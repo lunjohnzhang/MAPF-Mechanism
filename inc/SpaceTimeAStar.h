@@ -58,9 +58,9 @@ public:
 	pair<Path, int> findSuboptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
 		const vector<Path*>& paths, int agent, int lowerbound, double w, double agent_w, bool dummy_start_node) override;  // return the path and the lowerbound
 
-	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
+	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) override;
 
-	string getName() const { return "AStar"; }
+	string getName() const override { return "AStar"; }
 
 	SpaceTimeAStar(const Instance& instance, int agent):
 		SingleAgentSolver(instance, agent) {}

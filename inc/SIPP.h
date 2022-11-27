@@ -72,9 +72,9 @@ public:
     pair<Path, int> findSuboptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
                                        const vector<Path*>& paths, int agent, int lowerbound, double w, double agent_w, bool dummy_start_node) override;  // return the path and the lowerbound
     Path findPath(const ConstraintTable& constraint_table); // return A path that minimizes collisions, breaking ties by cost
-    int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
+    int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) override;
 
-    string getName() const { return "SIPP"; }
+    string getName() const override { return "SIPP"; }
 
     SIPP(const Instance& instance, int agent):
             SingleAgentSolver(instance, agent) {}
