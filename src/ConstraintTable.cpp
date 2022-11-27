@@ -1,6 +1,7 @@
 #include "ConstraintTable.h"
 
-int ConstraintTable::getMaxTimestep() const // everything is static after the max timestep
+int ConstraintTable::getMaxTimestep()
+    const  // everything is static after the max timestep
 {
     int rst = max(max(ct_max_timestep, cat_max_timestep), length_min);
     if (length_max < MAX_TIMESTEP)
@@ -59,86 +60,90 @@ void ConstraintTable::insert2CT(const list<Constraint>& constraints, int agent)
     tie(a, x, y, t, type) = constraints.front();
     switch (type)
     {
-        case constraint_type::POSITIVE_VERTEX:
-            assert(constraints.size() == 1);
-            if (agent == a) // this agent has to be at x at timestep t
+    case constraint_type::POSITIVE_VERTEX:
+        assert(constraints.size() == 1);
+        if (agent == a)  // this agent has to be at x at timestep t
+        {
+            insertLandmark(x, t);
+        }
+        else  // other agents cannot stay at x at timestep t
+        {
+            insert2CT(x, t, t + 1);
+        }
+        break;
+    case constraint_type::POSITIVE_EDGE:
+        assert(constraints.size() == 1);
+        if (agent == a)  // this agent has to be at x at timestep t - 1 and be
+                         // at y at timestep t
+        {
+            insertLandmark(x, t - 1);
+            insertLandmark(y, t);
+        }
+        else  // other agents cannot stay at x at timestep t - 1, be at y at
+              // timestep t, or traverse edge (y, x) from timesteps t - 1 to t
+        {
+            insert2CT(x, t - 1, t);
+            insert2CT(y, t, t + 1);
+            insert2CT(y, x, t, t + 1);
+        }
+        break;
+    case constraint_type::VERTEX:
+        if (a == agent)
+        {
+            for (const auto& constraint : constraints)
             {
-                insertLandmark(x, t);
-            }
-            else // other agents cannot stay at x at timestep t
-            {
+                tie(a, x, y, t, type) = constraint;
                 insert2CT(x, t, t + 1);
             }
-            break;
-        case constraint_type::POSITIVE_EDGE:
-            assert(constraints.size() == 1);
-            if (agent == a) // this agent has to be at x at timestep t - 1 and be at y at timestep t
+        }
+        break;
+    case constraint_type::EDGE:
+        assert(constraints.size() == 1);
+        if (a == agent)
+            insert2CT(x, y, t, t + 1);
+        break;
+    case constraint_type::BARRIER:
+        if (a == agent)
+        {
+            for (auto constraint : constraints)
             {
-                insertLandmark(x, t - 1);
-                insertLandmark(y, t);
-            }
-            else // other agents cannot stay at x at timestep t - 1, be at y at timestep t, or traverse edge (y, x) from timesteps t - 1 to t
-            {
-                insert2CT(x, t - 1, t);
-                insert2CT(y, t, t + 1);
-                insert2CT(y, x, t, t + 1);
-            }
-            break;
-        case constraint_type::VERTEX:
-            if (a == agent)
-            {
-                for (const auto& constraint : constraints)
+                tie(a, x, y, t, type) = constraint;
+                auto states = decodeBarrier(x, y, t);
+                for (const auto& state : states)
                 {
-                    tie(a, x, y, t, type) = constraint;
-                    insert2CT(x, t, t + 1);
+                    insert2CT(state.first, state.second, state.second + 1);
                 }
             }
-            break;
-        case  constraint_type::EDGE:
+        }
+        break;
+    case constraint_type::RANGE:
+        if (a == agent)
+        {
             assert(constraints.size() == 1);
-            if (a == agent)
-                insert2CT(x, y, t, t + 1);
-            break;
-        case constraint_type::BARRIER:
-            if (a == agent)
-            {
-                for (auto constraint : constraints)
-                {
-                    tie(a, x, y, t, type) = constraint;
-                    auto states = decodeBarrier(x, y, t);
-                    for (const auto& state : states)
-                    {
-                        insert2CT(state.first, state.second, state.second + 1);
-                    }
-
-                }
-            }
-            break;
-        case constraint_type::RANGE:
-            if (a == agent)
-            {
-                assert(constraints.size() == 1);
-                insert2CT(x, y, t + 1); // the agent cannot stay at x from timestep y to timestep t.
-            }
-            break;
+            insert2CT(x, y, t + 1);  // the agent cannot stay at x from timestep
+                                     // y to timestep t.
+        }
+        break;
     }
 }
 void ConstraintTable::insert2CT(const Path& path)
 {
     int prev_location = path.front().location;
     int prev_timestep = 0;
-    for (int timestep = 0; timestep < (int) path.size(); timestep++)
+    for (int timestep = 0; timestep < (int)path.size(); timestep++)
     {
         auto curr_location = path[timestep].location;
         if (prev_location != curr_location)
         {
-            insert2CT(prev_location, prev_timestep, timestep); // add vertex conflict
-            insert2CT(curr_location, prev_location, timestep, timestep + 1); // add edge conflict
+            insert2CT(prev_location, prev_timestep,
+                      timestep);  // add vertex conflict
+            insert2CT(curr_location, prev_location, timestep,
+                      timestep + 1);  // add edge conflict
             prev_location = curr_location;
             prev_timestep = timestep;
         }
     }
-    insert2CT(path.back().location, (int) path.size() - 1, MAX_TIMESTEP);
+    insert2CT(path.back().location, (int)path.size() - 1, MAX_TIMESTEP);
 }
 
 void ConstraintTable::insertLandmark(size_t loc, int t)
@@ -178,8 +183,8 @@ void ConstraintTable::insert2CAT(const Path& path)
     cat_max_timestep = max(cat_max_timestep, (int)path.size() - 1);
 }
 
-
-// return the location-time pairs on the barrier in an increasing order of their timesteps
+// return the location-time pairs on the barrier in an increasing order of their
+// timesteps
 list<pair<int, int> > ConstraintTable::decodeBarrier(int x, int y, int t) const
 {
     list<pair<int, int> > rst;
@@ -188,7 +193,7 @@ list<pair<int, int> > ConstraintTable::decodeBarrier(int x, int y, int t) const
     if (x1 == x2)
     {
         if (y1 < y2)
-            for (int i = min(y2 - y1, t); i>= 0; i--)
+            for (int i = min(y2 - y1, t); i >= 0; i--)
             {
                 rst.emplace_back(x1 * num_col + y2 - i, t - i);
             }
@@ -198,15 +203,15 @@ list<pair<int, int> > ConstraintTable::decodeBarrier(int x, int y, int t) const
                 rst.emplace_back(x1 * num_col + y2 + i, t - i);
             }
     }
-    else // y1== y2
+    else  // y1== y2
     {
         if (x1 < x2)
-            for (int i = min(x2 - x1, t); i>= 0; i--)
+            for (int i = min(x2 - x1, t); i >= 0; i--)
             {
                 rst.emplace_back((x2 - i) * num_col + y1, t - i);
             }
         else
-            for (int i = min(x1 - x2, t); i>= 0; i--)
+            for (int i = min(x1 - x2, t); i >= 0; i--)
             {
                 rst.emplace_back((x2 + i) * num_col + y1, t - i);
             }
@@ -229,14 +234,15 @@ bool ConstraintTable::constrained(size_t loc, int t) const
     {
         return false;
     }
-    for (const auto& constraint: it->second)
+    for (const auto& constraint : it->second)
     {
         if (constraint.first <= t && t < constraint.second)
             return true;
     }
     return false;
 }
-bool ConstraintTable::constrained(size_t curr_loc, size_t next_loc, int next_t) const
+bool ConstraintTable::constrained(size_t curr_loc, size_t next_loc,
+                                  int next_t) const
 {
     return constrained(getEdgeIndex(curr_loc, next_loc), next_t);
 }
@@ -254,36 +260,41 @@ void ConstraintTable::copy(const ConstraintTable& other)
     landmarks = other.landmarks;
 }
 
-
-int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, int next_timestep) const
+int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id,
+                                              int next_timestep) const
 {
     int rst = 0;
     if (!cat.empty())
     {
         if (cat[next_id].size() > next_timestep and cat[next_id][next_timestep])
             rst++;
-        if (curr_id != next_id and cat[next_id].size() >= next_timestep and cat[curr_id].size() > next_timestep and
-            cat[next_id][next_timestep - 1]and cat[curr_id][next_timestep])
+        if (curr_id != next_id and cat[next_id].size() >= next_timestep and
+            cat[curr_id].size() > next_timestep and
+            cat[next_id][next_timestep - 1] and cat[curr_id][next_timestep])
             rst++;
     }
     return rst;
 }
-bool ConstraintTable::hasConflictForStep(size_t curr_id, size_t next_id, int next_timestep) const
+bool ConstraintTable::hasConflictForStep(size_t curr_id, size_t next_id,
+                                         int next_timestep) const
 {
     if (!cat.empty())
     {
         if (cat[next_id].size() > next_timestep and cat[next_id][next_timestep])
             return true;
-        if (curr_id != next_id and cat[next_id].size() >= next_timestep and cat[curr_id].size() > next_timestep and
-            cat[next_id][next_timestep - 1]and cat[curr_id][next_timestep])
+        if (curr_id != next_id and cat[next_id].size() >= next_timestep and
+            cat[curr_id].size() > next_timestep and
+            cat[next_id][next_timestep - 1] and cat[curr_id][next_timestep])
             return true;
     }
     return false;
 }
-bool ConstraintTable::hasEdgeConflict(size_t curr_id, size_t next_id, int next_timestep) const
+bool ConstraintTable::hasEdgeConflict(size_t curr_id, size_t next_id,
+                                      int next_timestep) const
 {
     assert(curr_id != next_id);
-    return !cat.empty() and curr_id != next_id and cat[next_id].size() >= next_timestep and
+    return !cat.empty() and curr_id != next_id and
+           cat[next_id].size() >= next_timestep and
            cat[curr_id].size() > next_timestep and
            cat[next_id][next_timestep - 1] and cat[curr_id][next_timestep];
 }

@@ -10,8 +10,7 @@ public:
     const ConstraintTable& constraint_table;
 
     ReservationTable(const ConstraintTable& constraint_table)
-        : constraint_table(constraint_table),
-          sit(constraint_table.map_size)
+        : constraint_table(constraint_table), sit(constraint_table.map_size)
     {
     }
 

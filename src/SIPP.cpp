@@ -125,9 +125,8 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
                 reservation_table.constraint_table.length_max)
         {
             auto next_timestep = get<0>(interval);
-            auto next_h_val =
-                max(curr->h_val,
-                    curr->getFVal() - next_timestep);  // path max
+            auto next_h_val = max(curr->h_val,
+                                  curr->getFVal() - next_timestep);  // path max
             auto next_collisions =
                 curr->num_of_conflicts +
                 (int)curr->collision_v *
@@ -154,8 +153,7 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
 Path SIPP::findOptimalPath(const HLNode& node,
                            const ConstraintTable& initial_constraints,
                            const vector<Path*>& paths, int agent,
-                           int lowerbound,
-                           bool dummy_start_node)
+                           int lowerbound, bool dummy_start_node)
 {
     return findSuboptimalPath(node, initial_constraints, paths, agent,
                               lowerbound, 1, -1, dummy_start_node)
@@ -168,7 +166,8 @@ Path SIPP::findOptimalPath(const HLNode& node,
 // of the length of the path in order to speed up the search.
 pair<Path, int> SIPP::findSuboptimalPath(
     const HLNode& node, const ConstraintTable& initial_constraints,
-    const vector<Path*>& paths, int agent, int lowerbound, double w, double agent_w, bool dummy_start_node)
+    const vector<Path*>& paths, int agent, int lowerbound, double w,
+    double agent_w, bool dummy_start_node)
 {
     reset();
     this->w = w;
@@ -194,8 +193,7 @@ pair<Path, int> SIPP::findSuboptimalPath(
         return {path, 0};
 
     // generate start and add it to the OPEN list
-    auto start = new SIPPNode(start_location, 0,
-                              my_heuristic[start_location],
+    auto start = new SIPPNode(start_location, 0, my_heuristic[start_location],
                               nullptr, 0, get<1>(interval), get<1>(interval),
                               get<2>(interval), get<2>(interval));
     min_f_val = max((int)start->getFVal(), lowerbound);
