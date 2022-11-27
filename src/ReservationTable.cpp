@@ -162,6 +162,8 @@ void ReservationTable::insertSoftConstraint2SIT(int location, int t_min,
 void ReservationTable::updateSIT(int location)
 {
     assert(sit[location].empty());
+    sit[location].emplace_back(
+        0, min(constraint_table.length_max, MAX_TIMESTEP - 1) + 1, false);
 
     // negative constraints
     const auto& it = constraint_table.ct.find(location);
