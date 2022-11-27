@@ -12,7 +12,6 @@ public:
 	int timestep = 0;
 	int num_of_conflicts = 0;
 	bool in_openlist = false;
-	bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >length constraints
     bool is_goal = false;
 	// the following is used to compare nodes in the OPEN list
 	struct compare_node
@@ -54,11 +53,11 @@ public:
 	};  // used by FOCAL (heap) to compare nodes (top of the heap has min number-of-conflicts)
 
 
-	LLNode() : location(0), g_val(0), h_val(0), parent(nullptr), timestep(0), num_of_conflicts(0), in_openlist(false), wait_at_goal(false) {}
+	LLNode() : location(0), g_val(0), h_val(0), parent(nullptr), timestep(0), num_of_conflicts(0), in_openlist(false) {}
 
 	LLNode(int location, int g_val, int h_val, LLNode* parent, int timestep, int num_of_conflicts = 0, bool in_openlist = false) :
 		location(location), g_val(g_val), h_val(h_val), parent(parent), timestep(timestep),
-		num_of_conflicts(num_of_conflicts), in_openlist(in_openlist), wait_at_goal(false) {}
+		num_of_conflicts(num_of_conflicts), in_openlist(in_openlist) {}
 
 	inline int getFVal() const { return g_val + h_val; }
 	void copy(const LLNode& other)
@@ -69,7 +68,6 @@ public:
 		parent = other.parent;
 		timestep = other.timestep;
 		num_of_conflicts = other.num_of_conflicts;
-		wait_at_goal = other.wait_at_goal;
         is_goal = other.is_goal;
 	}
 };
@@ -94,9 +92,9 @@ public:
 	const Instance& instance;
 
 	virtual Path findOptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
-		const vector<Path*>& paths, int agent, int lower_bound) = 0;
+		const vector<Path*>& paths, int agent, int lower_bound, bool dummy_start_node) = 0;
 	virtual pair<Path, int> findSuboptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
-		const vector<Path*>& paths, int agent, int lowerbound, double w) = 0;  // return the path and the lowerbound
+		const vector<Path*>& paths, int agent, int lowerbound, double w, double agent_w, bool dummy_start_node) = 0;  // return the path and the lowerbound
 	virtual int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound) = 0;
 	virtual string getName() const = 0;
 

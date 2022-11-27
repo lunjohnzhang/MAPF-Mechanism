@@ -16,18 +16,30 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry> &path)
 }
 
 
-Path SpaceTimeAStar::findOptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
-                                     const vector<Path*>& paths, int agent, int lowerbound)
+Path SpaceTimeAStar::findOptimalPath(
+    const HLNode& node,
+    const ConstraintTable& initial_constraints,
+    const vector<Path*>& paths,
+    int agent,
+    int lowerbound,
+    bool dummy_start_node)
 {
-    return findSuboptimalPath(node, initial_constraints, paths, agent, lowerbound, 1).first;
+    return findSuboptimalPath(node, initial_constraints, paths, agent, lowerbound, 1, -1, dummy_start_node).first;
 }
 
 // find path by time-space A* search
 // Returns a bounded-suboptimal path that satisfies the constraints of the give node  while
 // minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 // lowerbound is an underestimation of the length of the path in order to speed up the search.
-pair<Path, int> SpaceTimeAStar::findSuboptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
-                                                   const vector<Path*>& paths, int agent, int lowerbound, double w)
+pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
+    const HLNode& node,
+    const ConstraintTable& initial_constraints,
+    const vector<Path*>& paths,
+    int agent,
+    int lowerbound,
+    double w,
+    double agent_w,
+    bool dummy_start_node)
 {
     this->w = w;
     Path path;
@@ -49,12 +61,19 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(const HLNode& node, const Con
     runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
 
     // the earliest timestep that the agent can hold its goal location. The length_min is considered here.
-    auto holding_time = constraint_table.getHoldingTime(goal_location, constraint_table.length_min);
     auto static_timestep = constraint_table.getMaxTimestep() + 1; // everything is static after this timestep
-    lowerbound =  max(holding_time, lowerbound);
 
     // generate start and add it to the OPEN & FOCAL list
-    auto start = new AStarNode(start_location, 0, max(lowerbound, my_heuristic[start_location]), nullptr, 0, 0);
+    AStarNode *start;
+    if (dummy_start_node)
+    {
+        // Create dummy start node if specified
+        start = new AStarNode(-1, 0, 1 + max(lowerbound, my_heuristic[start_location]), nullptr, 0, 0);
+    }
+    else
+    {
+        start = new AStarNode(start_location, 0, max(lowerbound, my_heuristic[start_location]), nullptr, 0, 0);
+    }
 
     num_generated++;
     start->open_handle = open_list.push(start);
@@ -70,9 +89,7 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(const HLNode& node, const Con
         auto* curr = popNode();
         assert(curr->location >= 0);
         // check if the popped node is a goal
-        if (curr->location == goal_location && // arrive at the goal location
-            !curr->wait_at_goal && // not wait at the goal location
-            curr->timestep >= holding_time) // the agent can hold the goal location afterward
+        if (curr->location == goal_location) // arrive at the goal location
         {
             updatePath(curr, path);
             break;
@@ -81,8 +98,18 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(const HLNode& node, const Con
         if (curr->timestep >= constraint_table.length_max)
             continue;
 
-        auto next_locations = instance.getNeighbors(curr->location);
-        next_locations.emplace_back(curr->location);
+        // Generate next location. For dummy start node, next location is the
+        // start location.
+        list<int> next_locations;
+        if (curr->location == -1)
+        {
+            next_locations.emplace_back(start_location);
+        }
+        else
+        {
+            next_locations = instance.getNeighbors(curr->location);
+            next_locations.emplace_back(curr->location);
+        }
         for (int next_location : next_locations)
         {
             int next_timestep = curr->timestep + 1;
@@ -104,14 +131,19 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(const HLNode& node, const Con
             int next_h_val = max(lowerbound - next_g_val, my_heuristic[next_location]);
             if (next_g_val + next_h_val > constraint_table.length_max)
                 continue;
+
+            // Skip if current path does not satisfy per agent suboptimal bound
+            if (agent_w != -1 && next_g_val + next_h_val >
+                agent_w * my_heuristic[start_location])
+            {
+                continue;
+            }
             int next_internal_conflicts = curr->num_of_conflicts +
                                           constraint_table.getNumOfConflictsForStep(curr->location, next_location, next_timestep);
 
             // generate (maybe temporary) node
             auto next = new AStarNode(next_location, next_g_val, next_h_val,
                                       curr, next_timestep, next_internal_conflicts);
-            if (next_location == goal_location && curr->location == goal_location)
-                next->wait_at_goal = true;
 
             // try to retrieve it from the hash table
             auto it = allNodes_table.find(next);

@@ -75,7 +75,6 @@ void ReservationTable::insertSoftConstraint2SIT(int location, int t_min, int t_m
         if (i_min < t_min && i_max <= t_max)
         {
             if (it != sit[location].end() and std::next(it) != sit[location].end() and
-                (location != goal_location || i_max != constraint_table.length_min) and
                 i_max == get<0>(*std::next(it)) and get<2>(*std::next(it))) // we can merge the current interval with the next one
             {
                 (*it) = make_tuple(i_min, t_min, false);
@@ -91,7 +90,7 @@ void ReservationTable::insertSoftConstraint2SIT(int location, int t_min, int t_m
         }
         else if (t_min <= i_min && t_max < i_max)
         {
-            if (it != sit[location].begin() and (location != goal_location || i_min != constraint_table.length_min) and
+            if (it != sit[location].begin() and
                 i_min == get<1>(*std::prev(it)) and get<2>(*std::prev(it))) // we can merge the current interval with the previous one
             {
                 (*std::prev(it)) = make_tuple(get<0>(*std::prev(it)), t_max, true);
@@ -110,11 +109,10 @@ void ReservationTable::insertSoftConstraint2SIT(int location, int t_min, int t_m
         }
         else // constraint_min <= get<0>(*it) && get<1> <= constraint_max
         {
-            if (it != sit[location].begin() and (location != goal_location || i_min != constraint_table.length_min) and
+            if (it != sit[location].begin() and
                 i_min == get<1>(*std::prev(it)) and get<2>(*std::prev(it))) // we can merge the current interval with the previous one
             {
                 if (it != sit[location].end() and std::next(it) != sit[location].end() and
-                    (location != goal_location || i_max != constraint_table.length_min) and
                     i_max == get<0>(*std::next(it)) and get<2>(*std::next(it))) // we can merge the current interval with the next one
                 {
                     (*std::prev(it)) = make_tuple(get<0>(*std::prev(it)), get<1>(*std::next(it)), true);
@@ -131,7 +129,6 @@ void ReservationTable::insertSoftConstraint2SIT(int location, int t_min, int t_m
             else
             {
                 if (it != sit[location].end() and std::next(it) != sit[location].end() and
-                    (location != goal_location || i_max != constraint_table.length_min) and
                     i_max == get<0>(*std::next(it)) and get<2>(*std::next(it))) // we can merge the current interval with the next one
                 {
                     (*it) = make_tuple(i_min, get<1>(*std::next(it)), true);
@@ -146,54 +143,10 @@ void ReservationTable::insertSoftConstraint2SIT(int location, int t_min, int t_m
     }
 }
 
-
-//merge successive safe intervals with the same number of conflicts.
-/*void ReservationTable::mergeIntervals(list<Interval >& intervals) const
-{
-	if (intervals.empty())
-		return;
-	auto prev = intervals.begin();
-	auto curr = prev;
-	++curr;
-	while (curr != intervals.end())
-	{
-		if (get<1>(*prev) == get<0>(*curr) && get<2>(*prev) == get<2>(*curr))
-		{
-			*prev = make_tuple(get<0>(*prev), get<1>(*curr), get<2>(*prev));
-			curr = intervals.erase(curr);
-		}
-		else
-		{
-			prev = curr;
-			++curr;
-		}
-	}
-}*/ // we cannot merge intervals for goal locations seperated by length_min
-
-
 // update SIT at the given location
 void ReservationTable::updateSIT(int location)
 {
     assert(sit[location].empty());
-    // length constraints for the goal location
-    if (location == goal_location) // we need to divide the same intervals into 2 parts [0, length_min) and [length_min, length_max + 1)
-    {
-        if (constraint_table.length_min > constraint_table.length_max) // the location is blocked for the entire time horizon
-        {
-            sit[location].emplace_back(0, 0, false);
-            return;
-        }
-        if (0 < constraint_table.length_min)
-        {
-            sit[location].emplace_back(0, constraint_table.length_min, false);
-        }
-        assert(constraint_table.length_min >= 0);
-        sit[location].emplace_back(constraint_table.length_min, min(constraint_table.length_max + 1, MAX_TIMESTEP), false);
-    }
-    else
-    {
-        sit[location].emplace_back(0, min(constraint_table.length_max, MAX_TIMESTEP - 1) + 1, false);
-    }
 
     // negative constraints
     const auto& it = constraint_table.ct.find(location);
@@ -223,8 +176,6 @@ void ReservationTable::updateSIT(int location)
             if (constraint_table.cat[location][t])
                 insertSoftConstraint2SIT(location, t, t + 1);
         }
-        if (constraint_table.cat_goals[location] < MAX_TIMESTEP)
-            insertSoftConstraint2SIT(location, constraint_table.cat_goals[location], MAX_TIMESTEP + 1);
     }
 }
 

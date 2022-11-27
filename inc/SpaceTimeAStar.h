@@ -40,8 +40,7 @@ public:
 		{
 			return (s1 == s2) || (s1 && s2 &&
                         s1->location == s2->location &&
-                        s1->timestep == s2->timestep &&
-						s1->wait_at_goal == s2->wait_at_goal);
+                        s1->timestep == s2->timestep);
 		}
 	};
 };
@@ -55,9 +54,9 @@ public:
 	// minimizing the number of internal conflicts (that is conflicts with known_paths for other agents found so far).
 	// lowerbound is an underestimation of the length of the path in order to speed up the search.
 	Path findOptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
-						const vector<Path*>& paths, int agent, int lower_bound);
+						const vector<Path*>& paths, int agent, int lower_bound, bool dummy_start_node) override;
 	pair<Path, int> findSuboptimalPath(const HLNode& node, const ConstraintTable& initial_constraints,
-		const vector<Path*>& paths, int agent, int lowerbound, double w);  // return the path and the lowerbound
+		const vector<Path*>& paths, int agent, int lowerbound, double w, double agent_w, bool dummy_start_node) override;  // return the path and the lowerbound
 
 	int getTravelTime(int start, int end, const ConstraintTable& constraint_table, int upper_bound);
 

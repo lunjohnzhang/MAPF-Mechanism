@@ -44,9 +44,10 @@ int main(int argc, char** argv)
 		("disjointSplitting", po::value<bool>()->default_value(false), "disjoint splitting")
 		("rectangleReasoning", po::value<bool>()->default_value(true), "rectangle reasoning")
 		("corridorReasoning", po::value<bool>()->default_value(true), "corridor reasoning")
-		("targetReasoning", po::value<bool>()->default_value(true), "target reasoning")
 		("sipp", po::value<bool>()->default_value(0), "using SIPPS as the low-level solver")
 		("restart", po::value<int>()->default_value(0), "rapid random restart times")
+        ("agentSuboptimality", po::value<double>()->default_value(1.2), "suboptimality bound of the single agent paths")
+        ("dummyStart", po::value<bool>()->default_value(true), "whether to create dummy start node")
 		;
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -62,6 +63,12 @@ int main(int argc, char** argv)
 		cerr << "Suboptimal bound should be at least 1!" << endl;
 		return -1;
 	}
+
+    if (vm["agentSuboptimality"].as<double>() < 1)
+    {
+        cerr << "Agent suboptimal bound should be at least 1!" << endl;
+        return -1;
+    }
 
 	high_level_solver_type s;
 	if (vm["highLevelSolver"].as<string>() == "A*")
@@ -148,12 +155,13 @@ int main(int argc, char** argv)
         ecbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
         ecbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         ecbs.setHeuristicType(h, h_hat);
-        ecbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
+        ecbs.setTargetReasoning(false);
         ecbs.setMutexReasoning(false);
         ecbs.setConflictSelectionRule(conflict);
         ecbs.setNodeSelectionRule(n);
         ecbs.setSavingStats(vm["stats"].as<bool>());
         ecbs.setHighLevelSolver(s, vm["suboptimality"].as<double>());
+        ecbs.setLowLevelSolver(vm["agentSuboptimality"].as<double>(), vm["dummyStart"].as<bool>());
         //////////////////////////////////////////////////////////////////////
         // run
         double runtime = 0;
@@ -190,7 +198,7 @@ int main(int argc, char** argv)
         cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
         cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         cbs.setHeuristicType(h, h_hat);
-        cbs.setTargetReasoning(vm["targetReasoning"].as<bool>());
+        cbs.setTargetReasoning(false);
         cbs.setMutexReasoning(false);
         cbs.setConflictSelectionRule(conflict);
         cbs.setNodeSelectionRule(n);

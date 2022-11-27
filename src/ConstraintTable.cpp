@@ -59,18 +59,6 @@ void ConstraintTable::insert2CT(const list<Constraint>& constraints, int agent)
     tie(a, x, y, t, type) = constraints.front();
     switch (type)
     {
-        case constraint_type::LEQLENGTH:
-            assert(constraints.size() == 1);
-            if (agent == a) // this agent has to reach its goal at or before timestep t.
-                length_max = min(length_max, t);
-            else // other agents cannot stay at x at or after timestep t
-                insert2CT(x, t, MAX_TIMESTEP);
-            break;
-        case constraint_type::GLENGTH:
-            assert(constraints.size() == 1);
-            if (a == agent) // path of agent_id should be of length at least t + 1
-                length_min = max(length_min, t + 1);
-            break;
         case constraint_type::POSITIVE_VERTEX:
             assert(constraints.size() == 1);
             if (agent == a) // this agent has to be at x at timestep t
@@ -169,7 +157,7 @@ void ConstraintTable::insert2CAT(int agent, const vector<Path*>& paths)
 {
     for (size_t ag = 0; ag < paths.size(); ag++)
     {
-        if (ag == agent || paths[ag] == nullptr)
+        if (ag == agent || paths[ag] == nullptr || paths[ag]->size() == 1)
             continue;
         insert2CAT(*paths[ag]);
     }
@@ -179,10 +167,7 @@ void ConstraintTable::insert2CAT(const Path& path)
     if (cat.empty())
     {
         cat.resize(map_size);
-        cat_goals.resize(map_size, MAX_TIMESTEP);
     }
-    assert(cat_goals[path.back().location] == MAX_TIMESTEP);
-    cat_goals[path.back().location] = path.size() - 1;
     for (auto timestep = (int)path.size() - 1; timestep >= 0; timestep--)
     {
         int loc = path[timestep].location;
@@ -265,7 +250,6 @@ void ConstraintTable::copy(const ConstraintTable& other)
     ct = other.ct;
     ct_max_timestep = other.ct_max_timestep;
     cat = other.cat;
-    cat_goals = other.cat_goals;
     cat_max_timestep = other.cat_max_timestep;
     landmarks = other.landmarks;
 }
@@ -281,8 +265,6 @@ int ConstraintTable::getNumOfConflictsForStep(size_t curr_id, size_t next_id, in
         if (curr_id != next_id and cat[next_id].size() >= next_timestep and cat[curr_id].size() > next_timestep and
             cat[next_id][next_timestep - 1]and cat[curr_id][next_timestep])
             rst++;
-        if (cat_goals[next_id] < next_timestep)
-            rst++;
     }
     return rst;
 }
@@ -294,8 +276,6 @@ bool ConstraintTable::hasConflictForStep(size_t curr_id, size_t next_id, int nex
             return true;
         if (curr_id != next_id and cat[next_id].size() >= next_timestep and cat[curr_id].size() > next_timestep and
             cat[next_id][next_timestep - 1]and cat[curr_id][next_timestep])
-            return true;
-        if (cat_goals[next_id] < next_timestep)
             return true;
     }
     return false;
@@ -317,26 +297,5 @@ int ConstraintTable::getFutureNumOfCollisions(int loc, int t) const
             rst += (int)cat[loc][timestep];
         }
     }
-    return rst;
-}
-
-// return the earliest timestep that the agent can hold the location
-int ConstraintTable::getHoldingTime(int location, int earliest_timestep) const
-{
-    int rst = earliest_timestep;
-    // CT
-    auto it = ct.find(location);
-    if (it != ct.end())
-    {
-        for (auto time_range : it->second)
-            rst = max(rst, time_range.second);
-    }
-    // Landmark
-    for (auto landmark : landmarks)
-    {
-        if (landmark.second != location)
-            rst = max(rst, (int)landmark.first + 1);
-    }
-
     return rst;
 }

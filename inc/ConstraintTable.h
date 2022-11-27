@@ -9,7 +9,6 @@ public:
     size_t num_col;
     size_t map_size;
 
-    int getHoldingTime(int location, int earliest_timestep) const; // the earliest timestep that the agent can hold the location after earliest_timestep
     int getMaxTimestep() const; // everything is static after the max timestep
     int getLastCollisionTimestep(int location) const;
     // void clear(){ct.clear(); cat_small.clear(); cat_large.clear(); landmarks.clear(); length_min = 0, length_max = INT_MAX; latest_timestep = 0;}
@@ -51,7 +50,7 @@ protected:
     typedef vector< vector<bool> > CAT;
     CAT cat;
     int cat_max_timestep = 0;
-    vector<int> cat_goals;
+    // vector<int> cat_goals;
     map<int, size_t> landmarks; // <timestep, location>: the agent must be at the given location at the given timestep
 
     void insertLandmark(size_t loc, int t); // insert a landmark, i.e., the agent has to be at the given location at the given timestep

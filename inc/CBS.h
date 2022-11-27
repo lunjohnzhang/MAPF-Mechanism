@@ -71,6 +71,11 @@ public:
 		suboptimality = w;
 	}
 	void setNodeLimit(int n) { node_limit = n; }
+    void setLowLevelSolver(double w, bool dummy_start_node)
+    {
+        agentSuboptimality = w;
+        dummy_start_node = dummy_start_node;
+    }
 
 	////////////////////////////////////////////////////////////////////////////////////////////
 	// Runs the algorithm until the problem is solved or time is exhausted 
@@ -121,10 +126,12 @@ protected:
 	
 	double time_limit;
 	double suboptimality = 1.0;
+    double agentSuboptimality = 1.0;
 	int cost_lowerbound = 0;
 	int inadmissible_cost_lowerbound;
 	int node_limit = MAX_NODES;
 	int cost_upperbound = MAX_COST;
+    bool dummy_start_node = false;
 
 	vector<ConstraintTable> initial_constraints;
 	clock_t start;

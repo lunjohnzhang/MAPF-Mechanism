@@ -278,7 +278,7 @@ bool ECBS::generateRoot()
 
 	for (auto i : agents)
 	{
-		paths_found_initially[i] = search_engines[i]->findSuboptimalPath(*root, initial_constraints[i], paths, i, 0, suboptimality);
+		paths_found_initially[i] = search_engines[i]->findSuboptimalPath(*root, initial_constraints[i], paths, i, 0, suboptimality, agentSuboptimality, dummy_start_node);
 		if (paths_found_initially[i].first.empty())
 		{
 			cerr << "The start-goal locations of agent " << i << "are not connected" << endl;
@@ -339,7 +339,7 @@ bool ECBS::generateChild(ECBSNode*  node, ECBSNode* parent)
 bool ECBS::findPathForSingleAgent(ECBSNode*  node, int ag)
 {
 	clock_t t = clock();
-	auto new_path = search_engines[ag]->findSuboptimalPath(*node, initial_constraints[ag], paths, ag, min_f_vals[ag], suboptimality);
+	auto new_path = search_engines[ag]->findSuboptimalPath(*node, initial_constraints[ag], paths, ag, min_f_vals[ag], suboptimality, agentSuboptimality, dummy_start_node);
 	num_LL_expanded += search_engines[ag]->num_expanded;
 	num_LL_generated += search_engines[ag]->num_generated;
 	runtime_build_CT += search_engines[ag]->runtime_build_CT;
