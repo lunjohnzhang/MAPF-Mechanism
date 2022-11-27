@@ -12,7 +12,6 @@ public:
     int timestep = 0;
     int num_of_conflicts = 0;
     bool in_openlist = false;
-    bool is_goal = false;
     // the following is used to compare nodes in the OPEN list
     struct compare_node
     {
@@ -95,7 +94,6 @@ public:
         parent = other.parent;
         timestep = other.timestep;
         num_of_conflicts = other.num_of_conflicts;
-        is_goal = other.is_goal;
     }
 };
 

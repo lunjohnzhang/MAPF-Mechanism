@@ -62,7 +62,6 @@ public:
         bool operator()(const SIPPNode* n1, const SIPPNode* n2) const
         {
             return (n1 == n2) || (n1 && n2 && n1->location == n2->location &&
-                                  n1->is_goal == n2->is_goal &&
                                   n1->high_generation == n2->high_generation);
         }
     };

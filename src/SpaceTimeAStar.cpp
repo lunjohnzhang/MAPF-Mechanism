@@ -3,8 +3,7 @@
 void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry>& path)
 {
     const LLNode* curr = goal;
-    if (curr->is_goal)
-        curr = curr->parent;
+
     path.reserve(curr->g_val + 1);
     while (curr != nullptr)
     {
