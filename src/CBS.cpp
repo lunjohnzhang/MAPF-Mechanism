@@ -76,7 +76,13 @@ void CBS::findConflicts(HLNode& curr, int a1, int a2)
     {
         int loc1 = paths[a1]->at(timestep).location;
         int loc2 = paths[a2]->at(timestep).location;
-        if (loc1 == loc2)
+
+        // Both locations are dummy start node. No collision
+        if (loc1 == loc2 && loc1 == -1 && loc2 == -1)
+        {
+            continue;
+        }
+        else if (loc1 == loc2)
         {
             shared_ptr<Conflict> conflict(new Conflict());
             if (target_reasoning && paths[a1]->size() == timestep + 1)
