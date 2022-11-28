@@ -298,15 +298,15 @@ bool ConstraintTable::hasEdgeConflict(size_t curr_id, size_t next_id,
            cat[curr_id].size() > next_timestep and
            cat[next_id][next_timestep - 1] and cat[curr_id][next_timestep];
 }
-int ConstraintTable::getFutureNumOfCollisions(int loc, int t) const
-{
-    int rst = 0;
-    if (!cat.empty())
-    {
-        for (auto timestep = t + 1; timestep < cat[loc].size(); timestep++)
-        {
-            rst += (int)cat[loc][timestep];
-        }
-    }
-    return rst;
-}
+// int ConstraintTable::getFutureNumOfCollisions(int loc, int t) const
+// {
+//     int rst = 0;
+//     if (!cat.empty())
+//     {
+//         for (auto timestep = t + 1; timestep < cat[loc].size(); timestep++)
+//         {
+//             rst += (int)cat[loc][timestep];
+//         }
+//     }
+//     return rst;
+// }

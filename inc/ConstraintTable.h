@@ -23,7 +23,7 @@ public:
                             int next_timestep) const;
     bool hasEdgeConflict(size_t curr_id, size_t next_id,
                          int next_timestep) const;
-    int getFutureNumOfCollisions(int loc, int t) const;
+    // int getFutureNumOfCollisions(int loc, int t) const;
 
     ConstraintTable(size_t num_col, size_t map_size)
         : num_col(num_col), map_size(map_size)

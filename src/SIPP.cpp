@@ -57,22 +57,8 @@ Path SIPP::findPath(const ConstraintTable& constraint_table)
         assert(curr->location >= 0);
         if (curr->location == goal_location)  // arrive at the goal location
         {
-            int future_collisions = constraint_table.getFutureNumOfCollisions(
-                curr->location, curr->timestep);
-            if (future_collisions == 0)
-            {
-                updatePath(curr, path);
-                break;
-            }
-            // generate a goal node
-            auto goal = new SIPPNode(*curr);
-            goal->h_val = 0;
-            goal->num_of_conflicts += future_collisions;
-            // try to retrieve it from the hash table
-            if (dominanceCheck(goal))
-                pushNodeToFocal(goal);
-            else
-                delete goal;
+            updatePath(curr, path);
+            break;
         }
 
         for (int next_location : instance.getNeighbors(
@@ -345,9 +331,9 @@ int SIPP::getTravelTime(int start, int end,
     auto root = new SIPPNode(start, 0, compute_heuristic(start, end), nullptr,
                              0, 1, 1, 0, 0);
     pushNodeToOpenAndFocal(root);
-    auto static_timestep =
-        constraint_table
-            .getMaxTimestep();  // everything is static after this timestep
+
+    // everything is static after this timestep
+    auto static_timestep = constraint_table.getMaxTimestep();
     while (!open_list.empty())
     {
         auto curr = open_list.top();

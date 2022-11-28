@@ -134,8 +134,9 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
                 continue;
 
             // Skip if current path does not satisfy per agent suboptimal bound
-            if (agent_w != -1 && next_g_val + next_h_val >
-                                     agent_w * my_heuristic[start_location])
+            if (agent_w != -1 &&
+                next_g_val + next_h_val >
+                    agent_w * (1 + my_heuristic[start_location]))
             {
                 continue;
             }
