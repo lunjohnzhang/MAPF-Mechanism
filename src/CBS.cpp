@@ -78,7 +78,7 @@ void CBS::findConflicts(HLNode& curr, int a1, int a2)
         int loc2 = paths[a2]->at(timestep).location;
 
         // Both locations are dummy start node. No collision
-        if (loc1 == loc2 && loc1 == -1 && loc2 == -1)
+        if (loc1 == -1 or loc2 == -1)
         {
             continue;
         }
