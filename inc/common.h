@@ -59,6 +59,8 @@ std::ostream& operator<<(std::ostream& os, const Path& path);
 
 bool isSamePath(const Path& p1, const Path& p2);
 
+string doubleToStr(double d, int precision);
+
 // Only for three-tuples of std::hash-able types for simplicity.
 // You can of course template this struct to allow other hash functions
 /*struct three_tuple_hash {

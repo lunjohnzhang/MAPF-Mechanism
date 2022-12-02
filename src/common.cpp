@@ -20,3 +20,11 @@ bool isSamePath(const Path& p1, const Path& p2)
     }
     return true;
 }
+
+string doubleToStr(double d, int precision)
+{
+    std::stringstream stream;
+    stream << std::fixed << std::setprecision(precision) << d;
+    std::string s = stream.str();
+    return s;
+}

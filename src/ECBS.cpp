@@ -9,7 +9,7 @@ bool ECBS::solve(double time_limit, int _cost_lowerbound)
     if (screen > 0)  // 1 or 2
     {
         string name = getSolverName();
-        name.resize(35, ' ');
+        name.resize(50, ' ');
         cout << name << ": ";
     }
     // set timer

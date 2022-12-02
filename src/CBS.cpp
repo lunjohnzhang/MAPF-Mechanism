@@ -3,7 +3,9 @@
 #include <algorithm>  // std::shuffle
 #include <chrono>     // std::chrono::system_clock
 #include <random>     // std::default_random_engine
+#include <sstream>
 
+#include "common.h"
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
 
@@ -1214,6 +1216,8 @@ string CBS::getSolverName() const
     if (bypass)
         name += "+BP";
     name += " with " + search_engines[0]->getName();
+    name += " w=" + doubleToStr(this->suboptimality, 2);
+    name += " agent_w=" + doubleToStr(this->agentSuboptimality, 2);
     return name;
 }
 
@@ -1227,7 +1231,7 @@ bool CBS::solve(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
     if (screen > 0)  // 1 or 2
     {
         string name = getSolverName();
-        name.resize(35, ' ');
+        name.resize(50, ' ');
         cout << name << ": ";
     }
     // set timer
