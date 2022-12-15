@@ -696,31 +696,6 @@ void ECBS::classifyConflicts(ECBSNode& node)
             }
         }
 
-        // Rectangle reasoning
-        if (rectangle_reasoning &&
-            (int)paths[a1]->size() - 1 ==
-                min_f_vals[a1] &&  // the paths for both agents are their
-                                   // shortest paths
-            (int)paths[a2]->size() - 1 == min_f_vals[a2] &&
-            min_f_vals[a1] > timestep &&  // conflict happens before both agents
-                                          // reach their goal locations
-            min_f_vals[a2] > timestep &&
-            type == constraint_type::VERTEX)  // vertex conflict
-        {
-            auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-            auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-            auto rectangle =
-                rectangle_helper.run(paths, timestep, a1, a2, mdd1, mdd2);
-            if (rectangle != nullptr)
-            {
-                if (!PC)
-                    rectangle->priority = conflict_priority::UNKNOWN;
-                computeSecondPriorityForConflict(*rectangle, node);
-                node.conflicts.push_back(rectangle);
-                continue;
-            }
-        }
-
         computeSecondPriorityForConflict(*con, node);
         node.conflicts.push_back(con);
     }

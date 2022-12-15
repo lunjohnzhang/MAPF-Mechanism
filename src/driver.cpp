@@ -18,53 +18,59 @@ int main(int argc, char** argv)
     namespace po = boost::program_options;
     // Declare the supported options.
     po::options_description desc("Allowed options");
-    desc.add_options()("help", "produce help message")
+    // clang-format off
+    desc.add_options()
+		("help", "produce help message")
 
         // params for the input instance and experiment settings
-        ("map,m", po::value<string>()->required(), "input file for map")(
-            "agents,a", po::value<string>()->required(),
-            "input file for agents")("output,o", po::value<string>(),
-                                     "output file for statistics")(
-            "outputPaths", po::value<string>(), "output file for paths")(
-            "agentNum,k", po::value<int>()->default_value(0),
-            "number of agents")("cutoffTime,t",
-                                po::value<double>()->default_value(7200),
-                                "cutoff time (seconds)")(
-            "screen,s", po::value<int>()->default_value(1),
-            "screen option (0: none; 1: results; 2:all)")(
-            "stats", po::value<bool>()->default_value(false),
+		("map,m", po::value<string>()->required(), "input file for map")
+        ("agents,a", po::value<string>()->required(), "input file for agents")
+		("output,o", po::value<string>(), "output file for statistics")
+		("outputPaths", po::value<string>(), "output file for paths")
+		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
+        ("cutoffTime,t", po::value<double>()->default_value(7200),
+            "cutoff time (seconds)")
+		("screen,s", po::value<int>()->default_value(1),
+            "screen option (0: none; 1: results; 2:all)")
+		("stats", po::value<bool>()->default_value(false),
             "write to files some detailed statistics")
+        ("num_of_layers,n_layer", po::value<int>()->default_value(10),
+            "height of the 3D map")
 
-        // params for CBS node selection strategies
-        ("highLevelSolver", po::value<string>()->default_value("EES"),
-         "the high-level solver (A*, A*eps, EES, NEW)")(
-            "lowLevelSolver", po::value<bool>()->default_value(true),
-            "using suboptimal solver in the low level")(
-            "inadmissibleH", po::value<string>()->default_value("Global"),
-            "inadmissible heuristics (Zero, Global, Path, Local, Conflict)")(
-            "suboptimality", po::value<double>()->default_value(1.2),
+		// params for CBS node selection strategies
+		("highLevelSolver", po::value<string>()->default_value("EES"),
+            "the high-level solver (A*, A*eps, EES, NEW)")
+		("lowLevelSolver", po::value<bool>()->default_value(true),
+            "using suboptimal solver in the low level")
+		("inadmissibleH", po::value<string>()->default_value("Global"),
+            "inadmissible heuristics (Zero, Global, Path, Local, Conflict)")
+        ("agentSuboptimality", po::value<double>()->default_value(1.2),
+            "suboptimality bound of the single agent paths")
+		("suboptimality", po::value<double>()->default_value(1.2),
             "suboptimality bound")
+        ("dummyStart", po::value<bool>()->default_value(true),
+            "whether to create dummy start node")
 
-        // params for CBS improvement
-        ("heuristics", po::value<string>()->default_value("WDG"),
-         "admissible heuristics for the high-level search (Zero, CG,DG, WDG)")(
-            "prioritizingConflicts", po::value<bool>()->default_value(true),
-            "conflict prioirtization. If true, conflictSelection is used as a "
-            "tie-breaking rule.")(
-            "bypass", po::value<bool>()->default_value(true), "Bypass1")(
-            "disjointSplitting", po::value<bool>()->default_value(false),
-            "disjoint splitting")("rectangleReasoning",
-                                  po::value<bool>()->default_value(true),
-                                  "rectangle reasoning")(
-            "corridorReasoning", po::value<bool>()->default_value(true),
-            "corridor reasoning")("sipp", po::value<bool>()->default_value(0),
-                                  "using SIPPS as the low-level solver")(
-            "restart", po::value<int>()->default_value(0),
-            "rapid random restart times")(
-            "agentSuboptimality", po::value<double>()->default_value(1.2),
-            "suboptimality bound of the single agent paths")(
-            "dummyStart", po::value<bool>()->default_value(true),
-            "whether to create dummy start node");
+		// params for CBS improvement
+		("heuristics", po::value<string>()->default_value("WDG"),
+            "admissible heuristics for the high-level search"
+            "(Zero, CG,DG, WDG)")
+		("prioritizingConflicts", po::value<bool>()->default_value(true),
+            "conflict prioirtization. If true, conflictSelection is used as a"
+            "tie-breaking rule.")
+		("bypass", po::value<bool>()->default_value(true), "Bypass1")
+		("disjointSplitting", po::value<bool>()->default_value(false),
+            "disjoint splitting")
+		("corridorReasoning", po::value<bool>()->default_value(true),
+            "corridor reasoning")
+		("targetReasoning", po::value<bool>()->default_value(true),
+            "target reasoning")
+		("sipp", po::value<bool>()->default_value(0),
+            "using SIPPS as the low-level solver")
+		("restart", po::value<int>()->default_value(0),
+            "rapid random restart times")
+		;
+    // clang-format on
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
 
@@ -160,7 +166,8 @@ int main(int argc, char** argv)
     ///////////////////////////////////////////////////////////////////////////
     // load the instance
     Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
-                      vm["agentNum"].as<int>());
+                      vm["agentNum"].as<int>(), 0, 0,
+                      vm["num_of_layers"].as<int>());
 
     srand(0);
     int runs = 1 + vm["restart"].as<int>();
@@ -172,7 +179,6 @@ int main(int argc, char** argv)
         ecbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
         ecbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
         ecbs.setBypass(vm["bypass"].as<bool>());
-        ecbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
         ecbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         ecbs.setHeuristicType(h, h_hat);
         ecbs.setTargetReasoning(false);
@@ -219,7 +225,6 @@ int main(int argc, char** argv)
         cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
         cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
         cbs.setBypass(vm["bypass"].as<bool>());
-        cbs.setRectangleReasoning(vm["rectangleReasoning"].as<bool>());
         cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         cbs.setHeuristicType(h, h_hat);
         cbs.setTargetReasoning(false);

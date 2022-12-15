@@ -35,6 +35,8 @@ using std::string;
 using std::tie;
 using std::tuple;
 using std::vector;
+using std::get;
+using std::make_tuple;
 
 // #define NDEBUG
 

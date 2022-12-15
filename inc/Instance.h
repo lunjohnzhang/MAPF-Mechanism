@@ -7,6 +7,7 @@ class Instance
 public:
     int num_of_cols;
     int num_of_rows;
+    int num_of_layers;
     int map_size;
 
     // enum valid_moves_t { NORTH, EAST, SOUTH, WEST, WAIT_MOVE, MOVE_COUNT };
@@ -15,7 +16,8 @@ public:
     Instance() {}
     Instance(const string& map_fname, const string& agent_fname,
              int num_of_agents = 0, int num_of_rows = 0, int num_of_cols = 0,
-             int num_of_obstacles = 0, int warehouse_width = 0);
+             int num_of_layers = 0, int num_of_obstacles = 0,
+             int warehouse_width = 0);
 
     void printAgents() const;
 
@@ -23,15 +25,28 @@ public:
     inline bool validMove(int curr, int next) const;
     list<int> getNeighbors(int curr) const;
 
-    inline int linearizeCoordinate(int row, int col) const
+    inline int linearizeCoordinate(int row, int col, int layer) const
     {
-        return (this->num_of_cols * row + col);
+        // return (this->num_of_cols * row + col);
+        return (this->num_of_layers * this->num_of_cols * row +
+                this->num_of_layers * col + layer);
     }
-    inline int getRowCoordinate(int id) const { return id / this->num_of_cols; }
-    inline int getColCoordinate(int id) const { return id % this->num_of_cols; }
-    inline pair<int, int> getCoordinate(int id) const
+    inline int getRowCoordinate(int id) const
     {
-        return make_pair(id / this->num_of_cols, id % this->num_of_cols);
+        return id / (this->num_of_cols * this->num_of_layers);
+    }
+    inline int getColCoordinate(int id) const
+    {
+        return (id / this->num_of_layers) % this->num_of_cols;
+    }
+    inline int getLayerCoordinate(int id) const
+    {
+        return id % this->num_of_layers;
+    }
+    inline tuple<int, int, int> getCoordinate(int id) const
+    {
+        return make_tuple(getRowCoordinate(id), getColCoordinate(id),
+                          getLayerCoordinate(id));
     }
     inline int getCols() const { return num_of_cols; }
 
@@ -39,31 +54,25 @@ public:
     {
         int loc1_x = getRowCoordinate(loc1);
         int loc1_y = getColCoordinate(loc1);
+        int loc1_z = getLayerCoordinate(loc1);
         int loc2_x = getRowCoordinate(loc2);
         int loc2_y = getColCoordinate(loc2);
-        return abs(loc1_x - loc2_x) + abs(loc1_y - loc2_y);
+        int loc2_z = getLayerCoordinate(loc2);
+        return abs(loc1_x - loc2_x) + abs(loc1_y - loc2_y) +
+               abs(loc1_z - loc2_z);
     }
 
-    inline int getManhattanDistance(const pair<int, int>& loc1,
-                                    const pair<int, int>& loc2) const
+    inline int getManhattanDistance(const tuple<int, int, int>& loc1,
+                                    const tuple<int, int, int>& loc2) const
     {
-        return abs(loc1.first - loc2.first) + abs(loc1.second - loc2.second);
+        return abs(get<0>(loc1) - get<0>(loc2)) +
+               abs(get<1>(loc1) - get<1>(loc2)) +
+               abs(get<2>(loc1) - get<2>(loc2));
+        // return abs(loc1.first - loc2.first) + abs(loc1.second - loc2.second);
     }
 
-    int getDegree(int loc) const
-    {
-        assert(loc >= 0 && loc < map_size && !my_map[loc]);
-        int degree = 0;
-        if (0 < loc - num_of_cols && !my_map[loc - num_of_cols])
-            degree++;
-        if (loc + num_of_cols < map_size && !my_map[loc + num_of_cols])
-            degree++;
-        if (loc % num_of_cols > 0 && !my_map[loc - 1])
-            degree++;
-        if (loc % num_of_cols < num_of_cols - 1 && !my_map[loc + 1])
-            degree++;
-        return degree;
-    }
+    // In how many directions the agent can move?
+    int getDegree(int curr) const;
 
     int getDefaultNumberOfAgents() const { return num_of_agents; }
 
@@ -84,15 +93,17 @@ private:
     bool loadAgents();
     void saveAgents() const;
 
-    void generateConnectedRandomGrid(
-        int rows, int cols, int obstacles);  // initialize new [rows x cols] map
-                                             // with random obstacles
+    // initialize new [rows x cols] map with random obstacles
+    void generateConnectedRandomGrid(int rows, int cols, int layers,
+                                     int obstacles);
     void generateRandomAgents(int warehouse_width);
-    bool addObstacle(
-        int obstacle);  // add this obsatcle only if the map is still connected
-    bool isConnected(int start,
-                     int goal);  // run BFS to find a path between start and
-                                 // goal, return true if a path exists.
+
+    // add this obsatcle only if the map is still connected
+    bool addObstacle(int obstacle);
+
+    // run BFS to find a path between start and goal, return true if a path
+    // exists.
+    bool isConnected(int start, int goal);
 
     int randomWalk(int loc, int steps) const;
 

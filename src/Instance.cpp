@@ -9,19 +9,21 @@ int RANDOM_WALK_STEPS = 100000;
 
 Instance::Instance(const string& map_fname, const string& agent_fname,
                    int num_of_agents, int num_of_rows, int num_of_cols,
-                   int num_of_obstacles, int warehouse_width)
+                   int num_of_layers, int num_of_obstacles, int warehouse_width)
     : map_fname(map_fname),
       agent_fname(agent_fname),
-      num_of_agents(num_of_agents)
+      num_of_agents(num_of_agents),
+      num_of_layers(num_of_layers)
 {
     bool succ = loadMap();
     if (!succ)
     {
-        if (num_of_rows > 0 && num_of_cols > 0 && num_of_obstacles >= 0 &&
-            num_of_obstacles <
-                num_of_rows * num_of_cols)  // generate random grid
+        // generate random grid
+        if (num_of_rows > 0 && num_of_cols > 0 && num_of_layers > 0 &&
+            num_of_obstacles >= 0 &&
+            num_of_obstacles < num_of_rows * num_of_cols)
         {
-            generateConnectedRandomGrid(num_of_rows, num_of_cols,
+            generateConnectedRandomGrid(num_of_rows, num_of_cols, num_of_layers,
                                         num_of_obstacles);
             saveMap();
         }
@@ -83,8 +85,9 @@ void Instance::generateRandomAgents(int warehouse_width)
         int k = 0;
         while (k < num_of_agents)
         {
-            int x = rand() % num_of_rows, y = rand() % num_of_cols;
-            int start = linearizeCoordinate(x, y);
+            int x = rand() % num_of_rows, y = rand() % num_of_cols,
+                z = rand() % num_of_layers;
+            int start = linearizeCoordinate(x, y, z);
             if (my_map[start] || starts[start])
                 continue;
 
@@ -112,10 +115,11 @@ void Instance::generateRandomAgents(int warehouse_width)
         int k = 0;
         while (k < num_of_agents)
         {
-            int x = rand() % num_of_rows, y = rand() % warehouse_width;
+            int x = rand() % num_of_rows, y = rand() % warehouse_width,
+                z = rand() % num_of_layers;
             if (k % 2 == 0)
                 y = num_of_cols - y - 1;
-            int start = linearizeCoordinate(x, y);
+            int start = linearizeCoordinate(x, y, z);
             if (starts[start])
                 continue;
             // update start
@@ -128,10 +132,11 @@ void Instance::generateRandomAgents(int warehouse_width)
         k = 0;
         while (k < num_of_agents)
         {
-            int x = rand() % num_of_rows, y = rand() % warehouse_width;
+            int x = rand() % num_of_rows, y = rand() % warehouse_width,
+                z = rand() % num_of_layers;
             if (k % 2 == 1)
                 y = num_of_cols - y - 1;
-            int goal = linearizeCoordinate(x, y);
+            int goal = linearizeCoordinate(x, y, z);
             if (goals[goal])
                 continue;
             // update goal
@@ -158,27 +163,38 @@ bool Instance::addObstacle(int obstacle)
     my_map[obstacle] = true;
     int obstacle_x = getRowCoordinate(obstacle);
     int obstacle_y = getColCoordinate(obstacle);
-    int x[4] = {obstacle_x, obstacle_x + 1, obstacle_x, obstacle_x - 1};
-    int y[4] = {obstacle_y - 1, obstacle_y, obstacle_y + 1, obstacle_y};
+    int obstacle_z = getLayerCoordinate(obstacle);
+    int x[6] = {
+        obstacle_x,     obstacle_x + 1, obstacle_x,
+        obstacle_x - 1, obstacle_x,     obstacle_x,
+    };
+    int y[6] = {
+        obstacle_y - 1, obstacle_y, obstacle_y + 1,
+        obstacle_y,     obstacle_y, obstacle_y,
+    };
+    int z[6] = {
+        obstacle_z, obstacle_z,     obstacle_z,
+        obstacle_z, obstacle_z + 1, obstacle_z - 1,
+    };
     int start = 0;
     int goal = 1;
-    while (start < 3 && goal < 4)
+    while (start < 5 && goal < 6)
     {
         if (x[start] < 0 || x[start] >= num_of_rows || y[start] < 0 ||
-            y[start] >= num_of_cols ||
-            my_map[linearizeCoordinate(x[start], y[start])])
+            y[start] >= num_of_cols || z[start] < 0 ||
+            z[start] >= num_of_layers ||
+            my_map[linearizeCoordinate(x[start], y[start], z[start])])
             start++;
         else if (goal <= start)
             goal = start + 1;
         else if (x[goal] < 0 || x[goal] >= num_of_rows || y[goal] < 0 ||
-                 y[goal] >= num_of_cols ||
-                 my_map[linearizeCoordinate(x[goal], y[goal])])
+                 y[goal] >= num_of_cols || z[goal] < 0 ||
+                 z[goal] >= num_of_layers ||
+                 my_map[linearizeCoordinate(x[goal], y[goal], z[goal])])
             goal++;
-        else if (isConnected(
-                     linearizeCoordinate(x[start], y[start]),
-                     linearizeCoordinate(
-                         x[goal],
-                         y[goal])))  // cannot find a path from start to goal
+        // cannot find a path from start to goal
+        else if (isConnected(linearizeCoordinate(x[start], y[start], z[start]),
+                             linearizeCoordinate(x[goal], y[goal], z[goal])))
         {
             start = goal;
             goal++;
@@ -215,14 +231,16 @@ bool Instance::isConnected(int start, int goal)
     return false;
 }
 
-void Instance::generateConnectedRandomGrid(int rows, int cols, int obstacles)
+void Instance::generateConnectedRandomGrid(int rows, int cols, int layers,
+                                           int obstacles)
 {
     cout << "Generate a " << rows << " x " << cols << " grid with " << obstacles
          << " obstacles. " << endl;
     int i, j;
     num_of_rows = rows + 2;
     num_of_cols = cols + 2;
-    map_size = num_of_rows * num_of_cols;
+    num_of_layers = layers + 2;
+    map_size = num_of_rows * num_of_cols * num_of_layers;
     my_map.resize(map_size, false);
     // Possible moves [WAIT, NORTH, EAST, SOUTH, WEST]
     /*moves_offset[Instance::valid_moves_t::WAIT_MOVE] = 0;
@@ -232,14 +250,29 @@ void Instance::generateConnectedRandomGrid(int rows, int cols, int obstacles)
     moves_offset[Instance::valid_moves_t::WEST] = -1;*/
 
     // add padding
-    i = 0;
-    for (j = 0; j < num_of_cols; j++) my_map[linearizeCoordinate(i, j)] = true;
-    i = num_of_rows - 1;
-    for (j = 0; j < num_of_cols; j++) my_map[linearizeCoordinate(i, j)] = true;
-    j = 0;
-    for (i = 0; i < num_of_rows; i++) my_map[linearizeCoordinate(i, j)] = true;
-    j = num_of_cols - 1;
-    for (i = 0; i < num_of_rows; i++) my_map[linearizeCoordinate(i, j)] = true;
+    for (int k = 1; k < num_of_layers - 1; k++)
+    {
+        i = 0;
+        for (j = 0; j < num_of_cols; j++)
+            my_map[linearizeCoordinate(i, j, k)] = true;
+        i = num_of_rows - 1;
+        for (j = 0; j < num_of_cols; j++)
+            my_map[linearizeCoordinate(i, j, k)] = true;
+        j = 0;
+        for (i = 0; i < num_of_rows; i++)
+            my_map[linearizeCoordinate(i, j, k)] = true;
+        j = num_of_cols - 1;
+        for (i = 0; i < num_of_rows; i++)
+            my_map[linearizeCoordinate(i, j, k)] = true;
+    }
+    for (int i = 0; i < num_of_cols; i++)
+    {
+        for (int j = 0; j < num_of_cols; j++)
+        {
+            my_map[linearizeCoordinate(i, j, 0)] = true;
+            my_map[linearizeCoordinate(i, j, num_of_layers - 1)] = true;
+        }
+    }
 
     // add obstacles uniformly at random
     i = 0;
@@ -288,7 +321,8 @@ bool Instance::loadMap()
         beg++;
         num_of_cols = atoi((*beg).c_str());  // read number of cols
     }
-    map_size = num_of_cols * num_of_rows;
+    assert (num_of_layers > 0);
+    map_size = num_of_cols * num_of_rows * num_of_layers;
     my_map.resize(map_size, false);
     // read map (and start/goal locations)
     for (int i = 0; i < num_of_rows; i++)
@@ -296,7 +330,10 @@ bool Instance::loadMap()
         getline(myfile, line);
         for (int j = 0; j < num_of_cols; j++)
         {
-            my_map[linearizeCoordinate(i, j)] = (line[j] != '.');
+            for (int k = 0; k < num_of_layers; k++)
+            {
+                my_map[linearizeCoordinate(i, j, k)] = (line[j] != '.');
+            }
         }
     }
     myfile.close();
@@ -312,15 +349,24 @@ bool Instance::loadMap()
 
 void Instance::printMap() const
 {
-    for (int i = 0; i < num_of_rows; i++)
+    // While printing/saving, we print the map layer by layer for better
+    // visualization.
+    // But note that in the implementation the "layer" dimension (aka the
+    // height) of the map is the 3rd dimension.
+    for (int k = 0; k < num_of_layers; k++)
     {
-        for (int j = 0; j < num_of_cols; j++)
+        for (int i = 0; i < num_of_rows; i++)
         {
-            if (this->my_map[linearizeCoordinate(i, j)])
-                cout << '@';
-            else
-                cout << '.';
+            for (int j = 0; j < num_of_cols; j++)
+            {
+                if (this->my_map[linearizeCoordinate(i, j, k)])
+                    cout << '@';
+                else
+                    cout << '.';
+            }
+            cout << endl;
         }
+        cout << endl;
         cout << endl;
     }
 }
@@ -335,15 +381,25 @@ void Instance::saveMap() const
         return;
     }
     myfile << num_of_rows << "," << num_of_cols << endl;
-    for (int i = 0; i < num_of_rows; i++)
+
+    // While printing/saving, we print the map layer by layer for better
+    // visualization.
+    // But note that in the implementation the "layer" dimension (aka the
+    // height) of the map is the 3rd dimension.
+    for (int k = 0; k < num_of_layers; k++)
     {
-        for (int j = 0; j < num_of_cols; j++)
+        for (int i = 0; i < num_of_rows; i++)
         {
-            if (my_map[linearizeCoordinate(i, j)])
-                myfile << "@";
-            else
-                myfile << ".";
+            for (int j = 0; j < num_of_cols; j++)
+            {
+                if (my_map[linearizeCoordinate(i, j, k)])
+                    myfile << "@";
+                else
+                    myfile << ".";
+            }
+            myfile << endl;
         }
+        myfile << endl;
         myfile << endl;
     }
     myfile.close();
@@ -383,13 +439,15 @@ bool Instance::loadAgents()
             int col = atoi((*beg).c_str());
             beg++;
             int row = atoi((*beg).c_str());
-            start_locations[i] = linearizeCoordinate(row, col);
+
+            // For third dimension, always start from and end at 0 (ground)
+            start_locations[i] = linearizeCoordinate(row, col, 0);
             // read goal [row,col] for agent i
             beg++;
             col = atoi((*beg).c_str());
             beg++;
             row = atoi((*beg).c_str());
-            goal_locations[i] = linearizeCoordinate(row, col);
+            goal_locations[i] = linearizeCoordinate(row, col, 0);
         }
     }
     else  // My benchmark
@@ -410,13 +468,13 @@ bool Instance::loadAgents()
             int row = atoi((*c_beg).c_str());
             c_beg++;
             int col = atoi((*c_beg).c_str());
-            start_locations[i] = linearizeCoordinate(row, col);
+            start_locations[i] = linearizeCoordinate(row, col, 0);
             // read goal [row,col] for agent i
             c_beg++;
             row = atoi((*c_beg).c_str());
             c_beg++;
             col = atoi((*c_beg).c_str());
-            goal_locations[i] = linearizeCoordinate(row, col);
+            goal_locations[i] = linearizeCoordinate(row, col, 0);
         }
     }
     myfile.close();
@@ -428,9 +486,11 @@ void Instance::printAgents() const
     for (int i = 0; i < num_of_agents; i++)
     {
         cout << "Agent" << i << " : S=(" << getRowCoordinate(start_locations[i])
-             << "," << getColCoordinate(start_locations[i]) << ") ; G=("
+             << "," << getColCoordinate(start_locations[i]) << ","
+             << getLayerCoordinate(start_locations[i]) << ") ; G=("
              << getRowCoordinate(goal_locations[i]) << ","
-             << getColCoordinate(goal_locations[i]) << ")" << endl;
+             << getColCoordinate(goal_locations[i]) << ","
+             << getLayerCoordinate(goal_locations[i]) << ")" << endl;
     }
 }
 
@@ -447,20 +507,45 @@ void Instance::saveAgents() const
     for (int i = 0; i < num_of_agents; i++)
         myfile << getRowCoordinate(start_locations[i]) << ","
                << getColCoordinate(start_locations[i]) << ","
+               << getLayerCoordinate(start_locations[i]) << ","
                << getRowCoordinate(goal_locations[i]) << ","
-               << getColCoordinate(goal_locations[i]) << "," << endl;
+               << getColCoordinate(goal_locations[i]) << ","
+               << getLayerCoordinate(goal_locations[i]) << "," << endl;
     myfile.close();
 }
 
 list<int> Instance::getNeighbors(int curr) const
 {
     list<int> neighbors;
-    int candidates[4] = {curr + 1, curr - 1, curr + num_of_cols,
-                         curr - num_of_cols};
+    int candidates[6] = {curr + 1,
+                         curr - 1,
+                         curr + num_of_layers,
+                         curr - num_of_layers,
+                         curr + num_of_cols * num_of_layers,
+                         curr - num_of_cols * num_of_layers};
     for (int next : candidates)
     {
         if (validMove(curr, next))
             neighbors.emplace_back(next);
     }
     return neighbors;
+}
+
+// In how many directions the agent can move?
+int Instance::getDegree(int curr) const
+{
+    assert(curr >= 0 && curr < map_size && !my_map[curr]);
+    int degree = 0;
+    int candidates[6] = {curr + 1,
+                         curr - 1,
+                         curr + num_of_layers,
+                         curr - num_of_layers,
+                         curr + num_of_cols * num_of_layers,
+                         curr - num_of_cols * num_of_layers};
+    for (int next : candidates)
+    {
+        if (validMove(curr, next))
+            degree++;
+    }
+    return degree;
 }

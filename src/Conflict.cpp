@@ -1,7 +1,6 @@
 #include "Conflict.h"
 
 #include "MDD.h"
-#include "RectangleReasoning.h"
 
 std::ostream& operator<<(std::ostream& os, const Constraint& constraint)
 {

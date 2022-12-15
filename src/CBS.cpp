@@ -5,9 +5,9 @@
 #include <random>     // std::default_random_engine
 #include <sstream>
 
-#include "common.h"
 #include "SIPP.h"
 #include "SpaceTimeAStar.h"
+#include "common.h"
 
 // takes the paths_found_initially and UPDATE all (constrained) paths found for
 // agents from curr to start
@@ -351,25 +351,6 @@ void CBS::classifyConflicts(CBSNode& node)
                 corridor->priority = con->priority;
                 computeSecondPriorityForConflict(*corridor, node);
                 node.conflicts.push_back(corridor);
-                continue;
-            }
-        }
-
-        // Rectangle reasoning
-        if (rectangle_reasoning && (int)paths[con->a1]->size() > timestep &&
-            (int)paths[con->a2]->size() >
-                timestep &&  // conflict happens before both agents reach their
-                             // goal locations
-            type == constraint_type::VERTEX)  // vertex conflict
-        {
-            auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
-            auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
-            auto rectangle =
-                rectangle_helper.run(paths, timestep, a1, a2, mdd1, mdd2);
-            if (rectangle != nullptr)
-            {
-                computeSecondPriorityForConflict(*rectangle, node);
-                node.conflicts.push_back(rectangle);
                 continue;
             }
         }
@@ -1000,7 +981,7 @@ void CBS::saveResults(const string& fileName, const string& instanceName) const
           << heuristic_helper.runtime_build_dependency_graph << ","
           << heuristic_helper.runtime_solve_MVC << "," <<
 
-        runtime_detect_conflicts << "," << rectangle_helper.accumulated_runtime
+        runtime_detect_conflicts << ","
           << "," << corridor_helper.accumulated_runtime << ","
           << mutex_helper.accumulated_runtime << ","
           << mdd_helper.accumulated_runtime << "," << runtime_build_CT << ","
@@ -1205,8 +1186,6 @@ string CBS::getSolverName() const
     default:
         break;
     }
-    if (rectangle_reasoning)
-        name += "+R";
     if (corridor_reasoning)
         name += "+C";
     if (target_reasoning)
@@ -1501,7 +1480,6 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
       paths_found_initially(paths_found_initially),
       search_engines(search_engines),
       mdd_helper(initial_constraints, search_engines),
-      rectangle_helper(search_engines[0]->instance),
       mutex_helper(search_engines[0]->instance, initial_constraints),
       corridor_helper(search_engines, initial_constraints),
       heuristic_helper(search_engines.size(), paths, search_engines,
@@ -1516,7 +1494,6 @@ CBS::CBS(const Instance& instance, bool sipp, int screen)
       suboptimality(1),
       num_of_agents(instance.getDefaultNumberOfAgents()),
       mdd_helper(initial_constraints, search_engines),
-      rectangle_helper(instance),
       mutex_helper(instance, initial_constraints),
       corridor_helper(search_engines, initial_constraints),
       heuristic_helper(instance.getDefaultNumberOfAgents(), paths,
