@@ -34,7 +34,7 @@ int main(int argc, char** argv)
             "screen option (0: none; 1: results; 2:all)")
 		("stats", po::value<bool>()->default_value(false),
             "write to files some detailed statistics")
-        ("num_of_layers,n_layer", po::value<int>()->default_value(10),
+        ("nLayers", po::value<int>()->default_value(10),
             "height of the 3D map")
 
 		// params for CBS node selection strategies
@@ -167,7 +167,7 @@ int main(int argc, char** argv)
     // load the instance
     Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
                       vm["agentNum"].as<int>(), 0, 0,
-                      vm["num_of_layers"].as<int>());
+                      vm["nLayers"].as<int>());
 
     srand(0);
     int runs = 1 + vm["restart"].as<int>();
