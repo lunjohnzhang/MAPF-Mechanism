@@ -1,11 +1,12 @@
 #!/bin/bash
 
-USAGE="Usage: bash scripts/run.sh OUT_DIR N_AGENTS SCEN_FILE MAP_FILE"
+USAGE="Usage: bash scripts/run.sh OUT_DIR N_AGENTS SCEN_FILE MAP_FILE N_LAYERS"
 
 NAME="$1"
 N_AGENTS="$2"
 SCEN_FILE="$3"
 MAP_FILE="$4"
+N_LAYERS="$5"
 
 if [ -z "${NAME}" ];
 then
@@ -31,6 +32,12 @@ then
   exit 1
 fi
 
+if [ -z "${N_LAYERS}" ];
+then
+  echo "${USAGE}"
+  exit 1
+fi
+
 curr_time=`date +"%Y-%m-%d_%H-%M-%S"`
 
 OUT_DIR_FULL="logs/$curr_time-${N_AGENTS}agents-$NAME"
@@ -50,6 +57,7 @@ do
             -k "$N_AGENTS" \
             -t 60 \
             --suboptimality $w \
-            --agentSuboptimality $w &
+            --agentSuboptimality $w \
+            --nLayers $N_LAYERS &
     done
 done
