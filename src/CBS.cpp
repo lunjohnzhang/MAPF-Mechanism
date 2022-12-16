@@ -1143,6 +1143,8 @@ void CBS::savePaths(const string& fileName) const
                    << search_engines[0]->instance.getRowCoordinate(t.location)
                    << ","
                    << search_engines[0]->instance.getColCoordinate(t.location)
+                   << ","
+                   << search_engines[0]->instance.getLayerCoordinate(t.location)
                    << ")->";
         output << endl;
     }
