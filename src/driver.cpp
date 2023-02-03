@@ -11,6 +11,7 @@
 #include <boost/tokenizer.hpp>
 
 #include "ECBS.h"
+#include "PP.h"
 
 /* Main function */
 int main(int argc, char** argv)
@@ -21,6 +22,9 @@ int main(int argc, char** argv)
     // clang-format off
     desc.add_options()
 		("help", "produce help message")
+
+        // Algo
+        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP']")
 
         // params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
@@ -172,7 +176,8 @@ int main(int argc, char** argv)
     int runs = 1 + vm["restart"].as<int>();
     //////////////////////////////////////////////////////////////////////
     // initialize the solver
-    if (vm["lowLevelSolver"].as<bool>())
+    string algo = vm["algo"].as<string>();
+    if (vm["lowLevelSolver"].as<bool>() && algo == "ECBS")
     {
         ECBS ecbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
         ecbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
@@ -218,7 +223,17 @@ int main(int argc, char** argv)
                            vm["agents"].as<string>());
         ecbs.clearSearchEngines();
     }
-    else
+    else if (algo == "PP")
+    {
+        PP pp(instance, vm["screen"].as<int>());
+        for (int i = 0; i < runs; i++)
+        {
+            pp.preprocess(true, true, true);
+            pp.computeRandomOrdering();
+
+        }
+    }
+    else if (algo == "CBS")
     {
         CBS cbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
         cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
