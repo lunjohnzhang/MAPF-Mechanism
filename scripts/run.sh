@@ -40,7 +40,7 @@ fi
 
 curr_time=`date +"%Y-%m-%d_%H-%M-%S"`
 
-OUT_DIR_FULL="logs/$curr_time-${N_AGENTS}agents-$NAME"
+OUT_DIR_FULL="logs/$curr_time-${N_AGENTS}agents-$NAME-${N_LAYERS}layers"
 mkdir -p $OUT_DIR_FULL
 
 for w in $(seq 1.02 0.02 1.2)
@@ -58,6 +58,7 @@ do
             -t 60 \
             --suboptimality $w \
             --agentSuboptimality $w \
-            --nLayers $N_LAYERS &
+            --nLayers $N_LAYERS \
+            --screen 2 &
     done
 done

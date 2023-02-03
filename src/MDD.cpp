@@ -332,6 +332,48 @@ corresponding parent link and child link find = true; break;
     return true;
 }*/
 
+
+void MDD::buildMDD(const Instance& instance, const vector<int>& distances_to_goal, int start_location)
+{
+    std::queue<MDDNode*> open;
+    levels.resize(distances_to_goal[start_location] + 1);
+    auto root = new MDDNode(start_location, nullptr); // Root
+    levels[0].push_back(root);
+    open.push(root);
+    while (!open.empty())
+    {
+        auto curr = open.front();
+        open.pop();
+        int next_level = curr->level + 1;
+        int next_dist_to_goal = distances_to_goal[start_location] - next_level;
+        for (int next_location : instance.getNeighbors(curr->location)) // Try every possible move. We only add backward edges in this step.
+        {
+            if (distances_to_goal[next_location] != next_dist_to_goal) // not valid move
+                continue;
+            bool find = false;
+            for (auto & child : levels[next_level])
+            {
+                if (child->location == next_location) // If the child node exists
+                {
+                    child->parents.push_back(curr); // then add corresponding parent link and child link
+                    curr->children.push_back(child);
+                    find = true;
+                    break;
+                }
+            }
+            if (!find) // Else generate a new mdd node
+            {
+                auto childNode = new MDDNode(next_location, curr);
+                levels[childNode->level].push_back(childNode);
+                curr->children.push_back(childNode);
+                open.push(childNode);
+            }
+        }
+    }
+    assert(levels.back().size() == 1);
+    return;
+}
+
 void MDD::deleteNode(MDDNode* node)
 {
     levels[node->level].remove(node);

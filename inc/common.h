@@ -10,6 +10,7 @@
 #include <set>
 #include <tuple>
 #include <vector>
+#include <numeric>
 
 using boost::unordered_map;
 using boost::unordered_set;
@@ -76,3 +77,21 @@ string doubleToStr(double d, int precision);
         return h1 ^ h2 ^ h3;
     }
 };*/
+
+double fRand(double fMin, double fMax);
+
+vector<int> softmax_ordering(vector<int>& agents_to_arrange, vector<double>& predictions_to_arrange);
+
+template <typename W>
+vector<double> softmax_vector(const vector<W>& to_normalize, double beta)
+{
+    vector<double> retvec(to_normalize.size(), 0);
+    std::transform(to_normalize.begin(), to_normalize.end(), retvec.begin(), [&beta](W d) -> double {
+        return std::exp(beta * d);
+        });
+
+    double sum_of_expo = std::accumulate(retvec.begin(), retvec.end(), 0.0);
+    std::for_each(retvec.begin(), retvec.end(), [&sum_of_expo](double& d) { d = d / sum_of_expo; });
+
+    return retvec;
+}

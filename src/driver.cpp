@@ -166,8 +166,7 @@ int main(int argc, char** argv)
     ///////////////////////////////////////////////////////////////////////////
     // load the instance
     Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
-                      vm["agentNum"].as<int>(), 0, 0,
-                      vm["nLayers"].as<int>());
+                      vm["agentNum"].as<int>(), 0, 0, vm["nLayers"].as<int>());
 
     srand(0);
     int runs = 1 + vm["restart"].as<int>();

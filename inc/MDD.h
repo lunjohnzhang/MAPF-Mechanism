@@ -43,6 +43,7 @@ public:
         const SingleAgentSolver* solver);  // build mdd of given levels
     bool buildMDD(ConstraintTable& ct,
                   const SingleAgentSolver* solver);  // build minimal MDD
+    void buildMDD(const Instance& instance, const vector<int>& distances_to_goal, int start_location); // build MDD by ignoring constraints
     // bool buildMDD(const std::vector <std::list< std::pair<int, int> > >&
     // constraints, int numOfLevels, 	int start_location, const int*
     // moves_offset, const std::vector<int>& my_heuristic, int map_size, int

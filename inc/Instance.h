@@ -76,15 +76,18 @@ public:
 
     int getDefaultNumberOfAgents() const { return num_of_agents; }
 
+    int num_of_agents;
+    vector<int> start_locations;
+    vector<int> goal_locations;
+
+    const vector<int>* getDistances(int root_location);
+
 private:
     // int moves_offset[MOVE_COUNT];
     vector<bool> my_map;
     string map_fname;
     string agent_fname;
-
-    int num_of_agents;
-    vector<int> start_locations;
-    vector<int> goal_locations;
+    unordered_map<int, vector<int>> distance_matrix;
 
     bool loadMap();
     void printMap() const;

@@ -12,6 +12,8 @@ public:
     int timestep = 0;
     int num_of_conflicts = 0;
     bool in_openlist = false;
+    bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >lenghth constraints
+
     // the following is used to compare nodes in the OPEN list
     struct compare_node
     {

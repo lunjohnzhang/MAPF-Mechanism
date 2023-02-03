@@ -549,3 +549,53 @@ int Instance::getDegree(int curr) const
     }
     return degree;
 }
+
+
+const vector<int>* Instance::getDistances(int root_location)
+{
+    auto it = distance_matrix.find(root_location);
+    if (it != distance_matrix.end())
+        return &(it->second);
+
+    struct Node
+    {
+        int location;
+        int value;
+
+        Node() = default;
+        Node(int location, int value) : location(location), value(value) {}
+        // the following is used to comapre nodes in the OPEN list
+        struct compare_node
+        {
+            // returns true if n1 > n2 (note -- this gives us *min*-heap).
+            bool operator()(const Node& n1, const Node& n2) const
+            {
+                return n1.value >= n2.value;
+            }
+        };  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
+    };
+
+    vector<int> rst(map_size, MAX_TIMESTEP);
+
+    // generate a heap that can save nodes (and a open_handle)
+    boost::heap::pairing_heap< Node, boost::heap::compare<Node::compare_node> > heap;
+    Node root(root_location, 0);
+    rst[root_location] = 0;
+    heap.push(root);  // add root to heap
+    while (!heap.empty())
+    {
+        Node curr = heap.top();
+        heap.pop();
+        for (int next_location : getNeighbors(curr.location))
+        {
+            if (rst[next_location] > curr.value + 1)
+            {
+                rst[next_location] = curr.value + 1;
+                Node next(next_location, curr.value + 1);
+                heap.push(next);
+            }
+        }
+    }
+    distance_matrix[root_location] = rst;
+    return &distance_matrix[root_location];
+}
