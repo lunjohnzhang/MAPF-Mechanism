@@ -226,12 +226,33 @@ int main(int argc, char** argv)
     else if (algo == "PP")
     {
         PP pp(instance, vm["screen"].as<int>());
+        double avg_suboptimality = 0;
+        double avg_sum_of_cost = 0;
+        int n_success = 0;
         for (int i = 0; i < runs; i++)
         {
             pp.preprocess(true, true, true);
             pp.computeRandomOrdering();
-
+            int sum_of_cost;
+            double suboptimality;
+            bool failed;
+            std::tie(sum_of_cost, suboptimality, failed) = pp.run();
+            if (!failed)
+            {
+                avg_suboptimality += suboptimality;
+                n_success += 1;
+                avg_sum_of_cost += sum_of_cost;
+                cout << "Run " << i << ": Sum of cost: " << sum_of_cost << ", "
+                     << "suboptimality: " << suboptimality << endl;
+            }
+            else
+                cout << "Run " << i << " failed";
+            pp.reset();
         }
+        avg_suboptimality /= n_success;
+        avg_sum_of_cost /= n_success;
+        cout << "Average sub optimality: " << avg_suboptimality << endl;
+        cout << "Average sum of cost: " << avg_sum_of_cost << endl;
     }
     else if (algo == "CBS")
     {

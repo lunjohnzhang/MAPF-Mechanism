@@ -40,7 +40,7 @@ public:
                     bool compute_distance_to_goal,
                     bool compute_mdd);  // compute information in each agent
     // return the sum of costs of the solution (INT_MAX if failed to solve)
-    int run();
+    std::tuple<int, double, bool> run();
     int run(int& failed_agent_id, double time_out_sec = 60.0);
     void reset();
 

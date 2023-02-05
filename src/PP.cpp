@@ -79,10 +79,9 @@ int PP::run(int& failed_agent_id, double time_out_sec)
         }
         for (auto& agent : path_table.hit_agents)
         {
+            // only consider agents that lead to shorter paths
             if (agents[id].path.empty() ||
-                agent.second <
-                    (int)(agents[id].path.size()) -
-                        1)  // only consider agents that lead to shorter paths
+                agent.second < (int)(agents[id].path.size()) - 1)
                 dependency_graph[id].insert(agent.first);
         }
         if (agents[id].path.empty())
@@ -99,10 +98,32 @@ int PP::run(int& failed_agent_id, double time_out_sec)
     return sum_of_costs;
 }
 
-int PP::run()
+std::tuple<int, double, bool> PP::run()
 {
-    int dummy_int = 0;
-    return run(dummy_int);
+    int failed_agent_id = -1;
+    int sum_of_cost = run(failed_agent_id);
+    bool failed = false;
+    double suboptimality = -1;
+    if (failed_agent_id >= 0)
+    {
+        // cout << "Failed agent: " << failed_agent_id << endl;
+        failed = true;
+    }
+    else{
+        // Compute upper bound of suboptimality
+        int sum_dist_to_goal = 0;
+        int sum_path_cost = 0;
+        for (auto agent: this->agents)
+        {
+            vector<int> temp = *agent.distance_to_start;
+            sum_dist_to_goal += temp[agent.goal_location];
+            sum_path_cost += agent.path.size();
+        }
+        suboptimality = (double)sum_path_cost / sum_dist_to_goal;
+        // cout << "Suboptimality: " << suboptimality << endl;
+    }
+
+    return std::make_tuple(sum_of_cost, suboptimality, failed);
 }
 
 void PP::computeDefaultOrdering()  // default ordering uses indices of the
