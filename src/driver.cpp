@@ -228,7 +228,10 @@ int main(int argc, char** argv)
         PP pp(instance, vm["screen"].as<int>());
         double avg_suboptimality = 0;
         double avg_sum_of_cost = 0;
+        double min_suboptimality = INT_MAX;
+        double min_sum_of_cost = INT_MAX;
         int n_success = 0;
+        double total_runtime = 0;
         for (int i = 0; i < runs; i++)
         {
             pp.preprocess(true, true, true);
@@ -242,8 +245,14 @@ int main(int argc, char** argv)
                 avg_suboptimality += suboptimality;
                 n_success += 1;
                 avg_sum_of_cost += sum_of_cost;
+                if (suboptimality < min_suboptimality)
+                    min_suboptimality = suboptimality;
+                if (sum_of_cost < min_sum_of_cost)
+                    min_sum_of_cost = sum_of_cost;
+                total_runtime += pp.runtime;
                 cout << "Run " << i << ": Sum of cost: " << sum_of_cost << ", "
-                     << "suboptimality: " << suboptimality << endl;
+                     << "suboptimality: " << suboptimality << ", "
+                     << "runtime: " << pp.runtime << endl;
             }
             else
                 cout << "Run " << i << " failed";
@@ -253,6 +262,9 @@ int main(int argc, char** argv)
         avg_sum_of_cost /= n_success;
         cout << "Average sub optimality: " << avg_suboptimality << endl;
         cout << "Average sum of cost: " << avg_sum_of_cost << endl;
+        cout << "Minimum sub optimality: " << min_suboptimality << endl;
+        cout << "Minimum sum of cost: " << min_sum_of_cost << endl;
+        cout << "Total runtime: " << total_runtime << endl;
     }
     else if (algo == "CBS")
     {
