@@ -58,7 +58,7 @@ void PP::preprocess(bool compute_distance_to_start,
     runtime_preprocessing = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }
 
-int PP::run(int& failed_agent_id, double time_out_sec)
+std::tuple<int, vector<int>> PP::run(int& failed_agent_id, double time_out_sec)
 {
     assert(ordering.size() == agents.size());
     clock_t start_time = clock();
@@ -94,14 +94,24 @@ int PP::run(int& failed_agent_id, double time_out_sec)
         sum_of_costs += (int)agents[id].path.size() - 1;
         path_table.insertPath(agents[id].id, agents[id].path);
     }
+
+    // Calculate sum of cost without specified agent
+    vector<int> sum_of_cost_wo_i(agents.size());
+    for(int i = 0; i < agents.size(); i++)
+    {
+        sum_of_cost_wo_i[i] = sum_of_costs - ((int)agents[i].path.size() - 1);
+    }
+
     runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-    return sum_of_costs;
+    return std::make_tuple(sum_of_costs, sum_of_cost_wo_i);
 }
 
-std::tuple<int, double, bool> PP::run()
+std::tuple<int, double, bool, vector<int>> PP::run()
 {
     int failed_agent_id = -1;
-    int sum_of_cost = run(failed_agent_id);
+    vector<int> sum_of_cost_wo_i;
+    int sum_of_cost;
+    std::tie (sum_of_cost, sum_of_cost_wo_i) = run(failed_agent_id);
     bool failed = false;
     double suboptimality = -1;
     if (failed_agent_id >= 0)
@@ -123,7 +133,8 @@ std::tuple<int, double, bool> PP::run()
         // cout << "Suboptimality: " << suboptimality << endl;
     }
 
-    return std::make_tuple(sum_of_cost, suboptimality, failed);
+    return std::make_tuple(
+        sum_of_cost, suboptimality, failed, sum_of_cost_wo_i);
 }
 
 void PP::computeDefaultOrdering()  // default ordering uses indices of the

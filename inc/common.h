@@ -11,6 +11,7 @@
 #include <tuple>
 #include <vector>
 #include <numeric>
+#include <chrono>
 
 using boost::unordered_map;
 using boost::unordered_set;
@@ -95,3 +96,7 @@ vector<double> softmax_vector(const vector<W>& to_normalize, double beta)
 
     return retvec;
 }
+
+vector<int> calculate_payment(int min_sum_of_cost, vector<vector<int>> all_sum_of_cost_wo_i);
+
+string get_curr_time_str();

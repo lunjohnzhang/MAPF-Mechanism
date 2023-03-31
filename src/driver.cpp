@@ -9,9 +9,12 @@
  */
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
+#include <boost/filesystem.hpp>
 
 #include "ECBS.h"
 #include "PP.h"
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 /* Main function */
 int main(int argc, char** argv)
@@ -162,6 +165,14 @@ int main(int argc, char** argv)
         return -1;
     }
 
+
+    // Create log dir
+    string timestamp = get_curr_time_str();
+    boost::filesystem::path dir(timestamp);
+    dir = "logs" / dir;
+    boost::filesystem::create_directories(dir);
+
+
     conflict_selection conflict = conflict_selection::EARLIEST;
     node_selection n = node_selection::NODE_CONFLICTPAIRS;
 
@@ -229,9 +240,10 @@ int main(int argc, char** argv)
         double avg_suboptimality = 0;
         double avg_sum_of_cost = 0;
         double min_suboptimality = INT_MAX;
-        double min_sum_of_cost = INT_MAX;
+        int min_sum_of_cost = INT_MAX;
         int n_success = 0;
         double total_runtime = 0;
+        vector<vector<int>> all_sum_of_cost_wo_i;
         for (int i = 0; i < runs; i++)
         {
             pp.preprocess(true, true, true);
@@ -239,7 +251,11 @@ int main(int argc, char** argv)
             int sum_of_cost;
             double suboptimality;
             bool failed;
-            std::tie(sum_of_cost, suboptimality, failed) = pp.run();
+            vector<int> sum_of_cost_wo_i;
+            std::tie(sum_of_cost, suboptimality, failed, sum_of_cost_wo_i) =
+                pp.run();
+            cout << endl;
+            all_sum_of_cost_wo_i.emplace_back(sum_of_cost_wo_i);
             if (!failed)
             {
                 avg_suboptimality += suboptimality;
@@ -265,6 +281,26 @@ int main(int argc, char** argv)
         cout << "Minimum sub optimality: " << min_suboptimality << endl;
         cout << "Minimum sum of cost: " << min_sum_of_cost << endl;
         cout << "Total runtime: " << total_runtime << endl;
+
+        // Calculate payment
+        vector<int> payments = calculate_payment(
+            min_sum_of_cost, all_sum_of_cost_wo_i);
+
+        json result = {
+            {"avg_suboptimality", avg_suboptimality},
+            {"avg_sum_of_cost", avg_sum_of_cost},
+            {"min_suboptimality", min_suboptimality},
+            {"min_sum_of_cost", min_sum_of_cost},
+            {"total_runtime", total_runtime},
+            {"payments", payments}
+        };
+
+        // Write result to log dir
+        boost::filesystem::path result_path = dir / "result.json";
+
+        std::ofstream ofs(result_path.string());
+        ofs << std::setw(4) << std::setfill(' ') << result << std::endl;
+        ofs.close();
     }
     else if (algo == "CBS")
     {
