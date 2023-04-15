@@ -58,12 +58,14 @@ void PP::preprocess(bool compute_distance_to_start,
     runtime_preprocessing = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }
 
-std::tuple<int, vector<int>> PP::run(int& failed_agent_id, double time_out_sec)
+std::tuple<int, vector<int>, vector<int>> PP::run(
+    int& failed_agent_id, double time_out_sec)
 {
     assert(ordering.size() == agents.size());
     clock_t start_time = clock();
     int sum_of_costs = 0;
     dependency_graph.resize(ordering.size());
+    vector<int> path_lengths(agents.size());
     for (int id : ordering)
     {
         path_table.hit_agents.clear();
@@ -91,8 +93,10 @@ std::tuple<int, vector<int>> PP::run(int& failed_agent_id, double time_out_sec)
             break;  // failed, id is the failing agent. in its dependency graph,
                     // at least one pair should be reversed
         }
-        sum_of_costs += (int)agents[id].path.size() - 1;
+        int curr_agent_path_len = (int)agents[id].path.size() - 1;
+        sum_of_costs += curr_agent_path_len;
         path_table.insertPath(agents[id].id, agents[id].path);
+        path_lengths[id] = curr_agent_path_len;
     }
 
     // Calculate sum of cost without specified agent
@@ -103,20 +107,22 @@ std::tuple<int, vector<int>> PP::run(int& failed_agent_id, double time_out_sec)
     }
 
     runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-    return std::make_tuple(sum_of_costs, sum_of_cost_wo_i);
+    return std::make_tuple(sum_of_costs, sum_of_cost_wo_i, path_lengths);
 }
 
-std::tuple<int, double, bool, vector<int>> PP::run()
+std::tuple<int, double, bool, vector<int>, vector<int>> PP::run()
 {
     int failed_agent_id = -1;
     vector<int> sum_of_cost_wo_i;
+    vector<int> path_lengths;
     int sum_of_cost;
-    std::tie (sum_of_cost, sum_of_cost_wo_i) = run(failed_agent_id);
+    std::tie (sum_of_cost, sum_of_cost_wo_i, path_lengths) =
+        run(failed_agent_id);
     bool failed = false;
     double suboptimality = -1;
     if (failed_agent_id >= 0)
     {
-        // cout << "Failed agent: " << failed_agent_id << endl;
+        cout << "Failed agent: " << failed_agent_id << endl;
         failed = true;
     }
     else{
@@ -134,7 +140,7 @@ std::tuple<int, double, bool, vector<int>> PP::run()
     }
 
     return std::make_tuple(
-        sum_of_cost, suboptimality, failed, sum_of_cost_wo_i);
+        sum_of_cost, suboptimality, failed, sum_of_cost_wo_i, path_lengths);
 }
 
 void PP::computeDefaultOrdering()  // default ordering uses indices of the

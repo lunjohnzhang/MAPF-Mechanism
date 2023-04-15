@@ -241,9 +241,13 @@ int main(int argc, char** argv)
         double avg_sum_of_cost = 0;
         double min_suboptimality = INT_MAX;
         int min_sum_of_cost = INT_MAX;
+        // Idx of the run that gets the min sum of cost
+        int min_sum_of_cost_idx = -1;
         int n_success = 0;
         double total_runtime = 0;
         vector<vector<int>> all_sum_of_cost_wo_i;
+        vector<vector<int>> all_path_lengths;
+        vector<int> all_sum_of_costs;
         for (int i = 0; i < runs; i++)
         {
             pp.preprocess(true, true, true);
@@ -252,26 +256,36 @@ int main(int argc, char** argv)
             double suboptimality;
             bool failed;
             vector<int> sum_of_cost_wo_i;
-            std::tie(sum_of_cost, suboptimality, failed, sum_of_cost_wo_i) =
-                pp.run();
+            vector<int> path_lengths;
+            std::tie(sum_of_cost,
+                     suboptimality,
+                     failed,
+                     sum_of_cost_wo_i,
+                     path_lengths) = pp.run();
             cout << endl;
-            all_sum_of_cost_wo_i.emplace_back(sum_of_cost_wo_i);
+
             if (!failed)
             {
+                all_sum_of_cost_wo_i.emplace_back(sum_of_cost_wo_i);
+                all_path_lengths.emplace_back(path_lengths);
+                all_sum_of_costs.emplace_back(sum_of_cost);
                 avg_suboptimality += suboptimality;
                 n_success += 1;
                 avg_sum_of_cost += sum_of_cost;
                 if (suboptimality < min_suboptimality)
                     min_suboptimality = suboptimality;
                 if (sum_of_cost < min_sum_of_cost)
+                {
                     min_sum_of_cost = sum_of_cost;
+                    min_sum_of_cost_idx = i;
+                }
                 total_runtime += pp.runtime;
                 cout << "Run " << i << ": Sum of cost: " << sum_of_cost << ", "
                      << "suboptimality: " << suboptimality << ", "
                      << "runtime: " << pp.runtime << endl;
             }
             else
-                cout << "Run " << i << " failed";
+                cout << "Run " << i << " failed" << endl;
             pp.reset();
         }
         avg_suboptimality /= n_success;
@@ -284,7 +298,10 @@ int main(int argc, char** argv)
 
         // Calculate payment
         vector<int> payments = calculate_payment(
-            min_sum_of_cost, all_sum_of_cost_wo_i);
+            min_sum_of_cost,
+            min_sum_of_cost_idx,
+            all_sum_of_costs,
+            all_path_lengths);
 
         json result = {
             {"avg_suboptimality", avg_suboptimality},

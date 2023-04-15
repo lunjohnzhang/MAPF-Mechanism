@@ -97,6 +97,10 @@ vector<double> softmax_vector(const vector<W>& to_normalize, double beta)
     return retvec;
 }
 
-vector<int> calculate_payment(int min_sum_of_cost, vector<vector<int>> all_sum_of_cost_wo_i);
+vector<int> calculate_payment(
+    int min_sum_of_cost,
+    int min_sum_of_cost_idx,
+    vector<int> all_sum_of_costs,
+    vector<vector<int>> all_path_lengths);
 
 string get_curr_time_str();

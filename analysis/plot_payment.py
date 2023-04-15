@@ -11,7 +11,8 @@ def plot_payment(logdir):
     payments = data["payments"]
 
     # data to plot
-    x = [x for x in range(len(payments))]
+    epsilon = 1e-7
+    x = [x+epsilon for x in range(len(payments))]
     y = payments
 
     # create a figure and an Axes object
@@ -24,6 +25,7 @@ def plot_payment(logdir):
     ax.set_title("Payments of Agents", fontsize=30)
     ax.set_xlabel("Agent ID", fontsize=20)
     ax.set_ylabel("Payment", fontsize=20)
+    ax.set_ylim(-20, 20)
 
     # save the plot as a PNG image file
     fig.savefig(os.path.join(logdir, "payment.png"))

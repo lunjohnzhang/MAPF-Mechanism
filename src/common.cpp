@@ -67,25 +67,70 @@ double fRand(double fMin, double fMax)
     return fMin + f * (fMax - fMin);
 }
 
-vector<int> calculate_payment(int min_sum_of_cost,
-                              vector<vector<int>> all_sum_of_cost_wo_i)
+vector<int> calculate_payment(
+    int min_sum_of_cost,
+    int min_sum_of_cost_idx,
+    vector<int> all_sum_of_costs,
+    vector<vector<int>> all_path_lengths)
 {
-    int n_agents = all_sum_of_cost_wo_i[0].size();
-    int n_runs = all_sum_of_cost_wo_i.size();
+    int n_agents = all_path_lengths[0].size();
+    int n_runs = all_path_lengths.size();
     vector<int> payments;
 
     // For each agent i, get the min sum of cost if not considering agent i
     for (int i = 0; i < n_agents; i++)
     {
-        int curr_min_sum_of_cost_wo_i = INT_MAX;
+        // cout << "with i    : ";
+        // for (int j = 0; j < n_runs; j++)
+        // {
+        //     cout << std::setw(4) << all_sum_of_costs[j] << " ";
+        // }
+        // cout << endl;
+
+        // Calculate sum of cost excluding agent i's solution
+        vector<int> sum_of_cost_wo_i(n_runs);
+        // cout << "without i : ";
         for (int j = 0; j < n_runs; j++)
         {
-            if (all_sum_of_cost_wo_i[j][i] < curr_min_sum_of_cost_wo_i)
+            sum_of_cost_wo_i[j] = all_sum_of_costs[j] - all_path_lengths[j][i];
+            // cout << std::setw(4) << sum_of_cost_wo_i[j] << " ";
+        }
+        // cout << endl;
+
+        // cout << "path len i: ";
+        // for (int j = 0; j < n_runs; j++)
+        // {
+        //     cout << std::setw(4) << all_path_lengths[j][i] << " ";
+        // }
+        // cout << endl << endl;
+
+        // Get the min of the sum of cost excluding i
+        int curr_min_sum_of_cost_wo_i = INT_MAX;
+        int curr_min_sum_of_cost_wo_i_idx = -1;
+        for (int j = 0; j < n_runs; j++)
+        {
+            if (curr_min_sum_of_cost_wo_i > sum_of_cost_wo_i[j])
             {
-                curr_min_sum_of_cost_wo_i = all_sum_of_cost_wo_i[j][i];
+                curr_min_sum_of_cost_wo_i = sum_of_cost_wo_i[j];
+                curr_min_sum_of_cost_wo_i_idx = j;
             }
         }
-        payments.emplace_back(min_sum_of_cost - curr_min_sum_of_cost_wo_i);
+
+        cout << curr_min_sum_of_cost_wo_i_idx << " " << min_sum_of_cost_idx << endl;
+        cout << curr_min_sum_of_cost_wo_i << " - "
+             << "(" << min_sum_of_cost << " - "
+             << all_path_lengths[min_sum_of_cost_idx][i] << ")" << endl;
+
+        // for (int j = 0; j < n_runs; j++)
+        // {
+        //     if (all_path_lengths[j][i] < curr_min_sum_of_cost_wo_i)
+        //     {
+        //         curr_min_sum_of_cost_wo_i = all_sum_of_cost_wo_i[j][i];
+        //     }
+        // }
+        payments.emplace_back(
+            curr_min_sum_of_cost_wo_i -
+            (min_sum_of_cost - all_path_lengths[min_sum_of_cost_idx][i]));
     }
 
     // Calculate payment of each agent
