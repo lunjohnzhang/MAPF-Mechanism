@@ -13,8 +13,6 @@
 
 #include "ECBS.h"
 #include "PP.h"
-#include <nlohmann/json.hpp>
-using json = nlohmann::json;
 
 /* Main function */
 int main(int argc, char** argv)
@@ -302,6 +300,13 @@ int main(int argc, char** argv)
             min_sum_of_cost_idx,
             all_sum_of_costs,
             all_path_lengths);
+
+
+        // Write payment related data to file for debugging
+        write_to_json(json(min_sum_of_cost), "min_sum_of_cost.json");
+        write_to_json(json(min_sum_of_cost_idx), "min_sum_of_cost_idx.json");
+        write_to_json(json(all_sum_of_costs), "all_sum_of_costs.json");
+        write_to_json(json(all_path_lengths), "all_path_lengths.json");
 
         json result = {
             {"avg_suboptimality", avg_suboptimality},

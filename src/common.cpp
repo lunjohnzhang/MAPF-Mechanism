@@ -151,3 +151,15 @@ string get_curr_time_str()
     std::string timestamp = ss.str();
     return timestamp;
 }
+
+void write_to_json(json to_write, string filename)
+{
+    // Open a file for writing
+    std::ofstream outfile(filename);
+
+    // Write the JSON object to the file
+    outfile << to_write;
+
+    // Close the file
+    outfile.close();
+}

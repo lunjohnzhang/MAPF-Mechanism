@@ -14,17 +14,27 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry>& path)
 }
 
 
-Path SpaceTimeAStar::findOptimalPath(PathTable& path_table, const vector<int>& heuristics, int start_location, double time_out_sec)
+Path SpaceTimeAStar::findOptimalPath(PathTable& path_table, const vector<int>& heuristics, int start_location, double time_out_sec, bool dummy_start_node)
 {
     Path path;
     num_expanded = 0;
     num_generated = 0;
 
-    auto holding_time = path_table.getHoldingTime(goal_location, heuristics[start_location]);
-
     // generate start and add it to the OPEN & FOCAL list
-    auto start = new AStarNode(start_location, 0,
-                               max(holding_time, heuristics[start_location]), nullptr, 0, 0, false);
+    AStarNode* start;
+    if (dummy_start_node)
+    {
+        // Create dummy start node if specified
+        start = new AStarNode(-1, 0,
+                              1 + heuristics[start_location],
+                              nullptr, 0, 0);
+    }
+    else
+    {
+        start = new AStarNode(start_location, 0,
+                              heuristics[start_location],
+                              nullptr, 0, 0);
+    }
 
     num_generated++;
     start->open_handle = open_list.push(start);
@@ -45,15 +55,22 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table, const vector<int>& h
         auto* curr = popNode();
         assert(curr->location >= 0);
         // check if the popped node is a goal
-        if (curr->h_val == 0 && // arrive at the goal location
-            curr->timestep >= holding_time) // the agent can hold the goal location afterward
+        if (curr->h_val == 0) // arrive at the goal location
         {
             updatePath(curr, path);
             break;
         }
 
-        auto next_locations = instance.getNeighbors(curr->location);
-        next_locations.emplace_back(curr->location);
+        list<int> next_locations;
+        if (curr->location == -1)
+        {
+            next_locations.emplace_back(start_location);
+        }
+        else
+        {
+            next_locations = instance.getNeighbors(curr->location);
+            next_locations.emplace_back(curr->location);
+        }
         for (int next_location : next_locations)
         {
             int next_timestep = curr->timestep + 1;

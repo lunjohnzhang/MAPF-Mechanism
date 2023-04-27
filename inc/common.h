@@ -12,6 +12,7 @@
 #include <vector>
 #include <numeric>
 #include <chrono>
+#include <nlohmann/json.hpp>
 
 using boost::unordered_map;
 using boost::unordered_set;
@@ -39,6 +40,7 @@ using std::tuple;
 using std::vector;
 using std::get;
 using std::make_tuple;
+using json = nlohmann::json;
 
 // #define NDEBUG
 
@@ -104,3 +106,5 @@ vector<int> calculate_payment(
     vector<vector<int>> all_path_lengths);
 
 string get_curr_time_str();
+
+void write_to_json(json to_write, string filename);
