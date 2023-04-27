@@ -3,3 +3,5 @@ cmake-*
 build/
 logs/
 .vscode
+*.o
+debug/*.json
