@@ -25,7 +25,7 @@ def plot_payment(logdir):
     ax.set_title("Payments of Agents", fontsize=30)
     ax.set_xlabel("Agent ID", fontsize=20)
     ax.set_ylabel("Payment", fontsize=20)
-    ax.set_ylim(-20, 20)
+    ax.set_ylim(-5, 5)
 
     # save the plot as a PNG image file
     fig.savefig(os.path.join(logdir, "payment.png"))
