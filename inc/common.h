@@ -2,6 +2,7 @@
 #include <boost/heap/pairing_heap.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
+#include <boost/filesystem.hpp>
 #include <ctime>
 #include <fstream>
 #include <iomanip>   // std::setprecision
@@ -107,4 +108,4 @@ vector<int> calculate_payment(
 
 string get_curr_time_str();
 
-void write_to_json(json to_write, string filename);
+void write_to_json(json to_write, boost::filesystem::path filename);

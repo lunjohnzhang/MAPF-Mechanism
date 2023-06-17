@@ -110,6 +110,27 @@ std::tuple<int, vector<int>, vector<int>> PP::run(
     return std::make_tuple(sum_of_costs, sum_of_cost_wo_i, path_lengths);
 }
 
+void PP::savePaths(const string& fileName) const
+{
+    std::ofstream output;
+    output.open(fileName, std::ios::out);
+    for (int i = 0; i < this->agents.size(); i++)
+    {
+        output << "Agent " << i << ": ";
+        for (const auto& t : this->agents[i].path)
+            output << "("
+                   << this->instance.getRowCoordinate(t.location)
+                   << ","
+                   << this->instance.getColCoordinate(t.location)
+                   << ","
+                   << this->instance.getLayerCoordinate(t.location)
+                   << ")->";
+        output << endl;
+    }
+    output.close();
+}
+
+
 std::tuple<int, double, bool, vector<int>, vector<int>> PP::run()
 {
     int failed_agent_id = -1;

@@ -152,10 +152,10 @@ string get_curr_time_str()
     return timestamp;
 }
 
-void write_to_json(json to_write, string filename)
+void write_to_json(json to_write, boost::filesystem::path filename)
 {
     // Open a file for writing
-    std::ofstream outfile(filename);
+    std::ofstream outfile(filename.string());
 
     // Write the JSON object to the file
     outfile << to_write;

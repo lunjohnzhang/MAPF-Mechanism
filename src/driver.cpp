@@ -30,8 +30,10 @@ int main(int argc, char** argv)
         // params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
         ("agents,a", po::value<string>()->required(), "input file for agents")
-		("output,o", po::value<string>(), "output file for statistics")
-		("outputPaths", po::value<string>(), "output file for paths")
+        ("saveStats", po::value<bool>()->default_value(true), "Save statistics on disk.")
+        ("savePath", po::value<bool>()->default_value(true), "Save path on disk.")
+		// ("output,o", po::value<string>(), "output file for statistics")
+		// ("outptuPaths", po::value<string>(), "output file for paths")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
         ("cutoffTime,t", po::value<double>()->default_value(7200),
             "cutoff time (seconds)")
@@ -72,8 +74,8 @@ int main(int argc, char** argv)
             "target reasoning")
 		("sipp", po::value<bool>()->default_value(0),
             "using SIPPS as the low-level solver")
-		("restart", po::value<int>()->default_value(0),
-            "rapid random restart times")
+		("nRuns", po::value<int>()->default_value(1),
+            "rapid random nRuns times")
 		;
     // clang-format on
     po::variables_map vm;
@@ -164,11 +166,12 @@ int main(int argc, char** argv)
     }
 
 
-    // Create log dir
+    // Create log logdir
+    string algo = vm["algo"].as<string>();
     string timestamp = get_curr_time_str();
-    boost::filesystem::path dir(timestamp);
-    dir = "logs" / dir;
-    boost::filesystem::create_directories(dir);
+    boost::filesystem::path logdir(timestamp + "_" + algo);
+    logdir = "logs" / logdir;
+    boost::filesystem::create_directories(logdir);
 
 
     conflict_selection conflict = conflict_selection::EARLIEST;
@@ -182,10 +185,9 @@ int main(int argc, char** argv)
                       vm["agentNum"].as<int>(), 0, 0, vm["nLayers"].as<int>());
 
     srand(0);
-    int runs = 1 + vm["restart"].as<int>();
+    int runs = vm["nRuns"].as<int>();
     //////////////////////////////////////////////////////////////////////
     // initialize the solver
-    string algo = vm["algo"].as<string>();
     if (vm["lowLevelSolver"].as<bool>() && algo == "ECBS")
     {
         ECBS ecbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
@@ -218,11 +220,11 @@ int main(int argc, char** argv)
             cout << "Failed to find solutions in Run " << i << endl;
         }
         ecbs.runtime = runtime;
-        if (vm.count("output"))
-            ecbs.saveResults(vm["output"].as<string>(),
+        if (vm["saveStats"].as<bool>())
+            ecbs.saveResults((logdir / "stats.csv").string(),
                              vm["agents"].as<string>());
-        if (ecbs.solution_found && vm.count("outputPaths"))
-            ecbs.savePaths(vm["outputPaths"].as<string>());
+        if (ecbs.solution_found && vm["savePath"].as<bool>())
+            ecbs.savePaths((logdir / "paths.txt").string());
         /*size_t pos = vm["output"].as<string>().rfind('.');      // position of
         the file extension string output_name =
         vm["output"].as<string>().substr(0, pos);     // get the name without
@@ -246,6 +248,11 @@ int main(int argc, char** argv)
         vector<vector<int>> all_sum_of_cost_wo_i;
         vector<vector<int>> all_path_lengths;
         vector<int> all_sum_of_costs;
+
+        // Create path directory
+        boost::filesystem::path logdir_paths = logdir / "paths";
+        boost::filesystem::create_directories(logdir_paths);
+
         for (int i = 0; i < runs; i++)
         {
             pp.preprocess(true, true, true);
@@ -281,6 +288,13 @@ int main(int argc, char** argv)
                 cout << "Run " << i << ": Sum of cost: " << sum_of_cost << ", "
                      << "suboptimality: " << suboptimality << ", "
                      << "runtime: " << pp.runtime << endl;
+
+                // Save path
+                if (vm["savePath"].as<bool>())
+                {
+                    string paths_file = "paths_" + std::to_string(i) + ".txt";
+                    pp.savePaths((logdir_paths / paths_file).string());
+                }
             }
             else
                 cout << "Run " << i << " failed" << endl;
@@ -303,10 +317,10 @@ int main(int argc, char** argv)
 
 
         // Write payment related data to file for debugging
-        write_to_json(json(min_sum_of_cost), "min_sum_of_cost.json");
-        write_to_json(json(min_sum_of_cost_idx), "min_sum_of_cost_idx.json");
-        write_to_json(json(all_sum_of_costs), "all_sum_of_costs.json");
-        write_to_json(json(all_path_lengths), "all_path_lengths.json");
+        write_to_json(json(min_sum_of_cost), logdir / "min_sum_of_cost.json");
+        write_to_json(json(min_sum_of_cost_idx), logdir / "min_sum_of_cost_idx.json");
+        write_to_json(json(all_sum_of_costs), logdir / "all_sum_of_costs.json");
+        write_to_json(json(all_path_lengths), logdir / "all_path_lengths.json");
 
         json result = {
             {"avg_suboptimality", avg_suboptimality},
@@ -317,8 +331,8 @@ int main(int argc, char** argv)
             {"payments", payments}
         };
 
-        // Write result to log dir
-        boost::filesystem::path result_path = dir / "result.json";
+        // Write result to log logdir
+        boost::filesystem::path result_path = logdir / "result.json";
 
         std::ofstream ofs(result_path.string());
         ofs << std::setw(4) << std::setfill(' ') << result << std::endl;
@@ -354,10 +368,10 @@ int main(int argc, char** argv)
             cout << "Failed to find solutions in Run " << i << endl;
         }
         cbs.runtime = runtime;
-        if (vm.count("output"))
+        if (vm["saveStats"].as<bool>())
             cbs.saveResults(vm["output"].as<string>(),
                             vm["agents"].as<string>());
-        if (cbs.solution_found && vm.count("outputPaths"))
+        if (cbs.solution_found && vm["savePath"].as<bool>())
             cbs.savePaths(vm["outputPaths"].as<string>());
         if (vm["stats"].as<bool>())
             cbs.saveStats(vm["output"].as<string>(), vm["agents"].as<string>());

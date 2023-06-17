@@ -57,6 +57,7 @@ public:
 
     void printOrdering() const;
     void printDependencyGraph() const;
+    void savePaths(const string& fileName) const;
 
 private:
     // input params
