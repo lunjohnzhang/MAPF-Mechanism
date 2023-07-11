@@ -225,7 +225,7 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
     {
         updateFocalList();  // update FOCAL if min f-val increased
         auto* curr = popNode();
-        assert(curr->location >= 0);
+        assert(curr->location >= -1);
         // check if the popped node is a goal
         if (curr->location == goal_location)  // arrive at the goal location
         {

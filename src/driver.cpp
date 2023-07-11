@@ -56,7 +56,7 @@ int main(int argc, char** argv)
             "suboptimality bound of the single agent paths")
 		("suboptimality", po::value<double>()->default_value(1.2),
             "suboptimality bound")
-        ("dummyStart", po::value<bool>()->default_value(true),
+        ("dummyStart", po::value<bool>()->default_value(false),
             "whether to create dummy start node")
 
 		// params for CBS improvement
