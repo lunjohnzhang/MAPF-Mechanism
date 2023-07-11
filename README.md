@@ -35,7 +35,7 @@ make
 Then, you are able to run the code:
 
 ```
-./eecbs -m maps/random-32-32-20.map -a scens/random-32-32-20-random-1.scen -k 50 -t 60 --suboptimality=1.2 --algo ECBS
+./drone -m maps/random-32-32-20.map -a scens/random-32-32-20-random-1.scen -k 50 -t 60 --suboptimality=1.2 --algo ECBS
 ```
 
 - m: the map file from the MAPF benchmark
@@ -50,7 +50,7 @@ Then, you are able to run the code:
 You can find more details and explanations for all parameters with:
 
 ```
-./eecbs --help
+./drone --help
 ```
 
 To test the code on more instances,
@@ -60,7 +60,7 @@ For a given number of agents k, the first k rows of the scen file are used to ge
 
 ## License
 
-EECBS is released under USC – Research License. See license.md for further details.
+The repo is released under USC – Research License. See license.md for further details.
 
 <!-- ## References
 

@@ -41,6 +41,7 @@ using std::tuple;
 using std::vector;
 using std::get;
 using std::make_tuple;
+using std::stack;
 using json = nlohmann::json;
 
 // #define NDEBUG

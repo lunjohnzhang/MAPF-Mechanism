@@ -33,7 +33,8 @@ enum constraint_type
     EDGE,
     POSITIVE_VERTEX,
     POSITIVE_EDGE,
-    CONSTRAINT_COUNT
+    CONSTRAINT_COUNT,
+    PBS_ORDER
 };
 
 enum conflict_selection
@@ -54,8 +55,10 @@ typedef std::tuple<int, int, int, int, constraint_type> Constraint;
 // <agent, B1, B2, t, BARRIER>
 // <agent, loc, t1, t2, CORRIDOR>
 // <agent, loc, -1, t, LEQLENGTH>: path of agent_id should be of length at most
-// t, and any other agent cannot be at loc at or after timestep t <agent, loc,
-// -1, t, GLENGTH>: path of agent_id should be of length at least t + 1
+//      t, and any other agent cannot be at loc at or after timestep t <agent,
+//      loc, -1, t, GLENGTH>: path of agent_id should be of length at least t+1
+// <low_agent, high_agent, -1, -1, PBS_ORDER>
+
 
 std::ostream& operator<<(std::ostream& os, const Constraint& constraint);
 
@@ -142,6 +145,15 @@ public:
         type = conflict_type::MUTEX;
         priority = conflict_priority::CARDINAL;
         // TODO add constraints from mutex reasoning
+    }
+
+    void pbsConflict(int a1, int a2)
+    {
+        constraint1.clear();
+        constraint2.clear();
+        this->a1 = a1;
+        this->a2 = a2;
+        type = conflict_type::STANDARD;
     }
 };
 

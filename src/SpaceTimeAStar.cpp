@@ -177,7 +177,11 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
     // build constraint table
     auto t = clock();
     ConstraintTable constraint_table(initial_constraints);
-    constraint_table.insert2CT(node, agent);
+    // initial constraints for PBS already contains all the required constraints
+    if (node.getName() != "PBS Node")
+    {
+        constraint_table.insert2CT(node, agent);
+    }
     runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
     if (constraint_table.constrained(start_location, 0))
     {
