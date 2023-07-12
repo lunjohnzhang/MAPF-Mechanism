@@ -517,6 +517,21 @@ void Instance::saveAgents() const
 list<int> Instance::getNeighbors(int curr) const
 {
     list<int> neighbors;
+
+    if (num_of_layers == 1)
+    {
+        int candidates[4] = {curr + 1,
+                             curr - 1,
+                             curr + num_of_cols,
+                             curr - num_of_cols};
+        for (int next : candidates)
+        {
+            if (validMove(curr, next))
+                neighbors.emplace_back(next);
+        }
+        return neighbors;
+    }
+
     int candidates[6] = {curr + 1,
                          curr - 1,
                          curr + num_of_layers,
