@@ -197,7 +197,7 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
             auto t = clock();
             if (hasConflicts(a, a2))
             {
-                shared_ptr<Conflict> new_conflict;
+                shared_ptr<Conflict> new_conflict(new Conflict());
                 new_conflict->pbsConflict(a, a2);
                 node->conflicts.emplace_back(new_conflict);
                 if (lower_agents.count(a2) > 0) // has a collision with a lower priority agent
@@ -656,7 +656,7 @@ bool PBS::generateRoot()
         {
             if(hasConflicts(a1, a2))
             {
-                shared_ptr<Conflict> new_conflict;
+                shared_ptr<Conflict> new_conflict(new Conflict());
                 new_conflict->pbsConflict(a1, a2);
                 root->conflicts.emplace_back(new_conflict);
             }

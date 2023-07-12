@@ -149,8 +149,8 @@ public:
 
     void pbsConflict(int a1, int a2)
     {
-        constraint1.clear();
-        constraint2.clear();
+        // constraint1.clear();
+        // constraint2.clear();
         this->a1 = a1;
         this->a2 = a2;
         type = conflict_type::STANDARD;
