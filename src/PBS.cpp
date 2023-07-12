@@ -299,20 +299,22 @@ bool PBS::hasConflicts(int a1, int a2) const
             return true;
 		}
 	}
-	if (paths[a1]->size() != paths[a2]->size())
-	{
-		int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;
-		int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;
-		int loc1 = paths[a1_]->back().location;
-		for (int timestep = min_path_length; timestep < (int)paths[a2_]->size(); timestep++)
-		{
-			int loc2 = paths[a2_]->at(timestep).location;
-			if (loc1 == loc2)
-			{
-				return true; // target conflict
-			}
-		}
-	}
+
+    // Don't need target conflict as the agents will disappear at goal.
+	// if (paths[a1]->size() != paths[a2]->size())
+	// {
+	// 	int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;
+	// 	int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;
+	// 	int loc1 = paths[a1_]->back().location;
+	// 	for (int timestep = min_path_length; timestep < (int)paths[a2_]->size(); timestep++)
+	// 	{
+	// 		int loc2 = paths[a2_]->at(timestep).location;
+	// 		if (loc1 == loc2)
+	// 		{
+	// 			return true; // target conflict
+	// 		}
+	// 	}
+	// }
     return false; // conflict-free
 }
 bool PBS::hasConflicts(int a1, const set<int>& agents) const
@@ -559,16 +561,21 @@ void PBS::saveCT(const string &fileName) const // write the CT to a file
 
 }
 
-void PBS::savePaths(const string &fileName) const
+void PBS::savePaths(const string& fileName) const
 {
     std::ofstream output;
     output.open(fileName, std::ios::out);
     for (int i = 0; i < num_of_agents; i++)
     {
         output << "Agent " << i << ": ";
-        for (const auto & t : *paths[i])
-            output << "(" << search_engines[0]->instance.getRowCoordinate(t.location)
-                   << "," << search_engines[0]->instance.getColCoordinate(t.location) << ")->";
+        for (const auto& t : *paths[i])
+            output << "("
+                   << search_engines[0]->instance.getRowCoordinate(t.location)
+                   << ","
+                   << search_engines[0]->instance.getColCoordinate(t.location)
+                   << ","
+                   << search_engines[0]->instance.getLayerCoordinate(t.location)
+                   << ")->";
         output << endl;
     }
     output.close();
@@ -738,21 +745,23 @@ bool PBS::validateSolution() const
 					return false;
 				}
 			}
-			if (paths[a1]->size() != paths[a2]->size())
-			{
-				int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;
-				int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;
-				int loc1 = paths[a1_]->back().location;
-				for (size_t timestep = min_path_length; timestep < paths[a2_]->size(); timestep++)
-				{
-					int loc2 = paths[a2_]->at(timestep).location;
-					if (loc1 == loc2)
-					{
-						cout << "Agents " << a1 << " and " << a2 << " collides at " << loc1 << " at timestep " << timestep << endl;
-						return false; // It's at least a semi conflict
-					}
-				}
-			}
+
+            // Don't need target conflict as the agents will disappear at goal.
+			// if (paths[a1]->size() != paths[a2]->size())
+			// {
+			// 	int a1_ = paths[a1]->size() < paths[a2]->size() ? a1 : a2;
+			// 	int a2_ = paths[a1]->size() < paths[a2]->size() ? a2 : a1;
+			// 	int loc1 = paths[a1_]->back().location;
+			// 	for (size_t timestep = min_path_length; timestep < paths[a2_]->size(); timestep++)
+			// 	{
+			// 		int loc2 = paths[a2_]->at(timestep).location;
+			// 		if (loc1 == loc2)
+			// 		{
+			// 			cout << "Agents " << a1 << " and " << a2 << " collides at " << loc1 << " at timestep " << timestep << endl;
+			// 			return false; // It's at least a semi conflict
+			// 		}
+			// 	}
+			// }
 		}
 	}
 	if ((int)soc != solution_cost)
