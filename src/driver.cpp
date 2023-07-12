@@ -174,6 +174,8 @@ int main(int argc, char** argv)
     logdir = "logs" / logdir;
     boost::filesystem::create_directories(logdir);
 
+    // Write config to logdir
+    write_config_to_file(vm, logdir / "config.json");
 
     conflict_selection conflict = conflict_selection::EARLIEST;
     node_selection n = node_selection::NODE_CONFLICTPAIRS;
@@ -386,7 +388,7 @@ int main(int argc, char** argv)
         // run
         double runtime = 0;
         pbs.solve(vm["cutoffTime"].as<double>());
-        if (vm.count("output"))
+        if (vm["saveStats"].as<bool>())
             pbs.saveResults((logdir / "stats.csv").string(),
                             vm["agents"].as<string>());
         if (pbs.solution_found && vm["savePath"].as<bool>())

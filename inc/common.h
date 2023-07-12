@@ -3,6 +3,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 #include <ctime>
 #include <fstream>
 #include <iomanip>   // std::setprecision
@@ -110,3 +111,7 @@ vector<int> calculate_payment(
 string get_curr_time_str();
 
 void write_to_json(json to_write, boost::filesystem::path filename);
+
+void write_config_to_file(
+    boost::program_options::variables_map vm,
+    boost::filesystem::path filename);
