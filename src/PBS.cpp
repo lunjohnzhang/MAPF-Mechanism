@@ -307,7 +307,12 @@ inline void PBS::update(PBSNode* node)
 bool PBS::hasConflicts(int a1, int a2) const
 {
 	int min_path_length = (int) (paths[a1]->size() < paths[a2]->size() ? paths[a1]->size() : paths[a2]->size());
-	for (int timestep = 0; timestep < min_path_length; timestep++)
+
+    // Ignore the first timestep if dummy start is turned on.
+    int start_timestep = 0;
+    if (this->dummy_start_node)
+        start_timestep = 1;
+	for (int timestep = start_timestep; timestep < min_path_length; timestep++)
 	{
 		int loc1 = paths[a1]->at(timestep).location;
 		int loc2 = paths[a2]->at(timestep).location;
@@ -781,6 +786,9 @@ void PBS::clearSearchEngines()
 bool PBS::validateSolution() const
 {
 	// check whether the paths are feasible
+    int start_timestep = 0;
+    if (this->dummy_start_node)
+        start_timestep = 1;
 	size_t soc = 0;
 	for (int a1 = 0; a1 < num_of_agents; a1++)
 	{
@@ -788,7 +796,7 @@ bool PBS::validateSolution() const
 		for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
 		{
 			size_t min_path_length = paths[a1]->size() < paths[a2]->size() ? paths[a1]->size() : paths[a2]->size();
-			for (size_t timestep = 0; timestep < min_path_length; timestep++)
+			for (size_t timestep = start_timestep; timestep < min_path_length; timestep++)
 			{
 				int loc1 = paths[a1]->at(timestep).location;
 				int loc2 = paths[a2]->at(timestep).location;

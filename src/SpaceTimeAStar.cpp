@@ -27,8 +27,8 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
     if (dummy_start_node)
     {
         // Create dummy start node if specified
-        start =
-            new AStarNode(-1, 0, 1 + heuristics[start_location], nullptr, 0, 0);
+        start = new AStarNode(dummy_start_loc, 0,
+                              1 + heuristics[start_location], nullptr, 0, 0);
     }
     else
     {
@@ -62,7 +62,7 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
         }
 
         list<int> next_locations;
-        if (curr->location == -1)
+        if (curr->location == dummy_start_loc)
         {
             next_locations.emplace_back(start_location);
         }
@@ -221,10 +221,11 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
 
     // generate start and add it to the OPEN & FOCAL list
     AStarNode* start;
+    int dummy_start_loc = instance.map_size;
     if (dummy_start_node)
     {
         // Create dummy start node if specified
-        start = new AStarNode(-1, 0,
+        start = new AStarNode(dummy_start_loc, 0,
                               1 + max(lowerbound, my_heuristic[start_location]),
                               nullptr, 0, 0);
     }
@@ -247,7 +248,7 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
     {
         updateFocalList();  // update FOCAL if min f-val increased
         auto* curr = popNode();
-        assert(curr->location >= -1);
+        assert(curr->location >= 0);
         // check if the popped node is a goal
         if (curr->location == goal_location)  // arrive at the goal location
         {
@@ -261,7 +262,7 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
         // Generate next location. For dummy start node, next location is the
         // start location.
         list<int> next_locations;
-        if (curr->location == -1)
+        if (curr->location == dummy_start_loc)
         {
             next_locations.emplace_back(start_location);
         }

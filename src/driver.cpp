@@ -46,7 +46,7 @@ int main(int argc, char** argv)
             "height of the 3D map")
         ("nRuns", po::value<int>()->default_value(1),
             "rapid random nRuns times")
-        ("dummyStart", po::value<bool>()->default_value(false),
+        ("dummyStart", po::value<bool>()->default_value(true),
             "whether to create dummy start node")
 
         // params for exhaustive PBS

@@ -75,7 +75,10 @@ private:
     string getSolverName() const;
 
 	int screen;
+
+    // Whether use dummy start node at single agent solver
 	bool dummy_start_node = false;
+
 	double time_limit;
 	int node_limit = MAX_NODES;
 

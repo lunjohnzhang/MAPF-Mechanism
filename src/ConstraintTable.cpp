@@ -171,7 +171,7 @@ void ConstraintTable::insert2CAT(const Path& path)
 {
     if (cat.empty())
     {
-        cat.resize(map_size);
+        cat.resize(map_size + 1); // Add 1 for dummy start loc
     }
     for (auto timestep = (int)path.size() - 1; timestep >= 0; timestep--)
     {

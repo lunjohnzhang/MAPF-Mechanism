@@ -151,6 +151,7 @@ public:
           goal_location(instance.goal_locations[agent])
     {
         compute_heuristics();
+        this->dummy_start_loc = this->instance.map_size;
     }
 
     virtual ~SingleAgentSolver() = default;
@@ -159,6 +160,7 @@ protected:
     int min_f_val;  // minimal f value in OPEN
     // int lower_bound; // Threshold for FOCAL
     double w = 1;  // suboptimal bound
+    int dummy_start_loc; // location of dummy start node, if applicable
 
     void compute_heuristics();
     int get_DH_heuristic(int from, int to) const
