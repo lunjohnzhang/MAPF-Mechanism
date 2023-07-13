@@ -37,7 +37,7 @@ bool PBS::solve(double _time_limit)
     if (screen > 0) // 1 or 2
     {
         string name = getSolverName();
-        name.resize(35, ' ');
+        name.resize(SOLVER_NAME_LEN, ' ');
         cout << name << ": ";
     }
     // set timer
@@ -50,6 +50,18 @@ bool PBS::solve(double _time_limit)
         auto curr = selectNode();
 
         if (terminate(curr)) break;
+
+        // If not terminate, and under exhaustive PBS, and a solution is found,
+        // see if time out.
+        if (this->exhaustive_search && this->solution_found)
+        {
+            // Time/node out, consider as failed even if some solutions are
+            // found.
+            if (timeAndNodeOut()) break;
+
+            // Not time/node out, continue to the next node.
+            continue;
+        }
 
         curr->conflict = chooseConflict(*curr);
 
@@ -67,6 +79,12 @@ bool PBS::solve(double _time_limit)
         pushNodes(curr->children[0], curr->children[1]);
         curr->clear();
     }  // end of while loop
+
+    if (this->exhaustive_search && this->solution_found)
+    {
+        cout << "Found " << this->n_solutions << " solutions, min cost: "
+             << goal_node->cost << endl;
+    }
     return solution_found;
 }
 
@@ -412,6 +430,8 @@ void PBS::printPriorityGraph() const
 
 void PBS::printResults() const
 {
+    if (this->n_solutions > 1)
+        cout << string(SOLVER_NAME_LEN + 2, ' ');
 	if (solution_cost >= 0) // solved
 		cout << "Succeed,";
 	else if (solution_cost == -1) // time_out
@@ -600,10 +620,33 @@ bool PBS::terminate(PBSNode* curr)
 {
 	runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
 	if (curr->conflicts.empty()) //no conflicts
-	{// found a solution
+	{
+        bool terminate_search = false;
+
+        // found a solution
 		solution_found = true;
-		goal_node = curr;
-		solution_cost = goal_node->cost;
+        this->n_solutions += 1;
+
+        // With exhaustive PBS, remember the current best solution and
+        // continue until all nodes are closed.
+        if (this->exhaustive_search)
+        {
+            if (solution_cost == -2 || solution_cost > curr->cost)
+            {
+                solution_cost = curr->cost;
+                goal_node = curr;
+            }
+            terminate_search = false;
+        }
+
+        // With regular PBS, stop on the first valid solution.
+        else
+        {
+            goal_node = curr;
+		    solution_cost = goal_node->cost;
+            terminate_search = true;
+        }
+
 		if (!validateSolution())
 		{
 			cout << "Solution invalid!!!" << endl;
@@ -612,9 +655,27 @@ bool PBS::terminate(PBSNode* curr)
 		}
 		if (screen > 0) // 1 or 2
 			printResults();
-		return true;
+		return terminate_search;
 	}
-	if (runtime > time_limit || num_HL_expanded > node_limit)
+
+    // Terminate if time/node runs out.
+    if (timeAndNodeOut()) return true;
+
+    // if (runtime > time_limit || num_HL_expanded > node_limit)
+	// {   // time/node out
+	// 	solution_cost = -1;
+	// 	solution_found = false;
+    //     if (screen > 0) // 1 or 2
+    //         printResults();
+	// 	return true;
+	// }
+
+	return false;
+}
+
+bool PBS::timeAndNodeOut()
+{
+    if (runtime > time_limit || num_HL_expanded > node_limit)
 	{   // time/node out
 		solution_cost = -1;
 		solution_found = false;
@@ -622,7 +683,7 @@ bool PBS::terminate(PBSNode* curr)
             printResults();
 		return true;
 	}
-	return false;
+    return false;
 }
 
 

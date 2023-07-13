@@ -44,6 +44,14 @@ int main(int argc, char** argv)
             "write to files some detailed statistics")
         ("nLayers", po::value<int>()->default_value(10),
             "height of the 3D map")
+        ("nRuns", po::value<int>()->default_value(1),
+            "rapid random nRuns times")
+        ("dummyStart", po::value<bool>()->default_value(false),
+            "whether to create dummy start node")
+
+        // params for exhaustive PBS
+        ("exhaustiveSearch", po::value<bool>()->default_value(true),
+            "exhaustive search with PBS")
 
 		// params for CBS node selection strategies
 		("highLevelSolver", po::value<string>()->default_value("EES"),
@@ -56,8 +64,6 @@ int main(int argc, char** argv)
             "suboptimality bound of the single agent paths")
 		("suboptimality", po::value<double>()->default_value(1.2),
             "suboptimality bound")
-        ("dummyStart", po::value<bool>()->default_value(false),
-            "whether to create dummy start node")
 
 		// params for CBS improvement
 		("heuristics", po::value<string>()->default_value("WDG"),
@@ -75,8 +81,6 @@ int main(int argc, char** argv)
             "target reasoning")
 		("sipp", po::value<bool>()->default_value(0),
             "using SIPPS as the low-level solver")
-		("nRuns", po::value<int>()->default_value(1),
-            "rapid random nRuns times")
 		;
     // clang-format on
     po::variables_map vm;
@@ -383,7 +387,9 @@ int main(int argc, char** argv)
     else if (algo == "PBS")
     {
         PBS pbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
-        pbs.setLowLevelSolver(vm["dummyStart"].as<bool>());
+        pbs.setSolverParams(
+            vm["dummyStart"].as<bool>(),
+            vm["exhaustiveSearch"].as<bool>());
 
         // run
         double runtime = 0;

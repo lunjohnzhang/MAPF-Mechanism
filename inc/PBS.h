@@ -41,9 +41,10 @@ public:
 	void clearSearchEngines();
 	~PBS();
 
-    void setLowLevelSolver(bool dummy_start_node)
+    void setSolverParams(bool dummy_start_node, bool exhaustive_search)
     {
         this->dummy_start_node = dummy_start_node;
+        this->exhaustive_search = exhaustive_search;
     }
 
 	// Save results
@@ -57,6 +58,16 @@ private:
     stack<PBSNode*> open_list;
 	list<PBSNode*> allNodes_table;
 
+    // exhaustive search.
+    // With exhaustive search, PBS will:
+    // 1. search through all high level nodes and return the solution with
+    //    minimal cost.
+    // 2. replan all agents with lower priority than the currently planned high
+    //    priority agent.
+    bool exhaustive_search = false; // Turn on exhaustive search or not.
+    // All nodes with collision-free solution.
+    list<PBSNode*> all_solution_nodes;
+    int n_solutions = 0;
 
     list<int> ordered_agents;
     vector<vector<bool>> priority_graph; // [i][j] = true indicates that i is lower than j
@@ -92,8 +103,14 @@ private:
 	bool validateSolution() const;
 	inline int getAgentLocation(int agent_id, size_t timestep) const;
 
-	vector<int> shuffleAgents() const;  //generate random permuattion of agent indices
-	bool terminate(PBSNode* curr); // check the stop condition and return true if it meets
+    //generate random permuattion of agent indices
+	vector<int> shuffleAgents() const;
+
+    // check the stop condition and return true if it meets
+	bool terminate(PBSNode* curr);
+
+    // Check whether time/node has run out.
+    bool timeAndNodeOut();
 
     void getHigherPriorityAgents(const list<int>::reverse_iterator & p1, set<int>& agents);
     void getLowerPriorityAgents(const list<int>::iterator & p1, set<int>& agents);

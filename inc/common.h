@@ -50,6 +50,7 @@ using json = nlohmann::json;
 #define MAX_TIMESTEP INT_MAX / 2
 #define MAX_COST INT_MAX / 2
 #define MAX_NODES INT_MAX / 2
+#define SOLVER_NAME_LEN 35
 
 struct PathEntry
 {
