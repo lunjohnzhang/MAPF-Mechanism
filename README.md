@@ -37,15 +37,20 @@ Then, you are able to run the code:
 ```
 ./drone -m maps/random-32-32-20.map -a scens/random-32-32-20-random-1.scen -k 50 -t 60 --suboptimality=1.2 --algo ECBS
 ```
-
-- m: the map file from the MAPF benchmark
-- a: the scenario file from the MAPF benchmark
-- o: the output file that contains the search statistics
-- outputPaths: the output file that contains the paths
-- k: the number of agents
-- t: the runtime limit
-- suboptimality: the suboptimality factor w
-- algo: the algorithm. One of `CBS`, `ECBS`, and `PP`.
+- algo: the MAPF algorithm. One of `CBS`, `ECBS`, `PBS`, and `PP`.
+- map: the map file from the MAPF benchmark
+- agents: the scenario file from the MAPF benchmark
+- agentNum: the number of agents
+- cutoffTime: the runtime limit
+- saveStats: whether to save the search statistics
+- savePath: whether to save the paths
+- seed: global random seed
+- nLayers: height of 3D map
+- dummyStart: whether to create a dummy start node in single agent solver
+- nRuns: number of random orders to run in `PP`.
+- exhaustiveSearch: whether to use exhaustive search in `PBS`
+- suboptimality: the suboptimality factor w for `ECBS`
+- agentSuboptimality: per agent suboptimality factor for `ECBS`
 
 You can find more details and explanations for all parameters with:
 
