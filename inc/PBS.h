@@ -86,9 +86,12 @@ private:
 
 	int num_of_agents;
 
-
+    vector<Path*> best_paths;
 	vector<Path*> paths;
 	vector < SingleAgentSolver* > search_engines;  // used to find (single) agents' paths and mdd
+
+    // Deep copy current `paths` to `best_paths`;
+    void storeBestPath();
 
     bool generateChild(int child_id, PBSNode* parent, int low, int high);
 
