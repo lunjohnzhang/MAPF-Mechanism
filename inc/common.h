@@ -15,6 +15,7 @@
 #include <numeric>
 #include <chrono>
 #include <stack>
+#include <random>
 #include <nlohmann/json.hpp>
 
 using boost::unordered_map;
@@ -43,6 +44,7 @@ using std::tuple;
 using std::vector;
 using std::get;
 using std::stack;
+using std::mt19937;
 using json = nlohmann::json;
 
 // #define NDEBUG

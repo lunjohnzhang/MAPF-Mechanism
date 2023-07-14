@@ -33,6 +33,7 @@ int main(int argc, char** argv)
         ("agents,a", po::value<string>()->required(), "input file for agents")
         ("saveStats", po::value<bool>()->default_value(true), "Save statistics on disk.")
         ("savePath", po::value<bool>()->default_value(true), "Save path on disk.")
+        ("seed", po::value<int>()->default_value(0), "global random seed")
 		// ("output,o", po::value<string>(), "output file for statistics")
 		// ("outptuPaths", po::value<string>(), "output file for paths")
 		("agentNum,k", po::value<int>()->default_value(0), "number of agents")
@@ -184,14 +185,15 @@ int main(int argc, char** argv)
     conflict_selection conflict = conflict_selection::EARLIEST;
     node_selection n = node_selection::NODE_CONFLICTPAIRS;
 
-    srand((int)time(0));
+    // Global seeding
+    int seed = vm["seed"].as<int>();
+    srand(seed);
 
     ///////////////////////////////////////////////////////////////////////////
     // load the instance
     Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
                       vm["agentNum"].as<int>(), 0, 0, vm["nLayers"].as<int>());
 
-    srand(0);
     int runs = vm["nRuns"].as<int>();
     //////////////////////////////////////////////////////////////////////
     // initialize the solver
@@ -243,7 +245,7 @@ int main(int argc, char** argv)
     }
     else if (algo == "PP")
     {
-        PP pp(instance, vm["screen"].as<int>());
+        PP pp(instance, vm["screen"].as<int>(), seed);
         double avg_suboptimality = 0;
         double avg_sum_of_cost = 0;
         double min_suboptimality = INT_MAX;

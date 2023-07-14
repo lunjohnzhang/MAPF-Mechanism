@@ -1,8 +1,9 @@
 #include "PP.h"
 
-PP::PP(Instance& instance, int screen)
+PP::PP(Instance& instance, int screen, int seed)
     : instance(instance),
       screen(screen),
+      seed(seed),
       path_table(instance.map_size),
       single_agent_planner(instance, 0)
 {
@@ -12,6 +13,8 @@ PP::PP(Instance& instance, int screen)
         agents.emplace_back(i, instance.start_locations[i],
                             instance.goal_locations[i]);
     }
+
+    this->gen = mt19937(this->seed);
 }
 
 void PP::reset()
@@ -58,8 +61,8 @@ void PP::preprocess(bool compute_distance_to_start,
     runtime_preprocessing = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }
 
-std::tuple<int, vector<int>, vector<int>> PP::run(
-    int& failed_agent_id, double time_out_sec)
+std::tuple<int, vector<int>, vector<int>> PP::run(int& failed_agent_id,
+                                                  double time_out_sec)
 {
     assert(ordering.size() == agents.size());
     clock_t start_time = clock();
@@ -101,7 +104,7 @@ std::tuple<int, vector<int>, vector<int>> PP::run(
 
     // Calculate sum of cost without specified agent
     vector<int> sum_of_cost_wo_i(agents.size());
-    for(int i = 0; i < agents.size(); i++)
+    for (int i = 0; i < agents.size(); i++)
     {
         sum_of_cost_wo_i[i] = sum_of_costs - ((int)agents[i].path.size() - 1);
     }
@@ -118,18 +121,13 @@ void PP::savePaths(const string& fileName) const
     {
         output << "Agent " << i << ": ";
         for (const auto& t : this->agents[i].path)
-            output << "("
-                   << this->instance.getRowCoordinate(t.location)
-                   << ","
-                   << this->instance.getColCoordinate(t.location)
-                   << ","
-                   << this->instance.getLayerCoordinate(t.location)
-                   << ")->";
+            output << "(" << this->instance.getRowCoordinate(t.location) << ","
+                   << this->instance.getColCoordinate(t.location) << ","
+                   << this->instance.getLayerCoordinate(t.location) << ")->";
         output << endl;
     }
     output.close();
 }
-
 
 std::tuple<int, double, bool, vector<int>, vector<int>> PP::run()
 {
@@ -137,7 +135,7 @@ std::tuple<int, double, bool, vector<int>, vector<int>> PP::run()
     vector<int> sum_of_cost_wo_i;
     vector<int> path_lengths;
     int sum_of_cost;
-    std::tie (sum_of_cost, sum_of_cost_wo_i, path_lengths) =
+    std::tie(sum_of_cost, sum_of_cost_wo_i, path_lengths) =
         run(failed_agent_id);
     bool failed = false;
     double suboptimality = -1;
@@ -146,11 +144,12 @@ std::tuple<int, double, bool, vector<int>, vector<int>> PP::run()
         cout << "Failed agent: " << failed_agent_id << endl;
         failed = true;
     }
-    else{
+    else
+    {
         // Compute upper bound of suboptimality
         int sum_dist_to_goal = 0;
         int sum_path_cost = 0;
-        for (auto agent: this->agents)
+        for (auto agent : this->agents)
         {
             vector<int> temp = *agent.distance_to_start;
             sum_dist_to_goal += temp[agent.goal_location];
@@ -160,8 +159,8 @@ std::tuple<int, double, bool, vector<int>, vector<int>> PP::run()
         // cout << "Suboptimality: " << suboptimality << endl;
     }
 
-    return std::make_tuple(
-        sum_of_cost, suboptimality, failed, sum_of_cost_wo_i, path_lengths);
+    return std::make_tuple(sum_of_cost, suboptimality, failed, sum_of_cost_wo_i,
+                           path_lengths);
 }
 
 void PP::computeDefaultOrdering()  // default ordering uses indices of the
@@ -177,8 +176,9 @@ void PP::computeRandomOrdering()  // generate a random ordering
     {
         computeDefaultOrdering();
     }
-    std::random_shuffle(ordering.begin(),
-                        ordering.end());  // randomize the ordering
+
+    // randomize the ordering
+    std::shuffle(ordering.begin(), ordering.end(), this->gen);
 }
 
 void PP::computeSHOrdering(

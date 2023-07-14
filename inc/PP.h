@@ -35,7 +35,7 @@ public:
     vector<set<int>> dependency_graph;  // entry[i][j] means that agent i has
                                         // lower priority than agent j
 
-    PP(Instance& instance, int screen);
+    PP(Instance& instance, int screen, int seed);
     void preprocess(bool compute_distance_to_start,
                     bool compute_distance_to_goal,
                     bool compute_mdd);  // compute information in each agent
@@ -65,6 +65,9 @@ private:
     int screen;
     PathTable path_table;
     SpaceTimeAStar single_agent_planner;
+
+    mt19937 gen;
+    int seed;
 
     bool hasSmallerStartGoalDistance(int i, int j) const;
     void quickSort(int low,
