@@ -1,8 +1,7 @@
 #pragma once
+#include "CBSNode.h"
 #include "Conflict.h"
 #include "common.h"
-#include "CBSNode.h"
-
 
 class PBSNode : public HLNode
 {
