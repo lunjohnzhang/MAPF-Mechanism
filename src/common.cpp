@@ -158,8 +158,31 @@ void write_to_json(json to_write, boost::filesystem::path filename)
     std::ofstream outfile(filename.string());
 
     // Write the JSON object to the file
-    outfile << to_write;
+    outfile << std::setw(4) << std::setfill(' ') << to_write << std::endl;
 
     // Close the file
     outfile.close();
+}
+
+void write_config_to_file(
+    boost::program_options::variables_map vm,
+    boost::filesystem::path filename)
+{
+    json config;
+    for (const auto& it : vm) {
+        // std::cout << it.first.c_str() << " ";
+        auto& value = it.second.value();
+        if (auto v = boost::any_cast<bool>(&value))
+            config[it.first] = *v;
+        else if (auto v = boost::any_cast<int>(&value))
+            config[it.first] = *v;
+        else if (auto v = boost::any_cast<double>(&value))
+            config[it.first] = *v;
+        else if (auto v = boost::any_cast<std::string>(&value))
+            config[it.first] = *v;
+        else
+            std::cout << "Unknown var type for config param"
+                      << it.first << std::endl;
+    }
+    write_to_json(config, filename);
 }

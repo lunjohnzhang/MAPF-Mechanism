@@ -13,6 +13,7 @@
 
 #include "ECBS.h"
 #include "PP.h"
+#include "PBS.h"
 
 /* Main function */
 int main(int argc, char** argv)
@@ -25,7 +26,7 @@ int main(int argc, char** argv)
 		("help", "produce help message")
 
         // Algo
-        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP']")
+        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP', 'PBS']")
 
         // params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
@@ -43,6 +44,14 @@ int main(int argc, char** argv)
             "write to files some detailed statistics")
         ("nLayers", po::value<int>()->default_value(10),
             "height of the 3D map")
+        ("nRuns", po::value<int>()->default_value(1),
+            "rapid random nRuns times")
+        ("dummyStart", po::value<bool>()->default_value(true),
+            "whether to create dummy start node")
+
+        // params for exhaustive PBS
+        ("exhaustiveSearch", po::value<bool>()->default_value(true),
+            "exhaustive search with PBS")
 
 		// params for CBS node selection strategies
 		("highLevelSolver", po::value<string>()->default_value("EES"),
@@ -55,8 +64,6 @@ int main(int argc, char** argv)
             "suboptimality bound of the single agent paths")
 		("suboptimality", po::value<double>()->default_value(1.2),
             "suboptimality bound")
-        ("dummyStart", po::value<bool>()->default_value(true),
-            "whether to create dummy start node")
 
 		// params for CBS improvement
 		("heuristics", po::value<string>()->default_value("WDG"),
@@ -74,8 +81,6 @@ int main(int argc, char** argv)
             "target reasoning")
 		("sipp", po::value<bool>()->default_value(0),
             "using SIPPS as the low-level solver")
-		("nRuns", po::value<int>()->default_value(1),
-            "rapid random nRuns times")
 		;
     // clang-format on
     po::variables_map vm;
@@ -173,6 +178,8 @@ int main(int argc, char** argv)
     logdir = "logs" / logdir;
     boost::filesystem::create_directories(logdir);
 
+    // Write config to logdir
+    write_config_to_file(vm, logdir / "config.json");
 
     conflict_selection conflict = conflict_selection::EARLIEST;
     node_selection n = node_selection::NODE_CONFLICTPAIRS;
@@ -225,12 +232,12 @@ int main(int argc, char** argv)
                              vm["agents"].as<string>());
         if (ecbs.solution_found && vm["savePath"].as<bool>())
             ecbs.savePaths((logdir / "paths.txt").string());
-        /*size_t pos = vm["output"].as<string>().rfind('.');      // position of
+        /*size_t pos = (logdir / "stats.csv").string().rfind('.');      // position of
         the file extension string output_name =
-        vm["output"].as<string>().substr(0, pos);     // get the name without
+        (logdir / "stats.csv").string().substr(0, pos);     // get the name without
         extension cbs.saveCT(output_name); // for debug*/
         if (vm["stats"].as<bool>())
-            ecbs.saveStats(vm["output"].as<string>(),
+            ecbs.saveStats((logdir / "stats.csv").string(),
                            vm["agents"].as<string>());
         ecbs.clearSearchEngines();
     }
@@ -369,13 +376,33 @@ int main(int argc, char** argv)
         }
         cbs.runtime = runtime;
         if (vm["saveStats"].as<bool>())
-            cbs.saveResults(vm["output"].as<string>(),
+            cbs.saveResults((logdir / "stats.csv").string(),
                             vm["agents"].as<string>());
         if (cbs.solution_found && vm["savePath"].as<bool>())
-            cbs.savePaths(vm["outputPaths"].as<string>());
+            cbs.savePaths((logdir / "paths.txt").string());
         if (vm["stats"].as<bool>())
-            cbs.saveStats(vm["output"].as<string>(), vm["agents"].as<string>());
+            cbs.saveStats((logdir / "stats.csv").string(), vm["agents"].as<string>());
         cbs.clearSearchEngines();
+    }
+    else if (algo == "PBS")
+    {
+        PBS pbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
+        pbs.setSolverParams(
+            vm["dummyStart"].as<bool>(),
+            vm["exhaustiveSearch"].as<bool>());
+
+        // run
+        double runtime = 0;
+        pbs.solve(vm["cutoffTime"].as<double>());
+        if (vm["saveStats"].as<bool>())
+            pbs.saveResults((logdir / "stats.csv").string(),
+                            vm["agents"].as<string>());
+        if (pbs.solution_found && vm["savePath"].as<bool>())
+            pbs.savePaths((logdir / "paths.txt").string());
+        /*size_t pos = (logdir / "stats.csv").string().rfind('.');      // position of the file extension
+        string output_name = (logdir / "stats.csv").string().substr(0, pos);     // get the name without extension
+        cbs.saveCT(output_name); // for debug*/
+        pbs.clearSearchEngines();
     }
 
     return 0;

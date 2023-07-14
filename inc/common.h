@@ -3,6 +3,7 @@
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
 #include <ctime>
 #include <fstream>
 #include <iomanip>   // std::setprecision
@@ -41,6 +42,7 @@ using std::tuple;
 using std::vector;
 using std::get;
 using std::make_tuple;
+using std::stack;
 using json = nlohmann::json;
 
 // #define NDEBUG
@@ -48,6 +50,7 @@ using json = nlohmann::json;
 #define MAX_TIMESTEP INT_MAX / 2
 #define MAX_COST INT_MAX / 2
 #define MAX_NODES INT_MAX / 2
+#define SOLVER_NAME_LEN 35
 
 struct PathEntry
 {
@@ -109,3 +112,7 @@ vector<int> calculate_payment(
 string get_curr_time_str();
 
 void write_to_json(json to_write, boost::filesystem::path filename);
+
+void write_config_to_file(
+    boost::program_options::variables_map vm,
+    boost::filesystem::path filename);

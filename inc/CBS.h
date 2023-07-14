@@ -117,7 +117,7 @@ public:
     void setLowLevelSolver(double w, bool dummy_start_node)
     {
         agentSuboptimality = w;
-        dummy_start_node = dummy_start_node;
+        this->dummy_start_node = dummy_start_node;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
