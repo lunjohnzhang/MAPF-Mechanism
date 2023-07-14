@@ -14,6 +14,7 @@
 #include <vector>
 #include <numeric>
 #include <chrono>
+#include <stack>
 #include <nlohmann/json.hpp>
 
 using boost::unordered_map;
@@ -41,7 +42,6 @@ using std::tie;
 using std::tuple;
 using std::vector;
 using std::get;
-using std::make_tuple;
 using std::stack;
 using json = nlohmann::json;
 
