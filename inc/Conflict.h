@@ -33,7 +33,7 @@ enum constraint_type
     EDGE,
     POSITIVE_VERTEX,
     POSITIVE_EDGE,
-    CONSTRAINT_COUNT,
+    // CONSTRAINT_COUNT,
     PBS_ORDER
 };
 

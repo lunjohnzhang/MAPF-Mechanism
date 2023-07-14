@@ -53,6 +53,7 @@ void HLNode::printConstraints(int id) const
                 case constraint_type::LEQLENGTH:
                 case constraint_type::POSITIVE_VERTEX:
                 case constraint_type::POSITIVE_EDGE:
+                case constraint_type::PBS_ORDER:
                     cout << constraint << ",";
                     break;
                 case constraint_type::GLENGTH:
