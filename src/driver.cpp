@@ -60,6 +60,10 @@ int main(int argc, char** argv)
         ("exhaustiveSearch", po::value<bool>()->default_value(true),
             "exhaustive search with PBS")
 
+        // params for mechanism design
+        ("cost_mode", po::value<string>()->default_value("uniform"))
+        ("value_mode", po::value<string>()->default_value("uniform"))
+
 		// params for CBS node selection strategies
 		("highLevelSolver", po::value<string>()->default_value("EES"),
             "the high-level solver (A*, A*eps, EES, NEW)")
@@ -197,8 +201,9 @@ int main(int argc, char** argv)
 
     ///////////////////////////////////////////////////////////////////////////
     // load the instance
-    Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
+    Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(), seed,
                       vm["agentNum"].as<int>(), 0, 0, vm["nLayers"].as<int>());
+    instance.saveAgentProfile(logdir / "agent_profile.json");
 
     GLOBAL_VAR::dummy_start_loc = instance.map_size;
 

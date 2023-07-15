@@ -123,3 +123,8 @@ void write_to_json(json to_write, boost::filesystem::path filename);
 void write_config_to_file(
     boost::program_options::variables_map vm,
     boost::filesystem::path filename);
+
+// Calculate weighted sum of path length by costs.
+double weighted_path_cost(vector<Path*> paths, vector<double> costs);
+
+bool areDoubleSame(double dFirstVal, double dSecondVal);

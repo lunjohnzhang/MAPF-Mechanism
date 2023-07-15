@@ -14,10 +14,11 @@ public:
     // // MOVE_COUNT is the enum's size
 
     Instance() {}
-    Instance(const string& map_fname, const string& agent_fname,
+    Instance(const string& map_fname, const string& agent_fname, int seed,
              int num_of_agents = 0, int num_of_rows = 0, int num_of_cols = 0,
              int num_of_layers = 0, int num_of_obstacles = 0,
-             int warehouse_width = 0);
+             int warehouse_width = 0, string cost_mode = "uniform",
+             string value_mode = "uniform");
 
     void printAgents() const;
 
@@ -80,7 +81,20 @@ public:
     vector<int> start_locations;
     vector<int> goal_locations;
 
+    int seed;
+    mt19937 gen;
+
+    // Cost of each agent
+    vector<double> costs;
+    string cost_mode;
+
+    // Value of each agent
+    vector<double> values;
+    string value_mode;
+
     const vector<int>* getDistances(int root_location);
+
+    void saveAgentProfile(boost::filesystem::path filename);
 
 private:
     // int moves_offset[MOVE_COUNT];

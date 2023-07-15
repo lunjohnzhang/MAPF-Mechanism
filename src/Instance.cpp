@@ -7,13 +7,17 @@
 
 int RANDOM_WALK_STEPS = 100000;
 
-Instance::Instance(const string& map_fname, const string& agent_fname,
+Instance::Instance(const string& map_fname, const string& agent_fname, int seed,
                    int num_of_agents, int num_of_rows, int num_of_cols,
-                   int num_of_layers, int num_of_obstacles, int warehouse_width)
+                   int num_of_layers, int num_of_obstacles, int warehouse_width,
+                   string cost_mode, string value_mode)
     : map_fname(map_fname),
       agent_fname(agent_fname),
+      seed(seed),
       num_of_agents(num_of_agents),
-      num_of_layers(num_of_layers)
+      num_of_layers(num_of_layers),
+      cost_mode(cost_mode),
+      value_mode(value_mode)
 {
     bool succ = loadMap();
     if (!succ)
@@ -46,6 +50,41 @@ Instance::Instance(const string& map_fname, const string& agent_fname,
         {
             cerr << "Agent file " << agent_fname << " not found." << endl;
             exit(-1);
+        }
+    }
+
+    // Initialize costs and values
+    this->costs.resize(num_of_agents);
+    this->values.resize(num_of_agents);
+    this->gen = mt19937(this->seed);
+    std::uniform_real_distribution<> distr(0.0, 1.0);
+
+    for (int i = 0; i < this->num_of_agents; i++)
+    {
+        // Sample from uniform distribution between 0 and 1
+        if (this->cost_mode == "uniform")
+        {
+            this->costs[i] = distr(gen);
+        }
+        // With categorical distribution, flip a coin to decide low cost agents
+        // (0.5) and high cost agents (1)
+        else if (this->cost_mode == "categorical")
+        {
+            double coin = distr(gen);
+            if (coin < 0.5)
+                this->costs[i] = 0.5;
+            else
+                this->costs[i] = 1;
+        }
+        else if (this->cost_mode == "all_one")
+        {
+            this->costs.resize(num_of_agents, 1.0);
+        }
+
+        // Sample from uniform distribution between 0 and 1
+        if (this->value_mode == "uniform")
+        {
+            this->values[i] = distr(gen);
         }
     }
 }
@@ -321,7 +360,7 @@ bool Instance::loadMap()
         beg++;
         num_of_cols = atoi((*beg).c_str());  // read number of cols
     }
-    assert (num_of_layers > 0);
+    assert(num_of_layers > 0);
     map_size = num_of_cols * num_of_rows * num_of_layers;
     my_map.resize(map_size, false);
     // read map (and start/goal locations)
@@ -520,9 +559,7 @@ list<int> Instance::getNeighbors(int curr) const
 
     if (num_of_layers == 1)
     {
-        int candidates[4] = {curr + 1,
-                             curr - 1,
-                             curr + num_of_cols,
+        int candidates[4] = {curr + 1, curr - 1, curr + num_of_cols,
                              curr - num_of_cols};
         for (int next : candidates)
         {
@@ -565,7 +602,6 @@ int Instance::getDegree(int curr) const
     return degree;
 }
 
-
 const vector<int>* Instance::getDistances(int root_location)
 {
     auto it = distance_matrix.find(root_location);
@@ -587,13 +623,15 @@ const vector<int>* Instance::getDistances(int root_location)
             {
                 return n1.value >= n2.value;
             }
-        };  // used by OPEN (heap) to compare nodes (top of the heap has min f-val, and then highest g-val)
+        };  // used by OPEN (heap) to compare nodes (top of the heap has min
+            // f-val, and then highest g-val)
     };
 
     vector<int> rst(map_size, MAX_TIMESTEP);
 
     // generate a heap that can save nodes (and a open_handle)
-    boost::heap::pairing_heap< Node, boost::heap::compare<Node::compare_node> > heap;
+    boost::heap::pairing_heap<Node, boost::heap::compare<Node::compare_node> >
+        heap;
     Node root(root_location, 0);
     rst[root_location] = 0;
     heap.push(root);  // add root to heap
@@ -613,4 +651,15 @@ const vector<int>* Instance::getDistances(int root_location)
     }
     distance_matrix[root_location] = rst;
     return &distance_matrix[root_location];
+}
+
+void Instance::saveAgentProfile(boost::filesystem::path filename)
+{
+    json agent_profile = {
+        {"map_dimension", vector<int>{num_of_rows, num_of_cols, num_of_layers}},
+        {"costs", this->costs},
+        {"values", this->values},
+        {"start_locations", this->start_locations},
+        {"goal_locations", this->goal_locations}};
+    write_to_json(agent_profile, filename);
 }

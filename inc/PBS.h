@@ -33,7 +33,13 @@ public:
     const Instance& instance;
 
     bool solution_found = false;
-    int solution_cost = -2;
+
+    // The cost of the solution. If using exhaustive PBS, it's the cost of the
+    // best solution.
+    double solution_cost = -2;
+
+    // Under exhaustive PBS, remember the best solution w/o each agent i.
+    vector<double> solution_costs_wo_i;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     // set params

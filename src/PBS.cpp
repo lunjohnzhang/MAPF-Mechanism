@@ -28,6 +28,8 @@ PBS::PBS(const Instance& instance, bool sipp, int screen)
     {
         instance.printAgents();
     }
+
+    this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
 }
 
 bool PBS::solve(double _time_limit)
@@ -87,7 +89,7 @@ bool PBS::solve(double _time_limit)
     {
         printResults();
         cout << "Found " << this->n_solutions
-             << " solutions, min cost: " << goal_node->cost << endl;
+             << " solutions, min cost: " << solution_cost << endl;
     }
     return solution_found;
 }
@@ -692,9 +694,12 @@ bool PBS::terminate(PBSNode* curr)
         // continue until all nodes are closed.
         if (this->exhaustive_search)
         {
-            if (solution_cost == -2 || solution_cost > curr->cost)
+            // Get the weighted sum of path length.
+            double weighted_sol_cost =
+                weighted_path_cost(this->paths, this->instance.costs);
+            if (solution_cost == -2 || solution_cost > weighted_sol_cost)
             {
-                solution_cost = curr->cost;
+                solution_cost = weighted_sol_cost;
                 goal_node = curr;
                 storeBestPath();
             }
@@ -831,10 +836,10 @@ bool PBS::validateSolution() const
     int start_timestep = 0;
     if (this->dummy_start_node)
         start_timestep = 1;
-    size_t soc = 0;
+    double soc = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
     {
-        soc += best_paths[a1]->size() - 1;
+        soc += (best_paths[a1]->size() - 1) * this->instance.costs[a1];
         for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
         {
             size_t min_path_length =
@@ -868,22 +873,23 @@ bool PBS::validateSolution() const
             // {
             // 	int a1_ = best_paths[a1]->size() < best_paths[a2]->size() ? a1 :
             // a2; 	int a2_ = best_paths[a1]->size() < best_paths[a2]->size() ?
-            // a2 : a1; 	int loc1 = best_paths[a1_]->back().location; 	for (size_t
-            // timestep = min_path_length; timestep < best_paths[a2_]->size();
-            // timestep++)
+            // a2 : a1; 	int loc1 = best_paths[a1_]->back().location; 	for
+            // (size_t timestep = min_path_length; timestep <
+            // best_paths[a2_]->size(); timestep++)
             // 	{
             // 		int loc2 = best_paths[a2_]->at(timestep).location;
             // 		if (loc1 == loc2)
             // 		{
-            // 			cout << "Agents " << a1 << " and " << a2 << " collides at " <<
-            // loc1 << " at timestep " << timestep << endl; 			return false; //
-            // It's at least a semi conflict
+            // 			cout << "Agents " << a1 << " and " << a2 << " collides at
+            // "
+            // << loc1 << " at timestep " << timestep << endl; 			return
+            // false; // It's at least a semi conflict
             // 		}
             // 	}
             // }
         }
     }
-    if ((int)soc != solution_cost)
+    if (!areDoubleSame(soc, solution_cost))
     {
         cout << "The solution cost is wrong!" << endl;
         return false;

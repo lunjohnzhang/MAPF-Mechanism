@@ -19,16 +19,20 @@ public:
 
     /////////////////////////////////////////////////////////////////////////////////////
     // stats
+    // total runtime
     double runtime = 0;
-    double runtime_generate_child = 0;  // runtime of generating child nodes
-    double runtime_build_CT = 0;        // runtime of building constraint table
-    double runtime_build_CAT =
-        0;  // runtime of building conflict avoidance table
-    double runtime_path_finding =
-        0;  // runtime of finding paths for single agents
+    // runtime of generating child nodes
+    double runtime_generate_child = 0;
+    // runtime of building constraint table
+    double runtime_build_CT = 0;
+    // runtime of building conflict avoidance table
+    double runtime_build_CAT = 0;
+    // runtime of finding paths for single agents
+    double runtime_path_finding = 0;
+    // runtime of detecting conflicts
     double runtime_detect_conflicts = 0;
-    double runtime_preprocessing =
-        0;  // runtime of building heuristic table for the low level
+    // runtime of building heuristic table for the low level
+    double runtime_preprocessing = 0;
 
     uint64_t num_cardinal_conflicts = 0;
     uint64_t num_corridor_conflicts = 0;
@@ -44,10 +48,12 @@ public:
     uint64_t num_LL_expanded = 0;
     uint64_t num_LL_generated = 0;
 
-    uint64_t num_cleanup =
-        0;                  // number of expanded nodes chosen from cleanup list
-    uint64_t num_open = 0;  // number of expanded nodes chosen from open list
-    uint64_t num_focal = 0;  // number of expanded nodes chosen from focal list
+    // number of expanded nodes chosen from cleanup list
+    uint64_t num_cleanup = 0;
+    // number of expanded nodes chosen from open list
+    uint64_t num_open = 0;
+    // number of expanded nodes chosen from focal list
+    uint64_t num_focal = 0;
     // CBSNode* dummy_start = nullptr;
     // CBSNode* goal_node = nullptr;
     HLNode* dummy_start = nullptr;
@@ -147,12 +153,12 @@ public:
     }
 
 protected:
-    bool corridor_reasoning;   // using corridor reasoning
-    bool target_reasoning;     // using target reasoning
-    bool disjoint_splitting;   // disjoint splitting
-    bool mutex_reasoning;      // using mutex reasoning
-    bool bypass;               // using Bypass1
-    bool PC;                   // prioritize conflicts
+    bool corridor_reasoning;  // using corridor reasoning
+    bool target_reasoning;    // using target reasoning
+    bool disjoint_splitting;  // disjoint splitting
+    bool mutex_reasoning;     // using mutex reasoning
+    bool bypass;              // using Bypass1
+    bool PC;                  // prioritize conflicts
     bool save_stats;
     high_level_solver_type solver_type;  // the solver for the high-level search
     conflict_selection conflict_selection_rule;
@@ -186,14 +192,15 @@ protected:
     vector<Path*> paths;
     vector<Path> paths_found_initially;  // contain initial paths found
     // vector<MDD*> mdds_initially;  // contain initial paths found
-    vector<SingleAgentSolver*>
-        search_engines;  // used to find (single) agents' paths and mdd
+
+    // used to find (single) agents' paths and mdd
+    vector<SingleAgentSolver*> search_engines;
 
     void addConstraints(const HLNode* curr, HLNode* child1,
                         HLNode* child2) const;
-    set<int> getInvalidAgents(
-        const list<Constraint>&
-            constraints);  // return agents that violate the constraints
+
+    // return agents that violate the constraints
+    set<int> getInvalidAgents(const list<Constraint>& constraints);
     // conflicts
     void findConflicts(HLNode& curr);
     void findConflicts(HLNode& curr, int a1, int a2);
@@ -215,22 +222,23 @@ protected:
     bool validateSolution() const;
     inline int getAgentLocation(int agent_id, size_t timestep) const;
 
-    vector<int> shuffleAgents()
-        const;  // generate random permutation of agent indices
-    bool terminate(
-        HLNode* curr);  // check the stop condition and return true if it meets
-    void computeConflictPriority(
-        shared_ptr<Conflict>& con,
-        CBSNode& node);  // check the conflict is cardinal, semi-cardinal or
-                         // non-cardinal
+    // generate random permutation of agent indices
+    vector<int> shuffleAgents() const;
+
+    // check the stop condition and return true if it meets
+    bool terminate(HLNode* curr);
+
+    // check the conflict is cardinal, semi-cardinal or non-cardinal
+    void computeConflictPriority(shared_ptr<Conflict>& con, CBSNode& node);
 
 private:  // CBS only, cannot be used by ECBS
-    pairing_heap<CBSNode*, compare<CBSNode::compare_node_by_f>>
-        cleanup_list;  // it is called open list in ECBS
+    // it is called open list in ECBS
+    pairing_heap<CBSNode*, compare<CBSNode::compare_node_by_f>> cleanup_list;
+    // this is used for EES
     pairing_heap<CBSNode*, compare<CBSNode::compare_node_by_inadmissible_f>>
-        open_list;  // this is used for EES
-    pairing_heap<CBSNode*, compare<CBSNode::compare_node_by_d>>
-        focal_list;  // this is ued for both ECBS and EES
+        open_list;
+    // this is ued for both ECBS and EES
+    pairing_heap<CBSNode*, compare<CBSNode::compare_node_by_d>> focal_list;
 
     // node operators
     inline void pushNode(CBSNode* node);

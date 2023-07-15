@@ -67,11 +67,9 @@ double fRand(double fMin, double fMax)
     return fMin + f * (fMax - fMin);
 }
 
-vector<int> calculate_payment(
-    int min_sum_of_cost,
-    int min_sum_of_cost_idx,
-    vector<int> all_sum_of_costs,
-    vector<vector<int>> all_path_lengths)
+vector<int> calculate_payment(int min_sum_of_cost, int min_sum_of_cost_idx,
+                              vector<int> all_sum_of_costs,
+                              vector<vector<int>> all_path_lengths)
 {
     int n_agents = all_path_lengths[0].size();
     int n_runs = all_path_lengths.size();
@@ -116,7 +114,8 @@ vector<int> calculate_payment(
             }
         }
 
-        cout << curr_min_sum_of_cost_wo_i_idx << " " << min_sum_of_cost_idx << endl;
+        cout << curr_min_sum_of_cost_wo_i_idx << " " << min_sum_of_cost_idx
+             << endl;
         cout << curr_min_sum_of_cost_wo_i << " - "
              << "(" << min_sum_of_cost << " - "
              << all_path_lengths[min_sum_of_cost_idx][i] << ")" << endl;
@@ -164,12 +163,12 @@ void write_to_json(json to_write, boost::filesystem::path filename)
     outfile.close();
 }
 
-void write_config_to_file(
-    boost::program_options::variables_map vm,
-    boost::filesystem::path filename)
+void write_config_to_file(boost::program_options::variables_map vm,
+                          boost::filesystem::path filename)
 {
     json config;
-    for (const auto& it : vm) {
+    for (const auto& it : vm)
+    {
         // std::cout << it.first.c_str() << " ";
         auto& value = it.second.value();
         if (auto v = boost::any_cast<bool>(&value))
@@ -181,8 +180,25 @@ void write_config_to_file(
         else if (auto v = boost::any_cast<std::string>(&value))
             config[it.first] = *v;
         else
-            std::cout << "Unknown var type for config param"
-                      << it.first << std::endl;
+            std::cout << "Unknown var type for config param" << it.first
+                      << std::endl;
     }
     write_to_json(config, filename);
+}
+
+double weighted_path_cost(vector<Path*> paths, vector<double> costs)
+{
+    assert(paths.size() == costs.size());
+
+    double weighted_sum;
+    for (int i = 0; i < paths.size(); i++)
+    {
+        weighted_sum += (double)(paths[i]->size() - 1) * costs[i];
+    }
+    return weighted_sum;
+}
+
+bool areDoubleSame(double dFirstVal, double dSecondVal)
+{
+    return std::abs(dFirstVal - dSecondVal) < 1E-5;
 }
