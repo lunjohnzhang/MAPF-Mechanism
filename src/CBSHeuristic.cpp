@@ -1,11 +1,11 @@
-//#pragma warning(disable: 4996) //Jiaoyang: I added this line to disable error
-//C4996 caused by CPLEX
+// #pragma warning(disable: 4996) //Jiaoyang: I added this line to disable error
+// C4996 caused by CPLEX
 #include "CBSHeuristic.h"
 
 #include <queue>
 
 #include "CBS.h"
-//#include <ilcplex/ilocplex.h>
+// #include <ilcplex/ilocplex.h>
 
 void CBSHeuristic::updateInadmissibleHeuristics(HLNode& curr)
 {
@@ -647,9 +647,8 @@ bool CBSHeuristic::buildWeightedDependencyGraph(ECBSNode& node,
                                                 vector<int>& CG, int& delta_g)
 {
     delta_g = 0;
-    vector<bool> counted(
-        num_of_agents,
-        false);  // record the agents whose delta_g has been counted
+    // record the agents whose delta_g has been counted
+    vector<bool> counted(num_of_agents, false);
     for (const auto& conflict : node.conflicts)
     {
         int a1 = min(conflict->a1, conflict->a2);

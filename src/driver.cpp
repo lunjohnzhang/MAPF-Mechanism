@@ -15,6 +15,12 @@
 #include "PP.h"
 #include "PBS.h"
 
+namespace GLOBAL_VAR
+{
+    int dummy_start_loc;
+}
+
+
 /* Main function */
 int main(int argc, char** argv)
 {
@@ -193,6 +199,8 @@ int main(int argc, char** argv)
     // load the instance
     Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(),
                       vm["agentNum"].as<int>(), 0, 0, vm["nLayers"].as<int>());
+
+    GLOBAL_VAR::dummy_start_loc = instance.map_size;
 
     int runs = vm["nRuns"].as<int>();
     //////////////////////////////////////////////////////////////////////

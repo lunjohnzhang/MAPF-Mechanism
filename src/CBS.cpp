@@ -79,8 +79,9 @@ void CBS::findConflicts(HLNode& curr, int a1, int a2)
         int loc1 = paths[a1]->at(timestep).location;
         int loc2 = paths[a2]->at(timestep).location;
 
-        // Both locations are dummy start node. No collision
-        if (loc1 == -1 or loc2 == -1)
+        // If locations are dummy start node. No collision
+        if (loc1 == GLOBAL_VAR::dummy_start_loc or
+            loc2 == GLOBAL_VAR::dummy_start_loc)
         {
             continue;
         }
@@ -1656,6 +1657,11 @@ bool CBS::validateSolution() const
         return false;
     }
 
+    // Ignore the first timestep if dummy start is turned on.
+    int start_timestep = 0;
+    if (this->dummy_start_node)
+        start_timestep = 1;
+
     // check whether the paths are feasible
     size_t soc = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
@@ -1666,7 +1672,8 @@ bool CBS::validateSolution() const
             size_t min_path_length = paths[a1]->size() < paths[a2]->size()
                                          ? paths[a1]->size()
                                          : paths[a2]->size();
-            for (size_t timestep = 0; timestep < min_path_length; timestep++)
+            for (size_t timestep = start_timestep; timestep < min_path_length;
+                 timestep++)
             {
                 int loc1 = paths[a1]->at(timestep).location;
                 int loc2 = paths[a2]->at(timestep).location;

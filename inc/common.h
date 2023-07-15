@@ -54,6 +54,11 @@ using json = nlohmann::json;
 #define MAX_NODES INT_MAX / 2
 #define SOLVER_NAME_LEN 35
 
+namespace GLOBAL_VAR
+{
+    extern int dummy_start_loc;
+}
+
 struct PathEntry
 {
     int location = -1;
