@@ -2,6 +2,8 @@
 
 void PathTable::reset()
 {
+    // The map_size here is the actual map_size + 1 because we included an
+    // additional entry for dummy start loc.
     auto map_size = table.size();
     table.clear();
     table.resize(map_size);
@@ -70,18 +72,20 @@ bool PathTable::constrained(int from, int to, int to_time, int f_value)
             return true;  // edge conflict with agent table[to][to_time - 1]
         }
     }
-    if (!goals.empty())
-    {
-        if (goals[to] <= to_time)
-        {
-            auto a = table[to][goals[to]];
-            auto it = hit_agents.find(a);
-            if (it == hit_agents.end() ||
-                it->second > f_value + goals[to] - to_time)
-                hit_agents[a] = f_value + goals[to] - to_time;
-            return true;  // target conflict
-        }
-    }
+
+    // Don't need target conflict as the agents will disappear at goal.
+    // if (!goals.empty())
+    // {
+    //     if (goals[to] <= to_time)
+    //     {
+    //         auto a = table[to][goals[to]];
+    //         auto it = hit_agents.find(a);
+    //         if (it == hit_agents.end() ||
+    //             it->second > f_value + goals[to] - to_time)
+    //             hit_agents[a] = f_value + goals[to] - to_time;
+    //         return true;  // target conflict
+    //     }
+    // }
     return false;
 }
 

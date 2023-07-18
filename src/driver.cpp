@@ -259,6 +259,7 @@ int main(int argc, char** argv)
     else if (algo == "PP")
     {
         PP pp(instance, vm["screen"].as<int>(), seed);
+        pp.setLowLevelSolver(vm["dummyStart"].as<bool>());
         pp.run(runs, logdir, vm["savePath"].as<bool>());
         pp.saveResults(logdir / "result.json");
     }

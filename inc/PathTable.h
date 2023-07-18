@@ -12,9 +12,10 @@ public:
     vector<int> goals;  // this stores the goal locations of the paths: key is
                         // the location, while value is the timestep when the
                         // agent reaches the goal
-    std::map<int, int>
-        hit_agents;  // agents that have been hit by the constrained function,
-                     // and the correspondiong f values
+
+    // agents that have been hit by the constrained function,
+    // and the correspondiong f values
+    std::map<int, int> hit_agents;
 
     void reset();
     void insertPath(int agent_id, const Path& path);

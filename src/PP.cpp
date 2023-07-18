@@ -4,7 +4,7 @@ PP::PP(Instance& instance, int screen, int seed)
     : instance(instance),
       screen(screen),
       seed(seed),
-      path_table(instance.map_size),
+      path_table(instance.map_size + 1),  // plus 1 to include dummy start loc
       single_agent_planner(instance, 0)
 {
     agents.reserve(instance.num_of_agents);
@@ -75,7 +75,7 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
         path_table.hit_agents.clear();
         agents[id].path = single_agent_planner.findOptimalPath(
             path_table, *agents[id].distance_to_goal, agents[id].start_location,
-            time_out_sec);
+            time_out_sec, dummy_start_node);
 
         if (time_out_sec < (double)(clock() - start_time) / CLOCKS_PER_SEC)
         {
@@ -190,6 +190,13 @@ void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path)
                 min_sum_of_cost = sum_of_cost;
                 min_sum_of_cost_idx = i;
             }
+
+            if (!validateSolution())
+            {
+                cout << "Solution invalid!!!" << endl;
+                exit(-1);
+            }
+
             total_runtime += this->runtime;
             if (screen > 0)
             {
@@ -404,4 +411,73 @@ void PP::saveResults(boost::filesystem::path filename) const
         {"payments", payments},
         {"utilities", utilities}};
     write_to_json(mechanism_results, filename);
+}
+
+bool PP::validateSolution() const
+{
+    // Check whether the paths are feasible.
+    // Ignore the first timestep if dummy start is turned on.
+    int num_of_agents = this->agents.size();
+    int start_timestep = 0;
+    if (this->dummy_start_node)
+        start_timestep = 1;
+    // double soc = 0;
+    for (int a1 = 0; a1 < num_of_agents; a1++)
+    {
+        // soc += (this->agents[a1].path.size() - 1) * this->instance.costs[a1];
+        for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
+        {
+            size_t min_path_length =
+                this->agents[a1].path.size() < this->agents[a2].path.size()
+                    ? this->agents[a1].path.size()
+                    : this->agents[a2].path.size();
+            for (size_t timestep = start_timestep; timestep < min_path_length;
+                 timestep++)
+            {
+                int loc1 = this->agents[a1].path.at(timestep).location;
+                int loc2 = this->agents[a2].path.at(timestep).location;
+                if (loc1 == loc2)
+                {
+                    cout << "Agents " << a1 << " and " << a2 << " collides at "
+                         << loc1 << " at timestep " << timestep << endl;
+                    return false;
+                }
+                else if (timestep < min_path_length - 1 &&
+                         loc1 ==
+                             this->agents[a2].path.at(timestep + 1).location &&
+                         loc2 ==
+                             this->agents[a1].path.at(timestep + 1).location)
+                {
+                    cout << "Agents " << a1 << " and " << a2 << " collides at ("
+                         << loc1 << "-->" << loc2 << ") at timestep "
+                         << timestep << endl;
+                    return false;
+                }
+            }
+
+            // Don't need target conflict as the agents will disappear at goal.
+            // if (this->agents[a1].path.size() != this->agents[a2].path.size())
+            // {
+            // 	int a1_ = this->agents[a1].path.size() <
+            // this->agents[a2].path.size() ? a1 : a2; 	int a2_ =
+            // this->agents[a1].path.size() < this->agents[a2].path.size() ? a2
+            // : a1; 	int loc1 = best_paths[a1_]->back().location; 	for
+            // (size_t timestep = min_path_length; timestep <
+            // best_paths[a2_]->size(); timestep++)
+            // 	{
+            // 		int loc2 = best_paths[a2_]->at(timestep).location;
+            // 		if (loc1 == loc2)
+            // 		{
+            // 			cout << "Agents " << a1 << " and " << a2 << " collides
+            // at
+            // "
+            // << loc1 << " at timestep " << timestep << endl; 			return
+            // false; // It's at least a semi conflict
+            // 		}
+            // 	}
+            // }
+        }
+    }
+
+    return true;
 }

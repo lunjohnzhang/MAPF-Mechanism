@@ -36,10 +36,15 @@ public:
                                         // lower priority than agent j
 
     PP(Instance& instance, int screen, int seed);
+    void setLowLevelSolver(bool dummy_start_node)
+    {
+        this->dummy_start_node = dummy_start_node;
+    }
     void preprocess(bool compute_distance_to_start,
                     bool compute_distance_to_goal,
                     bool compute_mdd);  // compute information in each agent
     void run(int n_runs, boost::filesystem::path logdir, bool save_path);
+    bool validateSolution() const;
 
     // return the sum of costs of the solution (MAX_COST if failed to solve)
     double run_once(int& failed_agent_id, int run_id,
@@ -67,6 +72,9 @@ private:
     int screen;
     PathTable path_table;
     SpaceTimeAStar single_agent_planner;
+
+    // Whether use dummy start node at single agent solver
+    bool dummy_start_node;
 
     mt19937 gen;
     int seed;
