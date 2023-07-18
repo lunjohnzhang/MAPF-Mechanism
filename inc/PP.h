@@ -39,10 +39,11 @@ public:
     void preprocess(bool compute_distance_to_start,
                     bool compute_distance_to_goal,
                     bool compute_mdd);  // compute information in each agent
-    // return the sum of costs of the solution (INT_MAX if failed to solve)
-    std::tuple<int, double, bool, vector<int>, vector<int>> run();
-    std::tuple<int, vector<int>, vector<int>> run(
-        int& failed_agent_id, double time_out_sec = 60.0);
+    void run(int n_runs, boost::filesystem::path logdir, bool save_path);
+
+    // return the sum of costs of the solution (MAX_COST if failed to solve)
+    double run_once(int& failed_agent_id, int run_id,
+                    double time_out_sec = 60.0);
     void reset();
 
     // default ordering uses indices of the agents
@@ -58,6 +59,7 @@ public:
     void printOrdering() const;
     void printDependencyGraph() const;
     void savePaths(const string& fileName) const;
+    void saveResults(boost::filesystem::path filename) const;
 
 private:
     // input params
@@ -72,4 +74,25 @@ private:
     bool hasSmallerStartGoalDistance(int i, int j) const;
     void quickSort(int low,
                    int high);  // prefer shorter start-goal shortest path
+
+    // Stats of monte carlo PP
+    double avg_suboptimality = 0;
+    double avg_sum_of_cost = 0;
+    double min_suboptimality = INT_MAX;
+    double min_sum_of_cost = MAX_COST;
+
+    // Idx of the run that gets the min sum of cost
+    int min_sum_of_cost_idx = -1;
+    int n_success = 0;
+    double total_runtime = 0;
+
+    // [i] stores the weighted sum of cost without agent i
+    vector<double> min_sum_of_cost_wo_i;
+
+    // [i][j] stores the weighted path length of the j-th agent
+    // in the i-th run
+    vector<vector<double>> all_weighted_path_lengths;
+
+    // Failed runs
+    vector<int> failed_runs;
 };

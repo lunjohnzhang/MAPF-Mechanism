@@ -1036,6 +1036,7 @@ void PBS::saveMechResults(boost::filesystem::path filename) const
     //                 path[i]").
     // 4. Utility of each agent.
     //    utility[i] = value[i] - cost[i] * path_length_i - payment_i
+    // 5. Agent profile.
 
     // Calculate payment and utility.
     vector<double> payments(this->num_of_agents);

@@ -15,6 +15,8 @@ PP::PP(Instance& instance, int screen, int seed)
     }
 
     this->gen = mt19937(this->seed);
+
+    this->min_sum_of_cost_wo_i.resize(this->agents.size(), MAX_COST);
 }
 
 void PP::reset()
@@ -61,14 +63,13 @@ void PP::preprocess(bool compute_distance_to_start,
     runtime_preprocessing = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }
 
-std::tuple<int, vector<int>, vector<int>> PP::run(int& failed_agent_id,
-                                                  double time_out_sec)
+double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
 {
     assert(ordering.size() == agents.size());
     clock_t start_time = clock();
-    int sum_of_costs = 0;
+    double sum_of_costs = 0;
     dependency_graph.resize(ordering.size());
-    vector<int> path_lengths(agents.size());
+    // vector<double> weighted_path_lengths(agents.size());
     for (int id : ordering)
     {
         path_table.hit_agents.clear();
@@ -96,21 +97,32 @@ std::tuple<int, vector<int>, vector<int>> PP::run(int& failed_agent_id,
             break;  // failed, id is the failing agent. in its dependency graph,
                     // at least one pair should be reversed
         }
-        int curr_agent_path_len = (int)agents[id].path.size() - 1;
-        sum_of_costs += curr_agent_path_len;
+        double curr_agent_weighted_path_len =
+            (double)(agents[id].path.size() - 1) * this->instance.costs[id];
+        sum_of_costs += curr_agent_weighted_path_len;
         path_table.insertPath(agents[id].id, agents[id].path);
-        path_lengths[id] = curr_agent_path_len;
+        all_weighted_path_lengths[run_id][id] = curr_agent_weighted_path_len;
     }
 
-    // Calculate sum of cost without specified agent
-    vector<int> sum_of_cost_wo_i(agents.size());
-    for (int i = 0; i < agents.size(); i++)
+    // Success: update min sum of cost without agent i
+    if (failed_agent_id == -1)
     {
-        sum_of_cost_wo_i[i] = sum_of_costs - ((int)agents[i].path.size() - 1);
+        for (int i = 0; i < agents.size(); i++)
+        {
+            double curr_sum_of_cost_wo_i =
+                sum_of_costs -
+                (double)(agents[i].path.size() - 1) * this->instance.costs[i];
+
+            // Better?
+            if (curr_sum_of_cost_wo_i < this->min_sum_of_cost_wo_i[i])
+            {
+                this->min_sum_of_cost_wo_i[i] = curr_sum_of_cost_wo_i;
+            }
+        }
     }
 
     runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-    return std::make_tuple(sum_of_costs, sum_of_cost_wo_i, path_lengths);
+    return sum_of_costs;
 }
 
 void PP::savePaths(const string& fileName) const
@@ -129,38 +141,79 @@ void PP::savePaths(const string& fileName) const
     output.close();
 }
 
-std::tuple<int, double, bool, vector<int>, vector<int>> PP::run()
+void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path)
 {
-    int failed_agent_id = -1;
-    vector<int> sum_of_cost_wo_i;
-    vector<int> path_lengths;
-    int sum_of_cost;
-    std::tie(sum_of_cost, sum_of_cost_wo_i, path_lengths) =
-        run(failed_agent_id);
-    bool failed = false;
-    double suboptimality = -1;
-    if (failed_agent_id >= 0)
-    {
-        cout << "Failed agent: " << failed_agent_id << endl;
-        failed = true;
-    }
-    else
-    {
-        // Compute upper bound of suboptimality
-        int sum_dist_to_goal = 0;
-        int sum_path_cost = 0;
-        for (auto agent : this->agents)
-        {
-            vector<int> temp = *agent.distance_to_start;
-            sum_dist_to_goal += temp[agent.goal_location];
-            sum_path_cost += agent.path.size();
-        }
-        suboptimality = (double)sum_path_cost / sum_dist_to_goal;
-        // cout << "Suboptimality: " << suboptimality << endl;
-    }
+    // Create path directory
+    boost::filesystem::path logdir_paths = logdir / "paths";
+    boost::filesystem::create_directories(logdir_paths);
 
-    return std::make_tuple(sum_of_cost, suboptimality, failed, sum_of_cost_wo_i,
-                           path_lengths);
+    this->all_weighted_path_lengths.resize(
+        n_runs, vector<double>(this->agents.size(), MAX_COST));
+
+    for (int i = 0; i < n_runs; i++)
+    {
+        this->preprocess(true, true, true);
+        this->computeRandomOrdering();
+        int failed_agent_id = -1;
+        double sum_of_cost = run_once(failed_agent_id, i);
+
+        // Current run is failed
+        if (failed_agent_id >= 0)
+        {
+            cout << "Failed agent: " << failed_agent_id << endl;
+            cout << "Run " << i << " failed" << endl;
+            failed_runs.emplace_back(i);
+        }
+        else
+        {
+            // Compute upper bound of suboptimality
+            double sum_dist_to_goal = 0;
+            for (int j = 0; j < this->agents.size(); j++)
+            {
+                auto agent = this->agents[j];
+                vector<int> temp = *agent.distance_to_start;
+                sum_dist_to_goal +=
+                    (double)temp[agent.goal_location] * this->instance.costs[j];
+            }
+            double suboptimality = sum_of_cost / sum_dist_to_goal;
+            // cout << "Suboptimality: " << suboptimality << endl;
+
+            // all_sum_of_cost_wo_i.emplace_back(sum_of_cost_wo_i);
+            // all_weighted_path_lengths.emplace_back(weighted_path_lengths);
+            avg_suboptimality += suboptimality;
+            n_success += 1;
+            avg_sum_of_cost += sum_of_cost;
+            if (suboptimality < min_suboptimality)
+                min_suboptimality = suboptimality;
+            if (sum_of_cost < min_sum_of_cost)
+            {
+                min_sum_of_cost = sum_of_cost;
+                min_sum_of_cost_idx = i;
+            }
+            total_runtime += this->runtime;
+            if (screen > 0)
+            {
+                cout << "Run " << i << ": Sum of cost: " << sum_of_cost << ", "
+                     << "suboptimality: " << suboptimality << ", "
+                     << "runtime: " << this->runtime << endl;
+            }
+
+            // Save path
+            if (save_path)
+            {
+                string paths_file = "paths_" + std::to_string(i) + ".txt";
+                this->savePaths((logdir_paths / paths_file).string());
+            }
+        }
+        this->reset();
+    }
+    avg_suboptimality /= n_success;
+    avg_sum_of_cost /= n_success;
+    cout << "Average suboptimality: " << avg_suboptimality << endl;
+    cout << "Average sum of cost: " << avg_sum_of_cost << endl;
+    cout << "Minimum suboptimality: " << min_suboptimality << endl;
+    cout << "Minimum sum of cost: " << min_sum_of_cost << endl;
+    cout << "Total runtime: " << total_runtime << endl;
 }
 
 void PP::computeDefaultOrdering()  // default ordering uses indices of the
@@ -293,4 +346,62 @@ void PP::printDependencyGraph() const
         for (auto j : dependency_graph[i]) cout << j << "->" << i << ", ";
         cout << endl;
     }
+}
+
+void PP::saveResults(boost::filesystem::path filename) const
+{
+    // Calculate (if necessary) and store the following results:
+    // 1. Weighted sum of path length by the costs of the agents.
+    // 2. Weighted sum of path length if ignoring cost of agent i, for each i.
+    // 3. Payment of each agent.
+    //    payment[i] = "weighted min sum of path length without agent i" -
+    //                 ("weighted min sum of path length" - "weighted length of
+    //                 path[i]").
+    // 4. Utility of each agent.
+    //    utility[i] = value[i] - cost[i] * path_length_i - payment_i
+    // 5. Agent profile.
+    // 6. Any MAPF related stats.
+
+    // Calculate payment
+    vector<double> payments(this->agents.size());
+    vector<double> utilities(this->agents.size());
+    for (int i = 0; i < this->agents.size(); i++)
+    {
+        payments.emplace_back(
+            min_sum_of_cost_wo_i[i] -
+            (min_sum_of_cost -
+             all_weighted_path_lengths[min_sum_of_cost_idx][i]));
+
+        utilities[i] = this->instance.values[i] -
+                       this->instance.costs[i] *
+                           all_weighted_path_lengths[min_sum_of_cost_idx][i] -
+                       payments[i];
+    }
+
+    json mechanism_results = {
+        // Agent profile
+        {"map_dimension",
+         vector<int>{this->instance.num_of_rows, this->instance.num_of_cols,
+                     this->instance.num_of_layers}},
+        {"costs", this->instance.costs},
+        {"values", this->instance.values},
+        {"start_coordinates",
+         this->instance.convertAgentLocations(this->instance.start_locations)},
+        {"goal_coordinates",
+         this->instance.convertAgentLocations(this->instance.goal_locations)},
+        // MAPF stats
+        {"total_runtime", total_runtime},
+        {"n_success", n_success},
+        {"avg_suboptimality", avg_suboptimality},
+        {"avg_sum_of_cost", avg_sum_of_cost},
+        {"min_suboptimality", min_suboptimality},
+        {"min_sum_of_cost", min_sum_of_cost},
+        {"min_sum_of_cost_idx", min_sum_of_cost_idx},
+        {"min_sum_of_cost_wo_i", min_sum_of_cost_wo_i},
+        {"all_weighted_path_lengths", all_weighted_path_lengths},
+        {"failed_runs", failed_runs},
+        // Mechanism stats
+        {"payments", payments},
+        {"utilities", utilities}};
+    write_to_json(mechanism_results, filename);
 }
