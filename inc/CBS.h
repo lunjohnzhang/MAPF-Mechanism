@@ -60,7 +60,7 @@ public:
     HLNode* goal_node = nullptr;
 
     bool solution_found = false;
-    int solution_cost = -2;
+    double solution_cost = -2;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     // set params
@@ -124,6 +124,7 @@ public:
     {
         agentSuboptimality = w;
         this->dummy_start_node = dummy_start_node;
+        this->heuristic_helper.setSolverParams(this->dummy_start_node);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -178,8 +179,8 @@ protected:
     double time_limit;
     double suboptimality = 1.0;
     double agentSuboptimality = 1.0;
-    int cost_lowerbound = 0;
-    int inadmissible_cost_lowerbound;
+    double cost_lowerbound = 0;
+    double inadmissible_cost_lowerbound;
     int node_limit = MAX_NODES;
     int cost_upperbound = MAX_COST;
     bool dummy_start_node = false;

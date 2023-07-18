@@ -84,11 +84,11 @@ public:
     pairing_heap<ECBSNode*, compare<ECBSNode::compare_node_by_d> >::handle_type
         focal_handle;
 
-    int sum_of_costs = 0;  // sum of costs of the paths
+    double sum_of_costs = 0;  // sum of costs of the paths
     ECBSNode* parent;
     list<pair<int, pair<Path, int> > >
         paths;  // new paths <agent id, <path, min f>>
-    inline int getFHatVal() const { return sum_of_costs + cost_to_go; }
+    inline double getFHatVal() const { return sum_of_costs + cost_to_go; }
     inline int getNumNewPaths() const { return (int)paths.size(); }
     inline string getName() const { return "ECBS Node"; }
     list<int> getReplannedAgents() const

@@ -45,7 +45,7 @@ public:
     }
 
     // Remove virtual function implementation warning. Should never be used.
-    inline int getFHatVal() const override { return -1; }
+    inline double getFHatVal() const override { return -1; }
 };
 
 std::ostream& operator<<(std::ostream& os, const PBSNode& node);
