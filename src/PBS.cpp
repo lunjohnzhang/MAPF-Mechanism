@@ -697,12 +697,31 @@ bool PBS::terminate(PBSNode* curr)
             // Get the weighted sum of path length.
             double weighted_sol_cost =
                 weighted_path_cost(this->paths, this->instance.costs);
+
+            // Store the best path/solution cost as of the current solution
             if (solution_cost == -2 || solution_cost > weighted_sol_cost)
             {
                 solution_cost = weighted_sol_cost;
                 goal_node = curr;
                 storeBestPath();
             }
+
+            // Store the best solution cost without each agent.
+            for (int i = 0; i < this->num_of_agents; i++)
+            {
+                // Calculate current solution cost without agent i
+                double curr_sol_cost_wo_i =
+                    weighted_sol_cost -
+                    this->instance.costs[i] *
+                        (double)(this->paths[i]->size() - 1);
+
+                // Better?
+                if (curr_sol_cost_wo_i < this->solution_costs_wo_i[i])
+                {
+                    this->solution_costs_wo_i[i] = curr_sol_cost_wo_i;
+                }
+            }
+
             terminate_search = false;
         }
 
@@ -880,7 +899,8 @@ bool PBS::validateSolution() const
             // 		int loc2 = best_paths[a2_]->at(timestep).location;
             // 		if (loc1 == loc2)
             // 		{
-            // 			cout << "Agents " << a1 << " and " << a2 << " collides at
+            // 			cout << "Agents " << a1 << " and " << a2 << " collides
+            // at
             // "
             // << loc1 << " at timestep " << timestep << endl; 			return
             // false; // It's at least a semi conflict
@@ -1003,4 +1023,44 @@ void PBS::storeBestPath()
             delete this->best_paths[i];
         this->best_paths[i] = new Path(*this->paths[i]);
     }
+}
+
+void PBS::saveMechResults(boost::filesystem::path filename) const
+{
+    // Calculate (if necessary) and store the following results:
+    // 1. Weighted sum of path length by the costs of the agents.
+    // 2. Weighted sum of path length if ignoring cost of agent i, for each i.
+    // 3. Payment of each agent.
+    //    payment[i] = "weighted min sum of path length without agent i" -
+    //                 ("weighted min sum of path length" - "weighted length of
+    //                 path[i]").
+    // 4. Utility of each agent.
+    //    utility[i] = value[i] - cost[i] * path_length_i - payment_i
+
+    // Calculate payment and utility.
+    vector<double> payments(this->num_of_agents);
+    vector<double> utilities(this->num_of_agents);
+    for (int i = 0; i < this->num_of_agents; i++)
+    {
+        payments[i] =
+            this->solution_costs_wo_i[i] -
+            (this->solution_cost -
+             this->instance.costs[i] * (this->best_paths[i]->size() - 1));
+
+        utilities[i] =
+            this->instance.values[i] -
+            this->instance.costs[i] * (this->best_paths[i]->size() - 1) -
+            payments[i];
+    }
+
+    json mechanism_results = {
+        {"map_dimension", vector<int>{this->instance.num_of_rows, this->instance.num_of_cols, this->instance.num_of_layers}},
+        {"costs", this->instance.costs},
+        {"values", this->instance.values},
+        {"start_coordinates", this->instance.convertAgentLocations(this->instance.start_locations)},
+        {"goal_coordinates", this->instance.convertAgentLocations(this->instance.goal_locations)},
+        {"payments", payments},
+        {"utilities", utilities}};
+    write_to_json(mechanism_results, filename);
+
 }

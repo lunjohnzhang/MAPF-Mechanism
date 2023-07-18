@@ -96,6 +96,8 @@ public:
 
     void saveAgentProfile(boost::filesystem::path filename);
 
+    vector<tuple<int,int,int>> convertAgentLocations(vector<int> locations) const;
+
 private:
     // int moves_offset[MOVE_COUNT];
     vector<bool> my_map;

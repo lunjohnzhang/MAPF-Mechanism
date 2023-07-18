@@ -334,18 +334,18 @@ bool Instance::loadMap()
     if (!myfile.is_open())
         return false;
     string line;
-    tokenizer<char_separator<char> >::iterator beg;
+    tokenizer<char_separator<char>>::iterator beg;
     getline(myfile, line);
     if (line[0] == 't')  // Nathan's benchmark
     {
         char_separator<char> sep(" ");
         getline(myfile, line);
-        tokenizer<char_separator<char> > tok(line, sep);
+        tokenizer<char_separator<char>> tok(line, sep);
         beg = tok.begin();
         beg++;
         num_of_rows = atoi((*beg).c_str());  // read number of rows
         getline(myfile, line);
-        tokenizer<char_separator<char> > tok2(line, sep);
+        tokenizer<char_separator<char>> tok2(line, sep);
         beg = tok2.begin();
         beg++;
         num_of_cols = atoi((*beg).c_str());  // read number of cols
@@ -354,7 +354,7 @@ bool Instance::loadMap()
     else  // my benchmark
     {
         char_separator<char> sep(",");
-        tokenizer<char_separator<char> > tok(line, sep);
+        tokenizer<char_separator<char>> tok(line, sep);
         beg = tok.begin();
         num_of_rows = atoi((*beg).c_str());  // read number of rows
         beg++;
@@ -468,8 +468,8 @@ bool Instance::loadAgents()
         for (int i = 0; i < num_of_agents; i++)
         {
             getline(myfile, line);
-            tokenizer<char_separator<char> > tok(line, sep);
-            tokenizer<char_separator<char> >::iterator beg = tok.begin();
+            tokenizer<char_separator<char>> tok(line, sep);
+            tokenizer<char_separator<char>>::iterator beg = tok.begin();
             beg++;  // skip the first number
             beg++;  // skip the map name
             beg++;  // skip the columns
@@ -492,16 +492,16 @@ bool Instance::loadAgents()
     else  // My benchmark
     {
         char_separator<char> sep(",");
-        tokenizer<char_separator<char> > tok(line, sep);
-        tokenizer<char_separator<char> >::iterator beg = tok.begin();
+        tokenizer<char_separator<char>> tok(line, sep);
+        tokenizer<char_separator<char>>::iterator beg = tok.begin();
         num_of_agents = atoi((*beg).c_str());
         start_locations.resize(num_of_agents);
         goal_locations.resize(num_of_agents);
         for (int i = 0; i < num_of_agents; i++)
         {
             getline(myfile, line);
-            tokenizer<char_separator<char> > col_tok(line, sep);
-            tokenizer<char_separator<char> >::iterator c_beg = col_tok.begin();
+            tokenizer<char_separator<char>> col_tok(line, sep);
+            tokenizer<char_separator<char>>::iterator c_beg = col_tok.begin();
             pair<int, int> curr_pair;
             // read start [row,col] for agent i
             int row = atoi((*c_beg).c_str());
@@ -630,7 +630,7 @@ const vector<int>* Instance::getDistances(int root_location)
     vector<int> rst(map_size, MAX_TIMESTEP);
 
     // generate a heap that can save nodes (and a open_handle)
-    boost::heap::pairing_heap<Node, boost::heap::compare<Node::compare_node> >
+    boost::heap::pairing_heap<Node, boost::heap::compare<Node::compare_node>>
         heap;
     Node root(root_location, 0);
     rst[root_location] = 0;
@@ -662,4 +662,16 @@ void Instance::saveAgentProfile(boost::filesystem::path filename)
         {"start_locations", this->start_locations},
         {"goal_locations", this->goal_locations}};
     write_to_json(agent_profile, filename);
+}
+
+vector<tuple<int, int, int>> Instance::convertAgentLocations(
+    vector<int> locations) const
+{
+    vector<tuple<int, int, int>> agent_locations(locations.size());
+
+    for (int i = 0; i < locations.size(); i++)
+    {
+        agent_locations[i] = getCoordinate(locations[i]);
+    }
+    return agent_locations;
 }

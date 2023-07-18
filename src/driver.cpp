@@ -338,11 +338,11 @@ int main(int argc, char** argv)
             all_path_lengths);
 
 
-        // Write payment related data to file for debugging
-        write_to_json(json(min_sum_of_cost), logdir / "min_sum_of_cost.json");
-        write_to_json(json(min_sum_of_cost_idx), logdir / "min_sum_of_cost_idx.json");
-        write_to_json(json(all_sum_of_costs), logdir / "all_sum_of_costs.json");
-        write_to_json(json(all_path_lengths), logdir / "all_path_lengths.json");
+        // // Write payment related data to file for debugging
+        // write_to_json(json(min_sum_of_cost), logdir / "min_sum_of_cost.json");
+        // write_to_json(json(min_sum_of_cost_idx), logdir / "min_sum_of_cost_idx.json");
+        // write_to_json(json(all_sum_of_costs), logdir / "all_sum_of_costs.json");
+        // write_to_json(json(all_path_lengths), logdir / "all_path_lengths.json");
 
         json result = {
             {"avg_suboptimality", avg_suboptimality},
@@ -414,6 +414,7 @@ int main(int argc, char** argv)
                             vm["agents"].as<string>());
         if (pbs.solution_found && vm["savePath"].as<bool>())
             pbs.savePaths((logdir / "paths.txt").string());
+        pbs.saveMechResults(logdir / "mechanism_result.json");
         /*size_t pos = (logdir / "stats.csv").string().rfind('.');      // position of the file extension
         string output_name = (logdir / "stats.csv").string().substr(0, pos);     // get the name without extension
         cbs.saveCT(output_name); // for debug*/
