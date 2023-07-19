@@ -99,6 +99,9 @@ private:
     double time_limit;
     int node_limit = MAX_NODES;
 
+    bool timeout = false;
+    bool nodeout = false;
+
     clock_t start;
 
     int num_of_agents;

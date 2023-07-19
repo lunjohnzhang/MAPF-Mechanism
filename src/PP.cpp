@@ -141,7 +141,8 @@ void PP::savePaths(const string& fileName) const
     output.close();
 }
 
-void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path)
+void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path,
+             double time_out_sec)
 {
     // Create path directory
     boost::filesystem::path logdir_paths = logdir / "paths";
@@ -198,6 +199,14 @@ void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path)
             }
 
             total_runtime += this->runtime;
+
+            if (time_out_sec < total_runtime)
+            {
+                timeout = true;
+                cout << "Timeout at run " << i << endl;
+                return;
+            }
+
             if (screen > 0)
             {
                 cout << "Run " << i << ": Sum of cost: " << sum_of_cost << ", "
@@ -407,6 +416,7 @@ void PP::saveResults(boost::filesystem::path filename) const
         {"min_sum_of_cost_wo_i", min_sum_of_cost_wo_i},
         {"all_weighted_path_lengths", all_weighted_path_lengths},
         {"failed_runs", failed_runs},
+        {"timeout", timeout},
         // Mechanism stats
         {"payments", payments},
         {"utilities", utilities}};

@@ -754,6 +754,10 @@ bool PBS::timeAndNodeOut()
 {
     if (runtime > time_limit || num_HL_expanded > node_limit)
     {  // time/node out
+        if (runtime > time_limit)
+            timeout = true;
+        if (num_HL_expanded > node_limit)
+            nodeout = true;
         solution_cost = -1;
         solution_found = false;
         if (screen > 0)  // 1 or 2
@@ -1041,27 +1045,35 @@ void PBS::saveMechResults(boost::filesystem::path filename) const
     // Calculate payment and utility.
     vector<double> payments(this->num_of_agents);
     vector<double> utilities(this->num_of_agents);
-    for (int i = 0; i < this->num_of_agents; i++)
+    if (solution_found)
     {
-        payments[i] =
-            this->solution_costs_wo_i[i] -
-            (this->solution_cost -
-             this->instance.costs[i] * (this->best_paths[i]->size() - 1));
+        for (int i = 0; i < this->num_of_agents; i++)
+        {
+            payments[i] =
+                this->solution_costs_wo_i[i] -
+                (this->solution_cost -
+                 this->instance.costs[i] * (this->best_paths[i]->size() - 1));
 
-        utilities[i] =
-            this->instance.values[i] -
-            this->instance.costs[i] * (this->best_paths[i]->size() - 1) -
-            payments[i];
+            utilities[i] =
+                this->instance.values[i] -
+                this->instance.costs[i] * (this->best_paths[i]->size() - 1) -
+                payments[i];
+        }
     }
 
     json mechanism_results = {
-        {"map_dimension", vector<int>{this->instance.num_of_rows, this->instance.num_of_cols, this->instance.num_of_layers}},
+        {"map_dimension",
+         vector<int>{this->instance.num_of_rows, this->instance.num_of_cols,
+                     this->instance.num_of_layers}},
         {"costs", this->instance.costs},
         {"values", this->instance.values},
-        {"start_coordinates", this->instance.convertAgentLocations(this->instance.start_locations)},
-        {"goal_coordinates", this->instance.convertAgentLocations(this->instance.goal_locations)},
+        {"start_coordinates",
+         this->instance.convertAgentLocations(this->instance.start_locations)},
+        {"goal_coordinates",
+         this->instance.convertAgentLocations(this->instance.goal_locations)},
         {"payments", payments},
-        {"utilities", utilities}};
+        {"utilities", utilities},
+        {"timeout", timeout},
+        {"nodeout", nodeout}};
     write_to_json(mechanism_results, filename);
-
 }

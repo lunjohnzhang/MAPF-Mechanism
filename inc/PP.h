@@ -43,7 +43,8 @@ public:
     void preprocess(bool compute_distance_to_start,
                     bool compute_distance_to_goal,
                     bool compute_mdd);  // compute information in each agent
-    void run(int n_runs, boost::filesystem::path logdir, bool save_path);
+    void run(int n_runs, boost::filesystem::path logdir, bool save_path,
+             double time_out_sec);
     bool validateSolution() const;
 
     // return the sum of costs of the solution (MAX_COST if failed to solve)
@@ -93,6 +94,7 @@ private:
     int min_sum_of_cost_idx = -1;
     int n_success = 0;
     double total_runtime = 0;
+    bool timeout = false;
 
     // [i] stores the weighted sum of cost without agent i
     vector<double> min_sum_of_cost_wo_i;

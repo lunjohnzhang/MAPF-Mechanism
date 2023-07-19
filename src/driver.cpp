@@ -260,7 +260,8 @@ int main(int argc, char** argv)
     {
         PP pp(instance, vm["screen"].as<int>(), seed);
         pp.setLowLevelSolver(vm["dummyStart"].as<bool>());
-        pp.run(runs, logdir, vm["savePath"].as<bool>());
+        pp.run(runs, logdir, vm["savePath"].as<bool>(),
+               vm["cutoffTime"].as<double>());
         pp.saveResults(logdir / "result.json");
     }
     else if (algo == "CBS")
