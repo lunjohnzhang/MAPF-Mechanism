@@ -1,11 +1,5 @@
-﻿/* Copyright (C) Jiaoyang Li
- * Unauthorized copying of this file, via any medium is strictly prohibited
- * Confidential
- * Written by Jiaoyang Li <jiaoyanl@usc.edu>, May 2020
- */
-
-/*driver.cpp
- * Solve a MAPF instance on 2D grids.
+﻿/*driver.cpp
+ * Solve a MAPF instance on 2D or 3D grids.
  */
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
