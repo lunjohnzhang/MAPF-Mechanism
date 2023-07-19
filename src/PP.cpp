@@ -419,6 +419,7 @@ void PP::saveResults(boost::filesystem::path filename) const
         {"all_weighted_path_lengths", all_weighted_path_lengths},
         {"failed_runs", failed_runs},
         {"timeout", timeout},
+        {"runtime", total_runtime},
         // Mechanism stats
         {"payments", payments},
         {"utilities", utilities}};

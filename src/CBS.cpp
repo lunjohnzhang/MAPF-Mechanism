@@ -1747,6 +1747,7 @@ void CBS::saveMechResults(boost::filesystem::path filename) const
          this->search_engines[0]->instance.convertAgentLocations(
              this->search_engines[0]->instance.goal_locations)},
         {"timeout", timeout},
-        {"nodeout", nodeout}};
+        {"nodeout", nodeout},
+        {"runtime", runtime}};
     write_to_json(mechanism_results, filename);
 }

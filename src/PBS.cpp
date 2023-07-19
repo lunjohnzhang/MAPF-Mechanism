@@ -1078,6 +1078,7 @@ void PBS::saveMechResults(boost::filesystem::path filename) const
         {"payments", payments},
         {"utilities", utilities},
         {"timeout", timeout},
-        {"nodeout", nodeout}};
+        {"nodeout", nodeout},
+        {"runtime", runtime}};
     write_to_json(mechanism_results, filename);
 }
