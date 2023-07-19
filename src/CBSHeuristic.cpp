@@ -33,8 +33,9 @@ void CBSHeuristic::updateInadmissibleHeuristics(HLNode& curr)
                                    // both GLOBAL and PATH
         if (num_of_errors[0] < 1)
         {
-            curr.cost_to_go = max(
-                0, curr.getFVal() - curr.getFHatVal());  // ensure that f <= f^
+            curr.cost_to_go =
+                max(0.0,
+                    curr.getFVal() - curr.getFHatVal());  // ensure that f <= f^
             return;
         }
         if (num_of_errors[0] <= sum_distance_errors[0])
@@ -93,7 +94,7 @@ void CBSHeuristic::updateInadmissibleHeuristics(HLNode& curr)
                 (int)(curr.distance_to_go * cost_error / (1 - distance_error));
         // cout << std::setprecision(3) << (double)curr.cost_to_go /
         // curr.distance_to_go << ",";
-        curr.cost_to_go = max(min(MAX_COST, curr.cost_to_go), 0);
+        curr.cost_to_go = max(min((double)MAX_COST, curr.cost_to_go), 0.0);
         curr.cost_to_go += h;
         break;
     default:
@@ -242,8 +243,8 @@ void CBSHeuristic::computeQuickHeuristics(HLNode& node)
     node->h_val = parent->h_val - maxWeight; // stronger pathmax
     }*/
     if (node.parent != nullptr)
-        node.h_val = max(0, node.parent->g_val + node.parent->h_val -
-                                node.g_val);  // pathmax
+        node.h_val = max(0.0, node.parent->g_val + node.parent->h_val -
+                                  node.g_val);  // pathmax
 
     // vector<bool> HG(num_of_agents * num_of_agents, false);
     // buildConflictGraph(HG, node);
@@ -312,7 +313,7 @@ bool CBSHeuristic::computeInformedHeuristics(CBSNode& curr, double _time_limit)
     }
     if (h < 0)
         return false;
-    curr.h_val = max(h, curr.h_val);
+    curr.h_val = max((double)h, curr.h_val);
 
     /*if (type == heuristics_type::WDG) //compute distance-to-go heuristics
     {
@@ -375,7 +376,7 @@ bool CBSHeuristic::computeInformedHeuristics(ECBSNode& curr,
     }
     if (h < 0)
         return false;
-    curr.h_val = max(h, curr.h_val);
+    curr.h_val = max((double)h, curr.h_val);
     curr.cost_to_go =
         max(curr.cost_to_go,
             curr.getFVal() - curr.sum_of_costs);  // ensure that f <= f^
@@ -788,6 +789,7 @@ pair<int, int> CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node,
     cbs.setHighLevelSolver(high_level_solver_type::ASTAR,
                            1);  // solve the sub problem optimally
     cbs.setNodeLimit(node_limit);
+    cbs.setLowLevelSolver(-1, this->dummy_start_node);
 
     double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
     int root_g =
@@ -847,6 +849,7 @@ tuple<int, int, int> CBSHeuristic::solve2Agents(int a1, int a2,
     cbs.setHighLevelSolver(high_level_solver_type::ASTAR,
                            1);  // solve the sub problem optimally
     cbs.setNodeLimit(node_limit);
+    cbs.setLowLevelSolver(-1, this->dummy_start_node);
 
     double runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
     cbs.solve(time_limit - runtime, 0, MAX_COST);

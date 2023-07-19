@@ -418,7 +418,8 @@ bool CBS::findPathForSingleAgent(CBSNode* node, int ag, int lowerbound)
         assert(!isSamePath(*paths[ag], new_path));
         node->paths.emplace_back(ag, new_path);
         node->g_val =
-            node->g_val - (int)paths[ag]->size() + (int)new_path.size();
+            node->g_val - ((int)paths[ag]->size() - (int)new_path.size()) *
+                              search_engines[ag]->instance.costs[ag];
         paths[ag] = &node->paths.back().second;
         node->makespan = max(node->makespan, new_path.size() - 1);
         return true;
@@ -1587,7 +1588,8 @@ bool CBS::generateRoot()
             paths[i] = &paths_found_initially[i];
             root->makespan =
                 max(root->makespan, paths_found_initially[i].size() - 1);
-            root->g_val += (int)paths_found_initially[i].size() - 1;
+            root->g_val += ((int)paths_found_initially[i].size() - 1) *
+                           search_engines[i]->instance.costs[i];
             num_LL_expanded += search_engines[i]->num_expanded;
             num_LL_generated += search_engines[i]->num_generated;
         }
@@ -1599,7 +1601,8 @@ bool CBS::generateRoot()
             paths[i] = &paths_found_initially[i];
             root->makespan =
                 max(root->makespan, paths_found_initially[i].size() - 1);
-            root->g_val += (int)paths_found_initially[i].size() - 1;
+            root->g_val += ((int)paths_found_initially[i].size() - 1) *
+                           search_engines[i]->instance.costs[i];
         }
     }
 
@@ -1663,10 +1666,10 @@ bool CBS::validateSolution() const
         start_timestep = 1;
 
     // check whether the paths are feasible
-    size_t soc = 0;
+    double soc = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
     {
-        soc += paths[a1]->size() - 1;
+        soc += (paths[a1]->size() - 1) * search_engines[0]->instance.costs[a1];
         for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
         {
             size_t min_path_length = paths[a1]->size() < paths[a2]->size()
@@ -1695,7 +1698,7 @@ bool CBS::validateSolution() const
             }
         }
     }
-    if ((int)soc != solution_cost)
+    if (!areDoubleSame(soc, solution_cost))
     {
         cout << "The solution cost is wrong!" << endl;
         return false;

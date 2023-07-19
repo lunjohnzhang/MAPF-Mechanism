@@ -300,8 +300,9 @@ bool ECBS::generateRoot()
         paths[i] = &paths_found_initially[i].first;
         min_f_vals[i] = paths_found_initially[i].second;
         root->makespan = max(root->makespan, paths[i]->size() - 1);
-        root->g_val += min_f_vals[i];
-        root->sum_of_costs += (int)paths[i]->size() - 1;
+        root->g_val += min_f_vals[i] * search_engines[i]->instance.costs[i];
+        root->sum_of_costs +=
+            ((int)paths[i]->size() - 1) * search_engines[i]->instance.costs[i];
         num_LL_expanded += search_engines[i]->num_expanded;
         num_LL_generated += search_engines[i]->num_generated;
     }
@@ -363,9 +364,11 @@ bool ECBS::findPathForSingleAgent(ECBSNode* node, int ag)
         return false;
     assert(!isSamePath(*paths[ag], new_path.first));
     node->paths.emplace_back(ag, new_path);
-    node->g_val = node->g_val - min_f_vals[ag] + new_path.second;
-    node->sum_of_costs = node->sum_of_costs - (int)paths[ag]->size() +
-                         (int)new_path.first.size();
+    node->g_val = node->g_val - (min_f_vals[ag] - new_path.second) *
+                                    search_engines[ag]->instance.costs[ag];
+    node->sum_of_costs = node->sum_of_costs -
+                         ((int)paths[ag]->size() - (int)new_path.first.size()) *
+                             search_engines[ag]->instance.costs[ag];
     paths[ag] = &node->paths.back().second.first;
     min_f_vals[ag] = new_path.second;
     node->makespan = max(node->makespan, new_path.first.size() - 1);

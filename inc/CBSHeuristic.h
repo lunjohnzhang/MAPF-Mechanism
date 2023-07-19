@@ -237,12 +237,21 @@ public:
                    : sum_distance_errors[i] / num_of_errors[i];
     }
 
+    void setSolverParams(bool dummy_start_node)
+    {
+        this->dummy_start_node = dummy_start_node;
+    }
+
     // void copyConflictGraph(HLNode& child, const HLNode& parent);
     void clear() { lookupTable.clear(); }
 
 private:
     heuristics_type inadmissible_heuristic;
 
+    // Whether to use dummy start node in low level search.
+    // Required here because some heuristic requirs running CBS, which involves
+    // setting this variable.
+    bool dummy_start_node = false;
     int screen = 0;
     int num_of_agents;
     vector<vector<HTable> > lookupTable;

@@ -17,9 +17,9 @@ class HLNode  // a virtual base class for high-level node
 public:
     list<Constraint> constraints;  // new constraints
 
-    int g_val = 0;           // sum of costs for CBS, and sum of min f for ECBS
-    int h_val = 0;           // admissible h
-    int cost_to_go = 0;      // informed but inadmissible h
+    double g_val = 0;        // sum of costs for CBS, and sum of min f for ECBS
+    double h_val = 0;        // admissible h
+    double cost_to_go = 0;   // informed but inadmissible h
     int distance_to_go = 0;  // distance to the goal state
     size_t depth = 0;        // depath of this CT node
     size_t makespan = 0;     // makespan over all paths
@@ -57,8 +57,8 @@ public:
     HLNode* parent;
     list<HLNode*> children;
 
-    inline int getFVal() const { return g_val + h_val; }
-    virtual inline int getFHatVal() const = 0;
+    inline double getFVal() const { return g_val + h_val; }
+    virtual inline double getFHatVal() const = 0;
     virtual inline int getNumNewPaths() const = 0;
     virtual list<int> getReplannedAgents() const = 0;
     virtual inline string getName() const = 0;
@@ -183,7 +183,7 @@ public:
 
     CBSNode* parent;
     list<pair<int, Path> > paths;  // new paths
-    inline int getFHatVal() const override { return g_val + cost_to_go; }
+    inline double getFHatVal() const override { return g_val + cost_to_go; }
     inline int getNumNewPaths() const override { return (int)paths.size(); }
     inline string getName() const override { return "CBS Node"; }
     list<int> getReplannedAgents() const override

@@ -7,19 +7,18 @@
 /*driver.cpp
  * Solve a MAPF instance on 2D grids.
  */
+#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/filesystem.hpp>
 
 #include "ECBS.h"
-#include "PP.h"
 #include "PBS.h"
+#include "PP.h"
 
 namespace GLOBAL_VAR
 {
     int dummy_start_loc;
 }
-
 
 /* Main function */
 int main(int argc, char** argv)
@@ -69,15 +68,15 @@ int main(int argc, char** argv)
             "the high-level solver (A*, A*eps, EES, NEW)")
 		("lowLevelSolver", po::value<bool>()->default_value(true),
             "using suboptimal solver in the low level")
-		("inadmissibleH", po::value<string>()->default_value("Global"),
+		("inadmissibleH", po::value<string>()->default_value("Zero"),
             "inadmissible heuristics (Zero, Global, Path, Local, Conflict)")
-        ("agentSuboptimality", po::value<double>()->default_value(1.2),
-            "suboptimality bound of the single agent paths")
+        ("agentSuboptimality", po::value<double>()->default_value(-1),
+            "suboptimality bound of each agent; -1 will turn it off")
 		("suboptimality", po::value<double>()->default_value(1.2),
             "suboptimality bound")
 
 		// params for CBS improvement
-		("heuristics", po::value<string>()->default_value("WDG"),
+		("heuristics", po::value<string>()->default_value("Zero"),
             "admissible heuristics for the high-level search"
             "(Zero, CG,DG, WDG)")
 		("prioritizingConflicts", po::value<bool>()->default_value(true),
@@ -88,7 +87,7 @@ int main(int argc, char** argv)
             "disjoint splitting")
 		("corridorReasoning", po::value<bool>()->default_value(true),
             "corridor reasoning")
-		("targetReasoning", po::value<bool>()->default_value(true),
+		("targetReasoning", po::value<bool>()->default_value(false),
             "target reasoning")
 		("sipp", po::value<bool>()->default_value(0),
             "using SIPPS as the low-level solver")
@@ -110,9 +109,12 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    if (vm["agentSuboptimality"].as<double>() < 1)
+    double agent_w = vm["agentSuboptimality"].as<double>();
+    if (agent_w < 1 && agent_w != -1.0)
     {
-        cerr << "Agent suboptimal bound should be at least 1!" << endl;
+        cerr << "Agent suboptimal bound should be at least 1 or it should be "
+                "-1 to be turned off!"
+             << endl;
         return -1;
     }
 
@@ -181,7 +183,6 @@ int main(int argc, char** argv)
         return -1;
     }
 
-
     // Create log logdir
     string algo = vm["algo"].as<string>();
     string timestamp = get_curr_time_str();
@@ -224,8 +225,7 @@ int main(int argc, char** argv)
         ecbs.setNodeSelectionRule(n);
         ecbs.setSavingStats(vm["stats"].as<bool>());
         ecbs.setHighLevelSolver(s, vm["suboptimality"].as<double>());
-        ecbs.setLowLevelSolver(vm["agentSuboptimality"].as<double>(),
-                               vm["dummyStart"].as<bool>());
+        ecbs.setLowLevelSolver(agent_w, vm["dummyStart"].as<bool>());
         //////////////////////////////////////////////////////////////////////
         // run
         double runtime = 0;
@@ -247,9 +247,9 @@ int main(int argc, char** argv)
                              vm["agents"].as<string>());
         if (ecbs.solution_found && vm["savePath"].as<bool>())
             ecbs.savePaths((logdir / "paths.txt").string());
-        /*size_t pos = (logdir / "stats.csv").string().rfind('.');      // position of
-        the file extension string output_name =
-        (logdir / "stats.csv").string().substr(0, pos);     // get the name without
+        /*size_t pos = (logdir / "stats.csv").string().rfind('.');      //
+        position of the file extension string output_name = (logdir /
+        "stats.csv").string().substr(0, pos);     // get the name without
         extension cbs.saveCT(output_name); // for debug*/
         if (vm["stats"].as<bool>())
             ecbs.saveStats((logdir / "stats.csv").string(),
@@ -277,6 +277,7 @@ int main(int argc, char** argv)
         cbs.setNodeSelectionRule(n);
         cbs.setSavingStats(vm["stats"].as<bool>());
         cbs.setHighLevelSolver(s, vm["suboptimality"].as<double>());
+        cbs.setLowLevelSolver(-1, vm["dummyStart"].as<bool>());
         //////////////////////////////////////////////////////////////////////
         // run
         double runtime = 0;
@@ -299,15 +300,15 @@ int main(int argc, char** argv)
         if (cbs.solution_found && vm["savePath"].as<bool>())
             cbs.savePaths((logdir / "paths.txt").string());
         if (vm["stats"].as<bool>())
-            cbs.saveStats((logdir / "stats.csv").string(), vm["agents"].as<string>());
+            cbs.saveStats((logdir / "stats.csv").string(),
+                          vm["agents"].as<string>());
         cbs.clearSearchEngines();
     }
     else if (algo == "PBS")
     {
         PBS pbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>());
-        pbs.setSolverParams(
-            vm["dummyStart"].as<bool>(),
-            vm["exhaustiveSearch"].as<bool>());
+        pbs.setSolverParams(vm["dummyStart"].as<bool>(),
+                            vm["exhaustiveSearch"].as<bool>());
 
         // run
         double runtime = 0;
@@ -318,9 +319,10 @@ int main(int argc, char** argv)
         if (pbs.solution_found && vm["savePath"].as<bool>())
             pbs.savePaths((logdir / "paths.txt").string());
         pbs.saveMechResults(logdir / "mechanism_result.json");
-        /*size_t pos = (logdir / "stats.csv").string().rfind('.');      // position of the file extension
-        string output_name = (logdir / "stats.csv").string().substr(0, pos);     // get the name without extension
-        cbs.saveCT(output_name); // for debug*/
+        /*size_t pos = (logdir / "stats.csv").string().rfind('.');      //
+        position of the file extension string output_name = (logdir /
+        "stats.csv").string().substr(0, pos);     // get the name without
+        extension cbs.saveCT(output_name); // for debug*/
         pbs.clearSearchEngines();
     }
 
