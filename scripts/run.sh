@@ -68,6 +68,7 @@ fi
 # Ref: https://unix.stackexchange.com/questions/103920/parallelize-a-bash-for-loop/436713#436713
 for i in $(seq 1 $N_SIM); do
     (
+        echo "starting task $i.."
         ./build/drone \
             -m "$MAP_FILE" \
             -a "$SCEN_FILE" \
@@ -79,7 +80,7 @@ for i in $(seq 1 $N_SIM); do
             --nRuns $N_RUNS \
             --seed $i \
             --screen 0
-        echo "starting task $i.."
+        echo "Done task $i"
     ) &
 
     # allow to execute up to $N jobs in parallel
