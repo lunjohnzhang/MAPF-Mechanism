@@ -68,7 +68,7 @@ int main(int argc, char** argv)
             "the high-level solver (A*, A*eps, EES, NEW)")
 		("lowLevelSolver", po::value<bool>()->default_value(true),
             "using suboptimal solver in the low level")
-		("inadmissibleH", po::value<string>()->default_value("Global"),
+		("inadmissibleH", po::value<string>()->default_value("Zero"),
             "inadmissible heuristics (Zero, Global, Path, Local, Conflict)")
         ("agentSuboptimality", po::value<double>()->default_value(-1),
             "suboptimality bound of each agent; -1 will turn it off")
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
             "suboptimality bound")
 
 		// params for CBS improvement
-		("heuristics", po::value<string>()->default_value("WDG"),
+		("heuristics", po::value<string>()->default_value("Zero"),
             "admissible heuristics for the high-level search"
             "(Zero, CG,DG, WDG)")
 		("prioritizingConflicts", po::value<bool>()->default_value(true),
