@@ -1416,6 +1416,10 @@ bool CBS::terminate(HLNode* curr)
     }
     if (runtime > time_limit || num_HL_expanded > node_limit)
     {  // time/node out
+        if (runtime > time_limit)
+            timeout = true;
+        if (num_HL_expanded > node_limit)
+            nodeout = true;
         solution_cost = -1;
         solution_found = false;
         if (screen > 0)  // 1 or 2
@@ -1725,4 +1729,24 @@ void CBS::clear()
     goal_node = nullptr;
     solution_found = false;
     solution_cost = -2;
+}
+
+void CBS::saveMechResults(boost::filesystem::path filename) const
+{
+    json mechanism_results = {
+        {"map_dimension",
+         vector<int>{this->search_engines[0]->instance.num_of_rows,
+                     this->search_engines[0]->instance.num_of_cols,
+                     this->search_engines[0]->instance.num_of_layers}},
+        {"costs", this->search_engines[0]->instance.costs},
+        {"values", this->search_engines[0]->instance.values},
+        {"start_coordinates",
+         this->search_engines[0]->instance.convertAgentLocations(
+             this->search_engines[0]->instance.start_locations)},
+        {"goal_coordinates",
+         this->search_engines[0]->instance.convertAgentLocations(
+             this->search_engines[0]->instance.goal_locations)},
+        {"timeout", timeout},
+        {"nodeout", nodeout}};
+    write_to_json(mechanism_results, filename);
 }

@@ -254,6 +254,7 @@ int main(int argc, char** argv)
         if (vm["stats"].as<bool>())
             ecbs.saveStats((logdir / "stats.csv").string(),
                            vm["agents"].as<string>());
+        ecbs.saveMechResults(logdir / "result.json");
         ecbs.clearSearchEngines();
     }
     else if (algo == "PP")
@@ -303,6 +304,7 @@ int main(int argc, char** argv)
         if (vm["stats"].as<bool>())
             cbs.saveStats((logdir / "stats.csv").string(),
                           vm["agents"].as<string>());
+        cbs.saveMechResults(logdir / "result.json");
         cbs.clearSearchEngines();
     }
     else if (algo == "PBS")
@@ -319,7 +321,7 @@ int main(int argc, char** argv)
                             vm["agents"].as<string>());
         if (pbs.solution_found && vm["savePath"].as<bool>())
             pbs.savePaths((logdir / "paths.txt").string());
-        pbs.saveMechResults(logdir / "mechanism_result.json");
+        pbs.saveMechResults(logdir / "result.json");
         /*size_t pos = (logdir / "stats.csv").string().rfind('.');      //
         position of the file extension string output_name = (logdir /
         "stats.csv").string().substr(0, pos);     // get the name without

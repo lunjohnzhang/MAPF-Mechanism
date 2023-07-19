@@ -146,6 +146,7 @@ public:
     void saveStats(const string& fileName, const string& instanceName);
     void saveCT(const string& fileName) const;     // write the CT to a file
     void savePaths(const string& fileName) const;  // write the paths to a file
+    void saveMechResults(boost::filesystem::path filename) const;
     void clear();  // used for rapid random  restart
 
     int getInitialPathLength(int agent) const
@@ -184,6 +185,8 @@ protected:
     int node_limit = MAX_NODES;
     int cost_upperbound = MAX_COST;
     bool dummy_start_node = false;
+    bool timeout = false;
+    bool nodeout = false;
 
     vector<ConstraintTable> initial_constraints;
     clock_t start;
