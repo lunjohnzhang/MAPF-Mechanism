@@ -82,6 +82,12 @@ string get_curr_time_str()
     return timestamp;
 }
 
+string get_uuid()
+{
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    return boost::uuids::to_string(uuid);
+}
+
 void write_to_json(json to_write, boost::filesystem::path filename)
 {
     // Open a file for writing

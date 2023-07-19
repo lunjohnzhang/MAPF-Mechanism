@@ -45,7 +45,9 @@ int main(int argc, char** argv)
         ("nLayers", po::value<int>()->default_value(10),
             "height of the 3D map")
         ("nRuns", po::value<int>()->default_value(1),
-            "rapid random nRuns times")
+            "number of times to run for Monte Carlo PP")
+        ("nRestarts", po::value<int>()->default_value(0),
+            "number of times to restart for CBS/ECBS. They runs for nRestarts+1 times")
         ("dummyStart", po::value<bool>()->default_value(true),
             "whether to create dummy start node")
 
@@ -180,7 +182,11 @@ int main(int argc, char** argv)
     // Create log logdir
     string algo = vm["algo"].as<string>();
     string timestamp = get_curr_time_str();
-    boost::filesystem::path logdir(timestamp + "_" + algo);
+    string uuid = get_uuid();
+    boost::filesystem::path logdir(
+        timestamp + "_" + algo +
+        "_k=" + std::to_string(vm["agentNum"].as<int>()) +
+        "_seed=" + std::to_string(vm["seed"].as<int>()) + "_" + uuid);
     logdir = "logs" / logdir;
     boost::filesystem::create_directories(logdir);
 
@@ -202,7 +208,6 @@ int main(int argc, char** argv)
 
     GLOBAL_VAR::dummy_start_loc = instance.map_size;
 
-    int runs = vm["nRuns"].as<int>();
     //////////////////////////////////////////////////////////////////////
     // initialize the solver
     if (vm["lowLevelSolver"].as<bool>() && algo == "ECBS")
@@ -224,6 +229,7 @@ int main(int argc, char** argv)
         // run
         double runtime = 0;
         int lowerbound = 0;
+        int runs = vm["nRestarts"].as<int>() + 1;
         for (int i = 0; i < runs; i++)
         {
             ecbs.clear();
@@ -253,6 +259,7 @@ int main(int argc, char** argv)
     }
     else if (algo == "PP")
     {
+        int runs = vm["nRuns"].as<int>();
         PP pp(instance, vm["screen"].as<int>(), seed);
         pp.setLowLevelSolver(vm["dummyStart"].as<bool>());
         pp.run(runs, logdir, vm["savePath"].as<bool>(),
@@ -278,6 +285,7 @@ int main(int argc, char** argv)
         // run
         double runtime = 0;
         int lowerbound = 0;
+        int runs = vm["nRestarts"].as<int>() + 1;
         for (int i = 0; i < runs; i++)
         {
             cbs.clear();

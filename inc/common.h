@@ -4,6 +4,9 @@
 #include <boost/unordered_set.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
+#include <boost/uuid/uuid.hpp>            // uuid class
+#include <boost/uuid/uuid_generators.hpp> // generators
+#include <boost/uuid/uuid_io.hpp>         // streaming operators etc.
 #include <ctime>
 #include <fstream>
 #include <iomanip>   // std::setprecision
@@ -111,6 +114,7 @@ vector<double> softmax_vector(const vector<W>& to_normalize, double beta)
 }
 
 string get_curr_time_str();
+string get_uuid();
 
 void write_to_json(json to_write, boost::filesystem::path filename);
 
