@@ -208,6 +208,13 @@ int main(int argc, char** argv)
 
     GLOBAL_VAR::dummy_start_loc = instance.map_size;
 
+    // Log basic info of current exp
+    cout << "Running " << algo << ", map: " << vm["map"].as<string>()
+         << ", n_layers: " << vm["nLayers"].as<int>()
+         << ", n_agents: " << vm["agentNum"].as<int>() << ", seed: " << seed
+         << endl
+         << endl;
+
     //////////////////////////////////////////////////////////////////////
     // initialize the solver
     if (vm["lowLevelSolver"].as<bool>() && algo == "ECBS")
