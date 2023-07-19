@@ -75,7 +75,7 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
         path_table.hit_agents.clear();
         agents[id].path = single_agent_planner.findOptimalPath(
             path_table, *agents[id].distance_to_goal, agents[id].start_location,
-            time_out_sec, dummy_start_node);
+            agents[id].goal_location, time_out_sec, dummy_start_node);
 
         if (time_out_sec < (double)(clock() - start_time) / CLOCKS_PER_SEC)
         {
@@ -195,6 +195,8 @@ void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path,
             if (!validateSolution())
             {
                 cout << "Solution invalid!!!" << endl;
+                string paths_file = "paths_" + std::to_string(i) + ".txt";
+                this->savePaths((logdir_paths / paths_file).string());
                 exit(-1);
             }
 
@@ -426,11 +428,8 @@ void PP::saveResults(boost::filesystem::path filename) const
 bool PP::validateSolution() const
 {
     // Check whether the paths are feasible.
-    // Ignore the first timestep if dummy start is turned on.
+
     int num_of_agents = this->agents.size();
-    int start_timestep = 0;
-    if (this->dummy_start_node)
-        start_timestep = 1;
     // double soc = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
     {
@@ -441,11 +440,17 @@ bool PP::validateSolution() const
                 this->agents[a1].path.size() < this->agents[a2].path.size()
                     ? this->agents[a1].path.size()
                     : this->agents[a2].path.size();
-            for (size_t timestep = start_timestep; timestep < min_path_length;
-                 timestep++)
+            for (size_t timestep = 0; timestep < min_path_length; timestep++)
             {
                 int loc1 = this->agents[a1].path.at(timestep).location;
                 int loc2 = this->agents[a2].path.at(timestep).location;
+
+                // Ignore conflicts at dummy start loc
+                if (loc1 == GLOBAL_VAR::dummy_start_loc ||
+                    loc2 == GLOBAL_VAR::dummy_start_loc)
+                {
+                    continue;
+                }
                 if (loc1 == loc2)
                 {
                     cout << "Agents " << a1 << " and " << a2 << " collides at "

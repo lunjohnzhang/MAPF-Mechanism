@@ -360,14 +360,17 @@ bool PBS::hasConflicts(int a1, int a2) const
         (int)(paths[a1]->size() < paths[a2]->size() ? paths[a1]->size()
                                                     : paths[a2]->size());
 
-    // Ignore the first timestep if dummy start is turned on.
-    int start_timestep = 0;
-    if (this->dummy_start_node)
-        start_timestep = 1;
-    for (int timestep = start_timestep; timestep < min_path_length; timestep++)
+    for (int timestep = 0; timestep < min_path_length; timestep++)
     {
         int loc1 = paths[a1]->at(timestep).location;
         int loc2 = paths[a2]->at(timestep).location;
+
+        // Ignore conflicts at dummy start loc
+        if (loc1 == GLOBAL_VAR::dummy_start_loc ||
+            loc2 == GLOBAL_VAR::dummy_start_loc)
+        {
+            continue;
+        }
         if (loc1 == loc2 or (timestep < min_path_length - 1 and
                              loc1 == paths[a2]->at(timestep + 1).location and
                              loc2 == paths[a1]
@@ -855,10 +858,6 @@ void PBS::clearSearchEngines()
 bool PBS::validateSolution() const
 {
     // Check whether the paths are feasible.
-    // Ignore the first timestep if dummy start is turned on.
-    int start_timestep = 0;
-    if (this->dummy_start_node)
-        start_timestep = 1;
     double soc = 0;
     for (int a1 = 0; a1 < num_of_agents; a1++)
     {
@@ -869,11 +868,16 @@ bool PBS::validateSolution() const
                 best_paths[a1]->size() < best_paths[a2]->size()
                     ? best_paths[a1]->size()
                     : best_paths[a2]->size();
-            for (size_t timestep = start_timestep; timestep < min_path_length;
-                 timestep++)
+            for (size_t timestep = 0; timestep < min_path_length; timestep++)
             {
                 int loc1 = best_paths[a1]->at(timestep).location;
                 int loc2 = best_paths[a2]->at(timestep).location;
+                // Ignore conflicts at dummy start loc
+                if (loc1 == GLOBAL_VAR::dummy_start_loc ||
+                    loc2 == GLOBAL_VAR::dummy_start_loc)
+                {
+                    continue;
+                }
                 if (loc1 == loc2)
                 {
                     cout << "Agents " << a1 << " and " << a2 << " collides at "

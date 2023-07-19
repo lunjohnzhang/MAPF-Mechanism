@@ -15,8 +15,8 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry>& path)
 
 Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
                                      const vector<int>& heuristics,
-                                     int start_location, double time_out_sec,
-                                     bool dummy_start_node)
+                                     int start_location, int goal_location,
+                                     double time_out_sec, bool dummy_start_node)
 {
     Path path;
     num_expanded = 0;
@@ -55,7 +55,7 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
         auto* curr = popNode();
         assert(curr->location >= 0);
         // check if the popped node is a goal
-        if (curr->h_val == 0)  // arrive at the goal location
+        if (curr->location == goal_location)  // arrive at the goal location
         {
             updatePath(curr, path);
             break;
@@ -65,6 +65,7 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
         if (curr->location == GLOBAL_VAR::dummy_start_loc)
         {
             next_locations.emplace_back(start_location);
+            next_locations.emplace_back(curr->location);
         }
         else
         {
@@ -264,6 +265,7 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
         if (curr->location == GLOBAL_VAR::dummy_start_loc)
         {
             next_locations.emplace_back(start_location);
+            next_locations.emplace_back(curr->location);
         }
         else
         {

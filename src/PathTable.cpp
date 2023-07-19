@@ -51,6 +51,12 @@ void PathTable::deletePath(int agent_id, const Path& path)
 
 bool PathTable::constrained(int from, int to, int to_time, int f_value)
 {
+    // Ignore conflicts at dummy start loc
+    if (from == GLOBAL_VAR::dummy_start_loc &&
+        to == GLOBAL_VAR::dummy_start_loc)
+    {
+        return false;
+    }
     if (!table.empty())
     {
         if (table[to].size() > to_time && table[to][to_time] != NO_AGENT)

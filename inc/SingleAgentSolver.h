@@ -12,7 +12,8 @@ public:
     int timestep = 0;
     int num_of_conflicts = 0;
     bool in_openlist = false;
-    bool wait_at_goal; // the action is to wait at the goal vertex or not. This is used for >lenghth constraints
+    bool wait_at_goal;  // the action is to wait at the goal vertex or not. This
+                        // is used for >lenghth constraints
 
     // the following is used to compare nodes in the OPEN list
     struct compare_node
@@ -26,9 +27,9 @@ public:
                 {
                     return rand() % 2 == 0;  // break ties randomly
                 }
-                return n1->h_val >=
-                       n2->h_val;  // break ties towards smaller h_vals (closer
-                                   // to goal location)
+                // break ties towards smaller h_vals (closer
+                // to goal location)
+                return n1->h_val >= n2->h_val;
             }
             return n1->g_val + n1->h_val >= n2->g_val + n2->h_val;
         }
@@ -49,17 +50,16 @@ public:
                     {
                         return rand() % 2 == 0;  // break ties randomly
                     }
-                    return n1->h_val >=
-                           n2->h_val;  // break ties towards smaller h_vals
-                                       // (closer to goal location)
+                    // break ties towards smaller h_vals
+                    // (closer to goal location)
+                    return n1->h_val >= n2->h_val;
                 }
-                return n1->g_val + n1->h_val >=
-                       n2->g_val +
-                           n2->h_val;  // break ties towards smaller f_vals
-                                       // (prefer shorter solutions)
+                // break ties towards smaller f_vals
+                // (prefer shorter solutions)
+                return n1->g_val + n1->h_val >= n2->g_val + n2->h_val;
             }
-            return n1->num_of_conflicts >=
-                   n2->num_of_conflicts;  // n1 > n2 if it has more conflicts
+            // n1 > n2 if it has more conflicts
+            return n1->num_of_conflicts >= n2->num_of_conflicts;
         }
     };  // used by FOCAL (heap) to compare nodes (top of the heap has min
         // number-of-conflicts)
