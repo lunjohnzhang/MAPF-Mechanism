@@ -1,25 +1,26 @@
 #!/bin/bash
 
-USAGE="Usage: bash scripts/run.sh ALGO N_AGENTS SCEN_FILE MAP_FILE N_LAYERS N_RUNS N_SIM N_CORES"
+USAGE="Usage: bash scripts/run.sh ALGO N_AGENTS SCEN_FILE MAP_FILE COST_FILE VALUE_FILE N_LAYERS N_RUNS N_SIM N_CORES ROOT_LOG"
 
-ALGO="$1"
-N_AGENTS="$2"
-SCEN_FILE="$3"
-MAP_FILE="$4"
-N_LAYERS="$5"
-N_RUNS="$6"
-N_SIM="$7"
-N_CORES="$8"
+algos=(
+    "PP"
+    "PP1"
+    "PBS"
+    "ECBS"
+    "CBS"
+)
 
-if [ -z "${ALGO}" ]; then
-    echo "${USAGE}"
-    exit 1
-fi
-
-if [ -z "${N_AGENTS}" ]; then
-    echo "${USAGE}"
-    exit 1
-fi
+SCEN_FILE="$1"  # scene file
+MAP_FILE="$2"   # map file
+COST_MODE="$3"  # cost config
+VALUE_MODE="$4" # value config
+N_LAYERS="$5"   # number of layers
+N_RUNS="$6"     # number of runs for Monte Carlo PP
+N_SIM="$7"      # number of simulations to run
+N_CORES="$8"    # max number of cores available
+N_AGENTS_MIN="$9"
+N_AGENTS_STEP="${10}"
+N_AGENTS_MAX="${11}"
 
 if [ -z "${SCEN_FILE}" ]; then
     echo "${USAGE}"
@@ -27,6 +28,16 @@ if [ -z "${SCEN_FILE}" ]; then
 fi
 
 if [ -z "${MAP_FILE}" ]; then
+    echo "${USAGE}"
+    exit 1
+fi
+
+if [ -z "${COST_MODE}" ]; then
+    echo "${USAGE}"
+    exit 1
+fi
+
+if [ -z "${VALUE_MODE}" ]; then
     echo "${USAGE}"
     exit 1
 fi
@@ -41,7 +52,6 @@ if [ -z "${N_RUNS}" ]; then
     exit 1
 fi
 
-
 if [ -z "${N_SIM}" ]; then
     echo "${USAGE}"
     exit 1
@@ -52,44 +62,58 @@ if [ -z "${N_CORES}" ]; then
     exit 1
 fi
 
-# for i in $(seq 1 $N_SIM); do
-#     ./build/drone \
-#         -m "$MAP_FILE" \
-#         -a "$SCEN_FILE" \
-#         -k "$N_AGENTS" \
-#         -t 120 \
-#         --suboptimality $w \
-#         --nLayers $N_LAYERS \
-#         --nRuns $N_RUNS \
-#         --screen $i &
-# done
+if [ -z "${N_AGENTS_MIN}" ]; then
+    echo "${USAGE}"
+    exit 1
+fi
 
+if [ -z "${N_AGENTS_STEP}" ]; then
+    echo "${USAGE}"
+    exit 1
+fi
+
+if [ -z "${N_AGENTS_MAX}" ]; then
+    echo "${USAGE}"
+    exit 1
+fi
+
+logdir="logs/$(date +'%Y-%m-%d_%H-%M-%S')_meta_exp"
+mkdir -p $logdir
 
 # Ref: https://unix.stackexchange.com/questions/103920/parallelize-a-bash-for-loop/436713#436713
-for i in $(seq 1 $N_SIM); do
-    (
-        echo "starting task $i.."
-        ./build/drone \
-            -m "$MAP_FILE" \
-            -a "$SCEN_FILE" \
-            -k "$N_AGENTS" \
-            -t 120 \
-            --algo $ALGO \
-            --suboptimality 1.05 \
-            --nLayers $N_LAYERS \
-            --nRuns $N_RUNS \
-            --seed $i \
-            --screen 0
-        echo "Done task $i"
-    ) &
+for algo in "${algos[@]}"; do
+    echo $algo
+    logdir_algo="${logdir}/$algo"
+    mkdir -p $logdir_algo
+    for n_agent in $(seq $N_AGENTS_MIN $N_AGENTS_STEP $N_AGENTS_MAX); do
+        for i in $(seq 1 $N_SIM); do
+            (
+                echo "starting task $i.."
+                ./build/drone \
+                    -m "$MAP_FILE" \
+                    -a "$SCEN_FILE" \
+                    -k "$n_agent" \
+                    -t 120 \
+                    --cost config/agent_costs/${COST_MODE}_${n_agent}.json \
+                    --value config/agent_values/${VALUE_MODE}_${n_agent}.json \
+                    --algo $algo \
+                    --suboptimality 1.05 \
+                    --nLayers $N_LAYERS \
+                    --nRuns $N_RUNS \
+                    --seed $i \
+                    --screen 0 \
+                    --root_logdir $logdir_algo
+                echo "Done task $i"
+            ) &
 
-    # allow to execute up to $N jobs in parallel
-    if [[ $(jobs -r -p | wc -l) -ge $N_CORES ]]; then
-        # now there are $N jobs already running, so wait here for any job
-        # to be finished so there is a place to start next one.
-        wait -n
-    fi
-
+            # allow to execute up to $N jobs in parallel
+            if [[ $(jobs -r -p | wc -l) -ge $N_CORES ]]; then
+                # now there are $N jobs already running, so wait here for any
+                # job to be finished so there is a place to start next one.
+                wait -n
+            fi
+        done
+    done
 done
 
 # no more jobs to be started but wait for pending jobs
