@@ -656,7 +656,7 @@ void PBS::savePaths(const string& fileName) const
     for (int i = 0; i < num_of_agents; i++)
     {
         output << "Agent " << i << ": ";
-        for (const auto& t : *paths[i])
+        for (const auto& t : *best_paths[i])
             output << "("
                    << search_engines[0]->instance.getRowCoordinate(t.location)
                    << ","
