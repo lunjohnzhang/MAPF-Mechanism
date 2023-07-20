@@ -25,7 +25,8 @@ public:
             {
                 if (n1->h_val == n2->h_val)
                 {
-                    return rand() % 2 == 0;  // break ties randomly
+                    // Break ties by location id
+                    return n1->location > n2->location;
                 }
                 // break ties towards smaller h_vals (closer
                 // to goal location)
