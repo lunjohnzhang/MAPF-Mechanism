@@ -90,6 +90,7 @@ private:
         heap_focal_t;
     heap_open_t open_list;
     heap_focal_t focal_list;
+    bool optimal = true;
 
     // define typedef for hash_map
     typedef unordered_set<AStarNode*, AStarNode::NodeHasher, AStarNode::eqnode>
