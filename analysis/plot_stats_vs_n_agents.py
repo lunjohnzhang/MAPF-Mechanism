@@ -135,10 +135,12 @@ def collect_results(logdirs):
             if current_algo == "ECBS" and config["highLevelSolver"] == "EES" :
                 current_algo = "EECBS"
             elif current_algo == "PP":
-                if config["nRuns"] > 1:
-                    current_algo = "Monte Carlo PP"
+                if logdir_algo == "PP_A*":
+                    current_algo = "Monte Carlo PP (A*)"
                 else:
-                    current_algo = "First Come First Serve"
+                    current_algo = "Monte Carlo PP"
+            elif current_algo == "PP1":
+                current_algo = "First Come First Serve"
             elif current_algo == "PBS" and config["exhaustiveSearch"]:
                 current_algo = "Exhaustive PBS"
 
