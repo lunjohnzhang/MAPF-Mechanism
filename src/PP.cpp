@@ -17,6 +17,7 @@ PP::PP(Instance& instance, int screen, int seed)
     this->gen = mt19937(this->seed);
 
     this->min_sum_of_cost_wo_i.resize(this->agents.size(), MAX_COST);
+    this->best_paths.resize(this->agents.size(), nullptr);
 }
 
 void PP::reset()
@@ -125,6 +126,16 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
     return sum_of_costs;
 }
 
+void PP::storeBestPath()
+{
+    for (int i = 0; i < this->agents.size(); i++)
+    {
+        if (this->best_paths[i] != nullptr)
+            delete this->best_paths[i];
+        this->best_paths[i] = new Path(this->agents[i].path);
+    }
+}
+
 void PP::savePaths(const string& fileName) const
 {
     std::ofstream output;
@@ -132,7 +143,7 @@ void PP::savePaths(const string& fileName) const
     for (int i = 0; i < this->agents.size(); i++)
     {
         output << "Agent " << i << ": ";
-        for (const auto& t : this->agents[i].path)
+        for (const auto& t : *best_paths[i])
             output << "(" << this->instance.getRowCoordinate(t.location) << ","
                    << this->instance.getColCoordinate(t.location) << ","
                    << this->instance.getLayerCoordinate(t.location) << ")->";
@@ -141,13 +152,8 @@ void PP::savePaths(const string& fileName) const
     output.close();
 }
 
-void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path,
-             double time_out_sec)
+void PP::run(int n_runs, double time_out_sec)
 {
-    // Create path directory
-    boost::filesystem::path logdir_paths = logdir / "paths";
-    boost::filesystem::create_directories(logdir_paths);
-
     this->all_weighted_path_lengths.resize(
         n_runs, vector<double>(this->agents.size(), MAX_COST));
 
@@ -190,13 +196,12 @@ void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path,
             {
                 min_sum_of_cost = sum_of_cost;
                 min_sum_of_cost_idx = i;
+                storeBestPath();
             }
 
             if (!validateSolution())
             {
                 cout << "Solution invalid!!!" << endl;
-                string paths_file = "paths_" + std::to_string(i) + ".txt";
-                this->savePaths((logdir_paths / paths_file).string());
                 exit(-1);
             }
 
@@ -214,13 +219,6 @@ void PP::run(int n_runs, boost::filesystem::path logdir, bool save_path,
                 cout << "Run " << i << ": Sum of cost: " << sum_of_cost << ", "
                      << "suboptimality: " << suboptimality << ", "
                      << "runtime: " << this->runtime << endl;
-            }
-
-            // Save path
-            if (save_path)
-            {
-                string paths_file = "paths_" + std::to_string(i) + ".txt";
-                this->savePaths((logdir_paths / paths_file).string());
             }
         }
         this->reset();

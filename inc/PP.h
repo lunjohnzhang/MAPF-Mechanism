@@ -43,8 +43,7 @@ public:
     void preprocess(bool compute_distance_to_start,
                     bool compute_distance_to_goal,
                     bool compute_mdd);  // compute information in each agent
-    void run(int n_runs, boost::filesystem::path logdir, bool save_path,
-             double time_out_sec);
+    void run(int n_runs, double time_out_sec);
     bool validateSolution() const;
 
     // return the sum of costs of the solution (MAX_COST if failed to solve)
@@ -66,6 +65,7 @@ public:
     void printDependencyGraph() const;
     void savePaths(const string& fileName) const;
     void saveResults(boost::filesystem::path filename) const;
+    void storeBestPath();
 
 private:
     // input params
@@ -73,6 +73,7 @@ private:
     int screen;
     PathTable path_table;
     SpaceTimeAStar single_agent_planner;
+    vector<Path*> best_paths;
 
     // Whether use dummy start node at single agent solver
     bool dummy_start_node;
