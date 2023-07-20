@@ -413,7 +413,7 @@ void PP::saveResults(boost::filesystem::path filename) const
         {"avg_suboptimality", avg_suboptimality},
         {"avg_sum_of_cost", avg_sum_of_cost},
         {"min_suboptimality", min_suboptimality},
-        {"min_sum_of_cost", min_sum_of_cost},
+        {"solution_cost", min_sum_of_cost},
         {"min_sum_of_cost_idx", min_sum_of_cost_idx},
         {"min_sum_of_cost_wo_i", min_sum_of_cost_wo_i},
         {"all_weighted_path_lengths", all_weighted_path_lengths},

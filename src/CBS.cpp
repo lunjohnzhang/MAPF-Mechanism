@@ -1748,6 +1748,7 @@ void CBS::saveMechResults(boost::filesystem::path filename) const
              this->search_engines[0]->instance.goal_locations)},
         {"timeout", timeout},
         {"nodeout", nodeout},
-        {"runtime", runtime}};
+        {"runtime", runtime},
+        {"solution_cost", solution_cost}};
     write_to_json(mechanism_results, filename);
 }

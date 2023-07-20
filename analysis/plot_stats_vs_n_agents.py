@@ -11,6 +11,7 @@ from dataclasses import dataclass, fields
 FIELD_TO_LABEL = {
     "runtime": "Runtime",
     "success": "Success Rate",
+    "solution_cost": "Solution Cost",
 }
 
 
@@ -18,6 +19,7 @@ FIELD_TO_LABEL = {
 class Stats:
     runtime: float = None
     success: int = 0
+    solution_cost: float = None
 
 
 def add_to_dict(key, val, the_dict):
@@ -44,7 +46,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
 
     all_vals = np.array(all_vals, dtype=float)
 
-    if field_name in ["runtime"]:
+    if field_name in ["runtime", "solution_cost"]:
         # Plot mean and 95% cf
         mean_vals = np.mean(all_vals, axis=1)
         cf_vals = st.t.interval(confidence=0.95,
@@ -132,7 +134,7 @@ def collect_results(logdirs):
 
             current_algo = config["algo"]
 
-            if current_algo == "ECBS" and config["highLevelSolver"] == "EES" :
+            if current_algo == "ECBS" and config["highLevelSolver"] == "EES":
                 current_algo = "EECBS"
             elif current_algo == "PP":
                 if logdir_algo == "PP_A*":
@@ -152,8 +154,9 @@ def collect_results(logdirs):
             if (not result["timeout"]
                     and not ("nodeout" in result and result["nodeout"])):
                 success = 1
-
-            stat = Stats(runtime=result["runtime"], success=success)
+            stat = Stats(runtime=result["runtime"],
+                         success=success,
+                         solution_cost=max(result["solution_cost"], 0))
 
             add_to_dict(n_agents, stat, to_plot)
 
