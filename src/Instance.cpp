@@ -7,17 +7,18 @@
 
 int RANDOM_WALK_STEPS = 100000;
 
-Instance::Instance(const string& map_fname, const string& agent_fname, int seed,
-                   int num_of_agents, int num_of_rows, int num_of_cols,
-                   int num_of_layers, int num_of_obstacles, int warehouse_width,
-                   string cost_mode, string value_mode)
+Instance::Instance(const string& map_fname, const string& agent_fname,
+                   const int seed, const string& cost_config,
+                   const string& value_config, int num_of_agents,
+                   int num_of_rows, int num_of_cols, int num_of_layers,
+                   int num_of_obstacles, int warehouse_width)
     : map_fname(map_fname),
       agent_fname(agent_fname),
       seed(seed),
+      cost_config(cost_config),
+      value_config(value_config),
       num_of_agents(num_of_agents),
-      num_of_layers(num_of_layers),
-      cost_mode(cost_mode),
-      value_mode(value_mode)
+      num_of_layers(num_of_layers)
 {
     bool succ = loadMap();
     if (!succ)
@@ -53,39 +54,22 @@ Instance::Instance(const string& map_fname, const string& agent_fname, int seed,
         }
     }
 
-    // Initialize costs and values
+    // Read in costs and values
+    std::ifstream cost_f(this->cost_config);
+    json cost_config_json = json::parse(cost_f);
+    std::ifstream value_f(this->value_config);
+    json value_config_json = json::parse(value_f);
+
+    this->cost_mode = cost_config_json["mode"];
+    this->value_mode = value_config_json["mode"];
+
     this->costs.resize(num_of_agents);
     this->values.resize(num_of_agents);
-    this->gen = mt19937(this->seed);
-    std::uniform_real_distribution<> distr(0.0, 1.0);
 
     for (int i = 0; i < this->num_of_agents; i++)
     {
-        // Sample from uniform distribution between 0 and 1
-        if (this->cost_mode == "uniform")
-        {
-            this->costs[i] = distr(gen);
-        }
-        // With categorical distribution, flip a coin to decide low cost agents
-        // (0.5) and high cost agents (1)
-        else if (this->cost_mode == "categorical")
-        {
-            double coin = distr(gen);
-            if (coin < 0.5)
-                this->costs[i] = 0.5;
-            else
-                this->costs[i] = 1;
-        }
-        else if (this->cost_mode == "all_one")
-        {
-            this->costs.resize(num_of_agents, 1.0);
-        }
-
-        // Sample from uniform distribution between 0 and 1
-        if (this->value_mode == "uniform")
-        {
-            this->values[i] = distr(gen);
-        }
+        this->costs[i] = cost_config_json["vals"][i];
+        this->values[i] = value_config_json["vals"][i];
     }
 }
 

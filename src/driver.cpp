@@ -24,8 +24,9 @@ int main(int argc, char** argv)
     desc.add_options()
 		("help", "produce help message")
 
-        // Algo
-        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP', 'PBS']")
+        // Algo, PP1 refers to PP with nRuns = 1, which is
+        // first-come-first-serve
+        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP', 'PBS', 'PP1']")
 
         // params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
@@ -50,14 +51,15 @@ int main(int argc, char** argv)
             "number of times to restart for CBS/ECBS. They runs for nRestarts+1 times")
         ("dummyStart", po::value<bool>()->default_value(true),
             "whether to create dummy start node")
+        ("root_logdir", po::value<string>()->default_value("logs"))
 
         // params for exhaustive PBS
         ("exhaustiveSearch", po::value<bool>()->default_value(true),
             "exhaustive search with PBS")
 
         // params for mechanism design
-        ("cost_mode", po::value<string>()->default_value("uniform"))
-        ("value_mode", po::value<string>()->default_value("uniform"))
+        ("cost", po::value<string>()->required())
+        ("value", po::value<string>()->required())
 
 		// params for CBS node selection strategies
 		("highLevelSolver", po::value<string>()->default_value("EES"),
@@ -187,7 +189,7 @@ int main(int argc, char** argv)
         timestamp + "_" + algo +
         "_k=" + std::to_string(vm["agentNum"].as<int>()) +
         "_seed=" + std::to_string(vm["seed"].as<int>()) + "_" + uuid);
-    logdir = "logs" / logdir;
+    logdir = vm["root_logdir"].as<string>() / logdir;
     boost::filesystem::create_directories(logdir);
 
     // Write config to logdir
@@ -203,6 +205,7 @@ int main(int argc, char** argv)
     ///////////////////////////////////////////////////////////////////////////
     // load the instance
     Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(), seed,
+                      vm["cost"].as<string>(), vm["value"].as<string>(),
                       vm["agentNum"].as<int>(), 0, 0, vm["nLayers"].as<int>());
     instance.saveAgentProfile(logdir / "agent_profile.json");
 
@@ -264,9 +267,11 @@ int main(int argc, char** argv)
         ecbs.saveMechResults(logdir / "result.json");
         ecbs.clearSearchEngines();
     }
-    else if (algo == "PP")
+    else if (algo == "PP" || algo == "PP1")
     {
         int runs = vm["nRuns"].as<int>();
+        if (algo == "PP1")
+            runs = 1;
         PP pp(instance, vm["screen"].as<int>(), seed);
         pp.setLowLevelSolver(vm["dummyStart"].as<bool>());
         pp.run(runs, logdir, vm["savePath"].as<bool>(),
