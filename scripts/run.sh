@@ -94,8 +94,8 @@ for algo in "${algos[@]}"; do
                     -a "$SCEN_FILE" \
                     -k "$n_agent" \
                     -t 120 \
-                    --cost config/agent_costs/${COST_MODE}_${n_agent}.json \
-                    --value config/agent_values/${VALUE_MODE}_${n_agent}.json \
+                    --cost config/agent_costs/${COST_MODE}/1000_$i.json \
+                    --value config/agent_values/${VALUE_MODE}/1000_$i.json \
                     --algo $algo \
                     --suboptimality 1.05 \
                     --nLayers $N_LAYERS \
