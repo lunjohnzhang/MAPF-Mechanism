@@ -31,7 +31,7 @@ int main(int argc, char** argv)
         // params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
         ("agents,a", po::value<string>()->required(), "input file for agents")
-        ("saveStats", po::value<bool>()->default_value(true), "Save statistics on disk.")
+        // ("saveStats", po::value<bool>()->default_value(true), "Save statistics on disk.")
         ("savePath", po::value<bool>()->default_value(true), "Save path on disk.")
         ("seed", po::value<int>()->default_value(0), "global random seed")
 		// ("output,o", po::value<string>(), "output file for statistics")
@@ -207,7 +207,6 @@ int main(int argc, char** argv)
     Instance instance(vm["map"].as<string>(), vm["agents"].as<string>(), seed,
                       vm["cost"].as<string>(), vm["value"].as<string>(),
                       vm["agentNum"].as<int>(), 0, 0, vm["nLayers"].as<int>());
-    instance.saveAgentProfile(logdir / "agent_profile.json");
 
     GLOBAL_VAR::dummy_start_loc = instance.map_size;
 
@@ -252,19 +251,19 @@ int main(int argc, char** argv)
             cout << "Failed to find solutions in Run " << i << endl;
         }
         ecbs.runtime = runtime;
-        if (vm["saveStats"].as<bool>())
-            ecbs.saveResults((logdir / "stats.csv").string(),
-                             vm["agents"].as<string>());
+        // if (vm["saveStats"].as<bool>())
+        //     ecbs.saveResults((logdir / "stats.csv").string(),
+        //                      vm["agents"].as<string>());
         if (ecbs.solution_found && vm["savePath"].as<bool>())
             ecbs.savePaths((logdir / "paths.txt").string());
         /*size_t pos = (logdir / "stats.csv").string().rfind('.');      //
         position of the file extension string output_name = (logdir /
         "stats.csv").string().substr(0, pos);     // get the name without
         extension cbs.saveCT(output_name); // for debug*/
-        if (vm["stats"].as<bool>())
-            ecbs.saveStats((logdir / "stats.csv").string(),
-                           vm["agents"].as<string>());
-        ecbs.saveMechResults(logdir / "result.json");
+        // if (vm["stats"].as<bool>())
+        //     ecbs.saveStats((logdir / "stats.csv").string(),
+        //                    vm["agents"].as<string>());
+        ecbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
         ecbs.clearSearchEngines();
     }
     else if (algo == "PP" || algo == "PP1")
@@ -311,15 +310,15 @@ int main(int argc, char** argv)
             cout << "Failed to find solutions in Run " << i << endl;
         }
         cbs.runtime = runtime;
-        if (vm["saveStats"].as<bool>())
-            cbs.saveResults((logdir / "stats.csv").string(),
-                            vm["agents"].as<string>());
+        // if (vm["saveStats"].as<bool>())
+        //     cbs.saveResults((logdir / "stats.csv").string(),
+        //                     vm["agents"].as<string>());
         if (cbs.solution_found && vm["savePath"].as<bool>())
             cbs.savePaths((logdir / "paths.txt").string());
-        if (vm["stats"].as<bool>())
-            cbs.saveStats((logdir / "stats.csv").string(),
-                          vm["agents"].as<string>());
-        cbs.saveMechResults(logdir / "result.json");
+        // if (vm["stats"].as<bool>())
+        //     cbs.saveStats((logdir / "stats.csv").string(),
+        //                   vm["agents"].as<string>());
+        cbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
         cbs.clearSearchEngines();
     }
     else if (algo == "PBS")
@@ -331,12 +330,12 @@ int main(int argc, char** argv)
         // run
         double runtime = 0;
         pbs.solve(vm["cutoffTime"].as<double>());
-        if (vm["saveStats"].as<bool>())
-            pbs.saveResults((logdir / "stats.csv").string(),
-                            vm["agents"].as<string>());
+        // if (vm["saveStats"].as<bool>())
+        //     pbs.saveResults((logdir / "stats.csv").string(),
+        //                     vm["agents"].as<string>());
         if (pbs.solution_found && vm["savePath"].as<bool>())
             pbs.savePaths((logdir / "paths.txt").string());
-        pbs.saveMechResults(logdir / "result.json");
+        pbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
         /*size_t pos = (logdir / "stats.csv").string().rfind('.');      //
         position of the file extension string output_name = (logdir /
         "stats.csv").string().substr(0, pos);     // get the name without

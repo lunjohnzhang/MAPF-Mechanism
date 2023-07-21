@@ -63,11 +63,11 @@ public:
     ~PBS();
 
     // Save results
-    void saveResults(const string& fileName, const string& instanceName) const;
+    // void saveResults(const string& fileName, const string& instanceName) const;
     void saveCT(const string& fileName) const;     // write the CT to a file
     void savePaths(const string& fileName) const;  // write the paths to a file
     // write mechanism related results
-    void saveMechResults(boost::filesystem::path filename) const;
+    void saveResults(boost::filesystem::path filename, const string& instanceName) const;
     void clear();  // used for rapid random  restart
 private:
     conflict_selection conflict_seletion_rule;

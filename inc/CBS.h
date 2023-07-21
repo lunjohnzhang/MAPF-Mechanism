@@ -142,11 +142,12 @@ public:
     ~CBS();
 
     // Save results
-    void saveResults(const string& fileName, const string& instanceName) const;
-    void saveStats(const string& fileName, const string& instanceName);
+    void saveResults(boost::filesystem::path filename,
+                     const string& instanceName) const;
+    // void saveStats(const string& fileName, const string& instanceName);
     void saveCT(const string& fileName) const;     // write the CT to a file
     void savePaths(const string& fileName) const;  // write the paths to a file
-    void saveMechResults(boost::filesystem::path filename) const;
+    // void saveMechResults(boost::filesystem::path filename) const;
     void clear();  // used for rapid random  restart
 
     int getInitialPathLength(int agent) const

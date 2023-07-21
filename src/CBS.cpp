@@ -932,112 +932,117 @@ void CBS::printResults() const
     }*/
 }
 
-void CBS::saveResults(const string& fileName, const string& instanceName) const
+// void CBS::saveResults(const string& fileName, const string& instanceName)
+// const
+// {
+//     std::ifstream infile(fileName);
+//     bool exist = infile.good();
+//     infile.close();
+//     if (!exist)
+//     {
+//         ofstream addHeads(fileName);
+//         addHeads
+//             << "runtime,#high-level expanded,#high-level generated,#low-level
+//             "
+//                "expanded,#low-level generated,"
+//             << "solution cost,min f value,root g value, root f value,"
+//             << "#adopt bypasses,"
+//             << "cardinal conflicts,"
+//             << "standard conflicts,rectangle conflicts,corridor "
+//                "conflicts,target conflicts,mutex conflicts,"
+//             << "chosen from cleanup,chosen from open,chosen from focal,"
+//             << "#solve MVCs,#merge MDDs,#solve 2 agents,#memoization,"
+//             << "cost error,distance error,"
+//             << "runtime of building heuristic graph,runtime of solving MVC,"
+//             << "runtime of detecting conflicts,"
+//             << "runtime of rectangle conflicts,runtime of corridor "
+//                "conflicts,runtime of mutex conflicts,"
+//             << "runtime of building MDDs,runtime of building constraint "
+//                "tables,runtime of building CATs,"
+//             << "runtime of path finding,runtime of generating child nodes,"
+//             << "preprocessing runtime,solver name,instance name" << endl;
+//         addHeads.close();
+//     }
+//     ofstream stats(fileName, std::ios::app);
+//     stats << runtime << "," << num_HL_expanded << "," << num_HL_generated <<
+//     ","
+//           << num_LL_expanded << "," << num_LL_generated << "," <<
+
+//         solution_cost << "," << cost_lowerbound << "," << dummy_start->g_val
+//           << "," << dummy_start->g_val + dummy_start->h_val << "," <<
+
+//         num_adopt_bypass << "," << num_cardinal_conflicts << ","
+//           << num_standard_conflicts << "," << num_rectangle_conflicts << ","
+//           << num_corridor_conflicts << "," << num_target_conflicts << ","
+//           << num_mutex_conflicts << "," <<
+
+//         num_cleanup << "," << num_open << "," << num_focal << "," <<
+
+//         heuristic_helper.num_solve_MVC << "," <<
+//         heuristic_helper.num_merge_MDDs
+//           << "," << heuristic_helper.num_solve_2agent_problems << ","
+//           << heuristic_helper.num_memoization << ","
+//           << heuristic_helper.getCostError() << ","
+//           << heuristic_helper.getDistanceError() << ","
+//           << heuristic_helper.runtime_build_dependency_graph << ","
+//           << heuristic_helper.runtime_solve_MVC << "," <<
+
+//         runtime_detect_conflicts << ","
+//           << "," << corridor_helper.accumulated_runtime << ","
+//           << mutex_helper.accumulated_runtime << ","
+//           << mdd_helper.accumulated_runtime << "," << runtime_build_CT << ","
+//           << runtime_build_CAT << "," << runtime_path_finding << ","
+//           << runtime_generate_child << "," <<
+
+//         runtime_preprocessing << "," << getSolverName() << "," <<
+//         instanceName
+//           << endl;
+//     stats.close();
+// }
+
+// void CBS::saveStats(const string& fileName, const string& instanceName)
+// {
+/*cout << "writing logs..." << endl;
+ofstream stats(fileName+ ".txt", std::ios::app);
+stats << instanceName << endl;
+stats << "agent 1,agent 2,node id,#expanded nodes, h" << endl;
+for (auto ins : heuristic_helper.sub_instances)
 {
-    std::ifstream infile(fileName);
+        stats << get<0>(ins) << "," << get<1>(ins) << "," <<
+get<2>(ins)->time_generated << "," << get<3>(ins) << "," << get<4>(ins) <<
+endl;
+}
+stats.close();*/
+/*if (solution_found)
+{
+    std::ifstream infile(fileName + ".heuristic");
     bool exist = infile.good();
     infile.close();
     if (!exist)
     {
-        ofstream addHeads(fileName);
-        addHeads
-            << "runtime,#high-level expanded,#high-level generated,#low-level "
-               "expanded,#low-level generated,"
-            << "solution cost,min f value,root g value, root f value,"
-            << "#adopt bypasses,"
-            << "cardinal conflicts,"
-            << "standard conflicts,rectangle conflicts,corridor "
-               "conflicts,target conflicts,mutex conflicts,"
-            << "chosen from cleanup,chosen from open,chosen from focal,"
-            << "#solve MVCs,#merge MDDs,#solve 2 agents,#memoization,"
-            << "cost error,distance error,"
-            << "runtime of building heuristic graph,runtime of solving MVC,"
-            << "runtime of detecting conflicts,"
-            << "runtime of rectangle conflicts,runtime of corridor "
-               "conflicts,runtime of mutex conflicts,"
-            << "runtime of building MDDs,runtime of building constraint "
-               "tables,runtime of building CATs,"
-            << "runtime of path finding,runtime of generating child nodes,"
-            << "preprocessing runtime,solver name,instance name" << endl;
-        addHeads.close();
+        ofstream addHeads(fileName + ".heuristic");
+        addHeads << "h*,solution depth,WDG,greedy WDG,DG,MVC on all
+conflicts,#conflicts,#CT nodes" << endl; addHeads.close();
     }
-    ofstream stats(fileName, std::ios::app);
-    stats << runtime << "," << num_HL_expanded << "," << num_HL_generated << ","
-          << num_LL_expanded << "," << num_LL_generated << "," <<
-
-        solution_cost << "," << cost_lowerbound << "," << dummy_start->g_val
-          << "," << dummy_start->g_val + dummy_start->h_val << "," <<
-
-        num_adopt_bypass << "," << num_cardinal_conflicts << ","
-          << num_standard_conflicts << "," << num_rectangle_conflicts << ","
-          << num_corridor_conflicts << "," << num_target_conflicts << ","
-          << num_mutex_conflicts << "," <<
-
-        num_cleanup << "," << num_open << "," << num_focal << "," <<
-
-        heuristic_helper.num_solve_MVC << "," << heuristic_helper.num_merge_MDDs
-          << "," << heuristic_helper.num_solve_2agent_problems << ","
-          << heuristic_helper.num_memoization << ","
-          << heuristic_helper.getCostError() << ","
-          << heuristic_helper.getDistanceError() << ","
-          << heuristic_helper.runtime_build_dependency_graph << ","
-          << heuristic_helper.runtime_solve_MVC << "," <<
-
-        runtime_detect_conflicts << ","
-          << "," << corridor_helper.accumulated_runtime << ","
-          << mutex_helper.accumulated_runtime << ","
-          << mdd_helper.accumulated_runtime << "," << runtime_build_CT << ","
-          << runtime_build_CAT << "," << runtime_path_finding << ","
-          << runtime_generate_child << "," <<
-
-        runtime_preprocessing << "," << getSolverName() << "," << instanceName
-          << endl;
-    stats.close();
-}
-
-void CBS::saveStats(const string& fileName, const string& instanceName)
-{
-    /*cout << "writing logs..." << endl;
-    ofstream stats(fileName+ ".txt", std::ios::app);
-    stats << instanceName << endl;
-    stats << "agent 1,agent 2,node id,#expanded nodes, h" << endl;
-    for (auto ins : heuristic_helper.sub_instances)
-    {
-            stats << get<0>(ins) << "," << get<1>(ins) << "," <<
-    get<2>(ins)->time_generated << "," << get<3>(ins) << "," << get<4>(ins) <<
-    endl;
-    }
-    stats.close();*/
-    /*if (solution_found)
-    {
-        std::ifstream infile(fileName + ".heuristic");
-        bool exist = infile.good();
-        infile.close();
-        if (!exist)
-        {
-            ofstream addHeads(fileName + ".heuristic");
-            addHeads << "h*,solution depth,WDG,greedy WDG,DG,MVC on all
-    conflicts,#conflicts,#CT nodes" << endl; addHeads.close();
-        }
-        ofstream out(fileName + ".heuristic", std::ios::app);
-        out << solution_cost - dummy_start->g_val << "," // h*
-            << goal_node->depth << "," // depth
-            << dummy_start->h_val << ","; // WDG
-        updatePaths(dummy_start);
-        findConflicts(*dummy_start);
-        classifyConflicts(*dummy_start);
-        // int greedy = heuristic_helper.greedyWDG(*dummy_start, time_limit);
-        int greedy = 0;
-        heuristic_helper.type = heuristics_type::DG;
-        int dg = heuristic_helper.computeInformedHeuristics(*dummy_start,
-    time_limit);
-        // int mvc = heuristic_helper.MVConAllConflicts(*dummy_start);
-        int mvc = 0;
-        out << greedy << "," << dg << "," << mvc << "," <<
-    dummy_start->conflicts.size() << "," << dummy_start->distance_to_go << endl;
-        out.close();
-    }*/
-}
+    ofstream out(fileName + ".heuristic", std::ios::app);
+    out << solution_cost - dummy_start->g_val << "," // h*
+        << goal_node->depth << "," // depth
+        << dummy_start->h_val << ","; // WDG
+    updatePaths(dummy_start);
+    findConflicts(*dummy_start);
+    classifyConflicts(*dummy_start);
+    // int greedy = heuristic_helper.greedyWDG(*dummy_start, time_limit);
+    int greedy = 0;
+    heuristic_helper.type = heuristics_type::DG;
+    int dg = heuristic_helper.computeInformedHeuristics(*dummy_start,
+time_limit);
+    // int mvc = heuristic_helper.MVConAllConflicts(*dummy_start);
+    int mvc = 0;
+    out << greedy << "," << dg << "," << mvc << "," <<
+dummy_start->conflicts.size() << "," << dummy_start->distance_to_go << endl;
+    out.close();
+}*/
+// }
 
 void CBS::saveCT(const string& fileName) const  // write the CT to a file
 {
@@ -1731,7 +1736,8 @@ void CBS::clear()
     solution_cost = -2;
 }
 
-void CBS::saveMechResults(boost::filesystem::path filename) const
+void CBS::saveResults(boost::filesystem::path filename,
+                      const string& instanceName) const
 {
     json mechanism_results = {
         {"map_dimension",
@@ -1749,6 +1755,41 @@ void CBS::saveMechResults(boost::filesystem::path filename) const
         {"timeout", timeout},
         {"nodeout", nodeout},
         {"runtime", runtime},
-        {"solution_cost", solution_cost}};
+        {"solution_cost", solution_cost},
+        {"num_HL_expanded", num_HL_expanded},
+        {"num_HL_generated", num_HL_generated},
+        {"num_LL_expanded", num_LL_expanded},
+        {"num_LL_generated", num_LL_generated},
+        {"cost_lowerbound", cost_lowerbound},
+        {"root_g_val", dummy_start->g_val},
+        {"root_f_val", dummy_start->g_val + dummy_start->h_val},
+        {"num_adopt_bypass", num_adopt_bypass},
+        {"num_cardinal_conflicts", num_cardinal_conflicts},
+        {"num_standard_conflicts", num_standard_conflicts},
+        {"num_rectangle_conflicts", num_rectangle_conflicts},
+        {"num_corridor_conflicts", num_corridor_conflicts},
+        {"num_target_conflicts", num_target_conflicts},
+        {"num_mutex_conflicts", num_mutex_conflicts},
+        {"num_cleanup", num_cleanup},
+        {"num_open", num_open},
+        {"num_focal", num_focal},
+        {"num_solve_MVC", heuristic_helper.num_solve_MVC},
+        {"num_merge_MDDs", heuristic_helper.num_merge_MDDs},
+        {"num_memoization", heuristic_helper.num_memoization},
+        {"cost_error", heuristic_helper.getCostError()},
+        {"distance_error", heuristic_helper.getDistanceError()},
+        {"runtime_build_dependency_graph",
+         heuristic_helper.runtime_build_dependency_graph},
+        {"runtime_solve_MVC", heuristic_helper.runtime_solve_MVC},
+        {"runtime_detect_conflicts", runtime_detect_conflicts},
+        {"runtime_corridor", corridor_helper.accumulated_runtime},
+        {"runtime_mutex", mutex_helper.accumulated_runtime},
+        {"runtime_mdd", mdd_helper.accumulated_runtime},
+        {"runtime_build_CAT", runtime_build_CAT},
+        {"runtime_path_finding", runtime_path_finding},
+        {"runtime_generate_child", runtime_generate_child},
+        {"runtime_preprocessing", runtime_preprocessing},
+        {"solver_name", getSolverName()},
+        {"instance_name", instanceName}};
     write_to_json(mechanism_results, filename);
 }

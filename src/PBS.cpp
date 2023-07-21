@@ -546,37 +546,42 @@ void PBS::printResults() const
     }*/
 }
 
-void PBS::saveResults(const string& fileName, const string& instanceName) const
-{
-    std::ifstream infile(fileName);
-    bool exist = infile.good();
-    infile.close();
-    if (!exist)
-    {
-        ofstream addHeads(fileName);
-        addHeads << "runtime,#high-level expanded,#high-level "
-                    "generated,#low-level expanded,#low-level generated,"
-                 << "solution cost,root g value,"
-                 << "runtime of detecting conflicts,runtime of building "
-                    "constraint tables,runtime of building CATs,"
-                 << "runtime of path finding,runtime of generating child nodes,"
-                 << "preprocessing runtime,solver name,instance name" << endl;
-        addHeads.close();
-    }
-    ofstream stats(fileName, std::ios::app);
-    stats << runtime << "," << num_HL_expanded << "," << num_HL_generated << ","
-          << num_LL_expanded << "," << num_LL_generated << "," <<
+// void PBS::saveResults(const string& fileName, const string& instanceName)
+// const
+// {
+//     std::ifstream infile(fileName);
+//     bool exist = infile.good();
+//     infile.close();
+//     if (!exist)
+//     {
+//         ofstream addHeads(fileName);
+//         addHeads << "runtime,#high-level expanded,#high-level "
+//                     "generated,#low-level expanded,#low-level generated,"
+//                  << "solution cost,root g value,"
+//                  << "runtime of detecting conflicts,runtime of building "
+//                     "constraint tables,runtime of building CATs,"
+//                  << "runtime of path finding,runtime of generating child
+//                  nodes,"
+//                  << "preprocessing runtime,solver name,instance name" <<
+//                  endl;
+//         addHeads.close();
+//     }
+//     ofstream stats(fileName, std::ios::app);
+//     stats << runtime << "," << num_HL_expanded << "," << num_HL_generated <<
+//     ","
+//           << num_LL_expanded << "," << num_LL_generated << "," <<
 
-        solution_cost << "," << dummy_start->cost << "," <<
+//         solution_cost << "," << dummy_start->cost << "," <<
 
-        runtime_detect_conflicts << "," << runtime_build_CT << ","
-          << runtime_build_CAT << "," << runtime_path_finding << ","
-          << runtime_generate_child << "," <<
+//         runtime_detect_conflicts << "," << runtime_build_CT << ","
+//           << runtime_build_CAT << "," << runtime_path_finding << ","
+//           << runtime_generate_child << "," <<
 
-        runtime_preprocessing << "," << getSolverName() << "," << instanceName
-          << endl;
-    stats.close();
-}
+//         runtime_preprocessing << "," << getSolverName() << "," <<
+//         instanceName
+//           << endl;
+//     stats.close();
+// }
 
 void PBS::saveCT(const string& fileName) const  // write the CT to a file
 {
@@ -1033,7 +1038,8 @@ void PBS::storeBestPath()
     }
 }
 
-void PBS::saveMechResults(boost::filesystem::path filename) const
+void PBS::saveResults(boost::filesystem::path filename,
+                      const string& instanceName) const
 {
     // Calculate (if necessary) and store the following results:
     // 1. Weighted sum of path length by the costs of the agents.
@@ -1065,7 +1071,7 @@ void PBS::saveMechResults(boost::filesystem::path filename) const
         }
     }
 
-    json mechanism_results = {
+    json results = {
         {"map_dimension",
          vector<int>{this->instance.num_of_rows, this->instance.num_of_cols,
                      this->instance.num_of_layers}},
@@ -1081,6 +1087,19 @@ void PBS::saveMechResults(boost::filesystem::path filename) const
         {"nodeout", nodeout},
         {"runtime", runtime},
         {"n_solutions", n_solutions},
-        {"solution_cost", solution_cost}};
-    write_to_json(mechanism_results, filename);
+        {"solution_cost", solution_cost},
+        {"num_HL_expanded", num_HL_expanded},
+        {"num_HL_generated", num_HL_generated},
+        {"num_LL_expanded", num_LL_expanded},
+        {"num_LL_generated", num_LL_generated},
+        {"root_g_val", dummy_start->cost},
+        {"runtime_detect_conflicts", runtime_detect_conflicts},
+        {"runtime_build_CT", runtime_build_CT},
+        {"runtime_build_CAT", runtime_build_CAT},
+        {"runtime_path_finding", runtime_path_finding},
+        {"runtime_generate_child", runtime_generate_child},
+        {"runtime_preprocessing", runtime_preprocessing},
+        {"solver_name", getSolverName()},
+        {"instance_name", instanceName}};
+    write_to_json(results, filename);
 }
