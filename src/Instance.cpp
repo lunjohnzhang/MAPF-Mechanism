@@ -172,7 +172,10 @@ void Instance::generateRandomAgents(int warehouse_width)
 
 bool Instance::validMove(int curr, int next) const
 {
-    if (next < 0 || next >= map_size)
+    if (next < 0 || next >= map_size ||
+        // Go from non-dummy start to dummy start: not valid!
+        (curr != GLOBAL_VAR::dummy_start_loc &&
+         next == GLOBAL_VAR::dummy_start_loc))
         return false;
     if (my_map[next])
         return false;

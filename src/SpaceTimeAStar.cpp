@@ -73,7 +73,7 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
         for (int next_location : next_locations)
         {
             int next_timestep = curr->timestep + 1;
-            if (path_table.makespan < next_timestep)
+            if (path_table.makespan + 1 < next_timestep)
             {
                 // now everything is static, so switch to space A* where we
                 // always use the same timestep

@@ -84,13 +84,13 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
             failed_agent_id = id;
             break;
         }
-        for (auto& agent : path_table.hit_agents)
-        {
-            // only consider agents that lead to shorter paths
-            if (agents[id].path.empty() ||
-                agent.second < (int)(agents[id].path.size()) - 1)
-                dependency_graph[id].insert(agent.first);
-        }
+        // for (auto& agent : path_table.hit_agents)
+        // {
+        //     // only consider agents that lead to shorter paths
+        //     if (agents[id].path.empty() ||
+        //         agent.second < (int)(agents[id].path.size()) - 1)
+        //         dependency_graph[id].insert(agent.first);
+        // }
         if (agents[id].path.empty())
         {
             sum_of_costs = MAX_COST;
