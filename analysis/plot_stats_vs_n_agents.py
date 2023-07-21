@@ -37,12 +37,36 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         fig, ax = plt.subplots(1, 1, figsize=(8, 8))
 
     to_plot = sorted(to_plot.items())
-    agent_nums = [agent_num for agent_num, _ in to_plot]
+    agent_nums = []
     # for field in fields(Stats):
     all_vals = []
     for n_agent, stats in to_plot:
         # print(n_agent)
+        breakout = False
+        # For solution cost, ignore the entry if success rate is not 100%
+        if field_name == "solution_cost":
+            # breakpoint()
+
+            for stat in stats:
+                if stat.success == 0:
+                    # should be ignored
+                    breakout = True
+                    break
+
+            # for i in range(all_vals.shape[0]):
+            #     if 0 in all_vals[i]: # some run failed
+            #         continue
+            #     else:
+            #         all_vals_to_plot.append(all_vals[i])
+
+        # else:
+        if breakout:
+            break
+        agent_nums.append(n_agent)
         all_vals.append([getattr(stat, field_name) for stat in stats])
+
+    if len(all_vals) == 0:
+        return
 
     all_vals = np.array(all_vals, dtype=float)
 
@@ -96,6 +120,13 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             os.path.join(
                 logdirs,
                 f"{field_name}.png",
+            ),
+            dpi=300,
+        )
+        fig.savefig(
+            os.path.join(
+                logdirs,
+                f"{field_name}.pdf",
             ),
             dpi=300,
         )
@@ -156,7 +187,7 @@ def collect_results(logdirs):
                 success = 1
             stat = Stats(runtime=result["runtime"],
                          success=success,
-                         solution_cost=max(result["solution_cost"], 0))
+                         solution_cost=result["solution_cost"])
 
             add_to_dict(n_agents, stat, to_plot)
 
@@ -206,6 +237,14 @@ def main(logdirs, add_legend=True):
             os.path.join(
                 logdirs,
                 f"{field.name}.png",
+            ),
+            dpi=300,
+        )
+
+        fig.savefig(
+            os.path.join(
+                logdirs,
+                f"{field.name}.pdf",
             ),
             dpi=300,
         )
