@@ -77,8 +77,14 @@ if [ -z "${N_AGENTS_MAX}" ]; then
     exit 1
 fi
 
-logdir="logs/$(date +'%Y-%m-%d_%H-%M-%S')_meta_exp"
+# Create logdir
+map_file_base=$(basename "$MAP_FILE")
+map_file_name="${map_file_base%.*}"
+
+logdir="logs/$(date +'%Y-%m-%d_%H-%M-%S')_${map_file_name}_layer=${N_LAYERS}"
 mkdir -p $logdir
+
+exit
 
 # Ref: https://unix.stackexchange.com/questions/103920/parallelize-a-bash-for-loop/436713#436713
 for algo in "${algos[@]}"; do
