@@ -194,8 +194,8 @@ for ((i = 0; i < ${#all_algos_exp[@]}; i++)); do
             -a $SCEN_FILE \
             -k ${all_n_agents_exp[$i]} \
             -t 120 \
-            --cost config/agent_costs/${COST_MODE}/1000_$i.json \
-            --value config/agent_values/${VALUE_MODE}/1000_$i.json \
+            --cost config/agent_costs/${COST_MODE}/1000_${all_seeds_exp[$i]}.json \
+            --value config/agent_values/${VALUE_MODE}/1000_${all_seeds_exp[$i]}.json \
             --algo ${all_algos_exp[$i]} \
             --suboptimality 1.05 \
             --nLayers $N_LAYERS \
