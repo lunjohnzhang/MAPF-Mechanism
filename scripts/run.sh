@@ -84,8 +84,6 @@ map_file_name="${map_file_base%.*}"
 logdir="logs/$(date +'%Y-%m-%d_%H-%M-%S')_${map_file_name}_layer=${N_LAYERS}"
 mkdir -p $logdir
 
-exit
-
 # Ref: https://unix.stackexchange.com/questions/103920/parallelize-a-bash-for-loop/436713#436713
 for algo in "${algos[@]}"; do
     echo $algo
