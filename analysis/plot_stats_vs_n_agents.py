@@ -12,6 +12,15 @@ FIELD_TO_LABEL = {
     "runtime": "Runtime",
     "success": "Success Rate",
     "solution_cost": "Solution Cost",
+    "social_welfare": "Social Welfare",
+}
+
+ALGO_TO_COLOR_MARKER = {
+    "EECBS": ("green", "o"),  # circle
+    "CBS": ("red", "^"),  # triangle_up
+    "Monte Carlo PP": ("orange", "s"),  # square
+    "First Come First Serve": ("blue", "P"),  # plus
+    "Exhaustive PBS": ("purple", "*"),
 }
 
 
@@ -20,6 +29,7 @@ class Stats:
     runtime: float = None
     success: int = 0
     solution_cost: float = None
+    social_welfare: float = None
 
 
 def add_to_dict(key, val, the_dict):
@@ -44,22 +54,13 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         # print(n_agent)
         breakout = False
         # For solution cost, ignore the entry if success rate is not 100%
-        if field_name == "solution_cost":
-            # breakpoint()
-
+        if field_name in ["solution_cost", "social_welfare"]:
             for stat in stats:
                 if stat.success == 0:
                     # should be ignored
                     breakout = True
                     break
 
-            # for i in range(all_vals.shape[0]):
-            #     if 0 in all_vals[i]: # some run failed
-            #         continue
-            #     else:
-            #         all_vals_to_plot.append(all_vals[i])
-
-        # else:
         if breakout:
             break
         agent_nums.append(n_agent)
@@ -70,7 +71,9 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
 
     all_vals = np.array(all_vals, dtype=float)
 
-    if field_name in ["runtime", "solution_cost"]:
+    color, marker = ALGO_TO_COLOR_MARKER[algo]
+
+    if field_name in ["runtime", "solution_cost", "social_welfare"]:
         # Plot mean and 95% cf
         mean_vals = np.mean(all_vals, axis=1)
         cf_vals = st.t.interval(confidence=0.95,
@@ -81,17 +84,17 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         ax.plot(
             agent_nums,
             mean_vals,
-            marker=".",
-            # color=color,
+            marker=marker,
+            color=color,
             label=algo,
-            # label=f"{map_from}",
+            markersize=10,
         )
         ax.fill_between(
             agent_nums,
             cf_vals[1],
             cf_vals[0],
             alpha=0.5,
-            # color=color,
+            color=color,
         )
 
     elif field_name in ["success"]:
@@ -101,10 +104,10 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         ax.plot(
             agent_nums,
             success_rate,
-            marker=".",
-            # color=color,
+            marker=marker,
+            color=color,
             label=algo,
-            # label=f"{map_from}",
+            markersize=10,
         )
 
     if save_fig:
@@ -185,9 +188,16 @@ def collect_results(logdirs):
             if (not result["timeout"]
                     and not ("nodeout" in result and result["nodeout"])):
                 success = 1
+
+            # Social welfare is sum of values - solution cost
+            values = result["values"]
+            solution_cost = result["solution_cost"]
+            social_welfare = np.sum(values) - solution_cost
+
             stat = Stats(runtime=result["runtime"],
                          success=success,
-                         solution_cost=result["solution_cost"])
+                         solution_cost=solution_cost,
+                         social_welfare=social_welfare)
 
             add_to_dict(n_agents, stat, to_plot)
 
