@@ -238,8 +238,11 @@ else
 fi
 
 # Ref: https://unix.stackexchange.com/questions/103920/parallelize-a-bash-for-loop/436713#436713
-
-for ((i = 0; i < ${#all_algos_exp[@]}; i++)); do
+# Run experiments in random order to distribute the workload
+order=($(seq 1 ${#all_algos_exp[@]} | shuf))
+for i in "${order[@]}"; do
+# for ((i = 0; i < ${#all_algos_exp[@]}; i++)); do
+    i=$((i - 1))
     (
         echo "starting task $i.."
         ./build/drone \
