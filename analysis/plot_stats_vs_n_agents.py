@@ -13,6 +13,7 @@ FIELD_TO_LABEL = {
     "success": "Success Rate",
     "solution_cost": "Solution Cost",
     "social_welfare": "Social Welfare",
+    "social_welfare_subopt": "Social Welfare Subopt"
 }
 
 ALGO_TO_COLOR_MARKER = {
@@ -31,12 +32,17 @@ class Stats:
     solution_cost: float = None
     social_welfare: float = None
 
+    # Diff social_welfare (OUR_ALGO - BAELINE)
+    social_welfare_subopt: float = None
 
-def add_to_dict(key, val, the_dict):
+
+def add_to_dict(key, val, seed, the_dict):
     if key in the_dict:
-        the_dict[key].append(val)
+        the_dict[key][seed] = val
     else:
-        the_dict[key] = [val]
+        # Initialize the sub-dictionary
+        the_dict[key] = {seed: val}
+        # the_dict[key] = [val]
 
 
 def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
@@ -54,8 +60,10 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         # print(n_agent)
         breakout = False
         # For solution cost, ignore the entry if success rate is not 100%
-        if field_name in ["solution_cost", "social_welfare"]:
-            for stat in stats:
+        if field_name in [
+                "solution_cost", "social_welfare", "social_welfare_subopt"
+        ]:
+            for _, stat in stats.items():
                 if stat.success == 0:
                     # should be ignored
                     breakout = True
@@ -64,7 +72,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         if breakout:
             break
         agent_nums.append(n_agent)
-        all_vals.append([getattr(stat, field_name) for stat in stats])
+        all_vals.append([getattr(stat, field_name) for _, stat in stats.items()])
 
     if len(all_vals) == 0:
         return
@@ -73,7 +81,10 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
 
     color, marker = ALGO_TO_COLOR_MARKER[algo]
 
-    if field_name in ["runtime", "solution_cost", "social_welfare"]:
+    if field_name in [
+            "runtime", "solution_cost", "social_welfare",
+            "social_welfare_subopt"
+    ]:
         # Plot mean and 95% cf
         mean_vals = np.mean(all_vals, axis=1)
         cf_vals = st.t.interval(confidence=0.95,
@@ -87,7 +98,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             marker=marker,
             color=color,
             label=algo,
-            markersize=10,
+            markersize=15,
         )
         ax.fill_between(
             agent_nums,
@@ -107,7 +118,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             marker=marker,
             color=color,
             label=algo,
-            markersize=10,
+            markersize=15,
         )
 
     if save_fig:
@@ -135,16 +146,24 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         )
 
 
-def collect_results(logdirs):
+def collect_results(logdirs, baseline_algo="PP1"):
     # All results to plot, key is the current algo, value is the `to_plot` dict
     # of the current algo
     print(f"Collecting results")
 
     to_plot_algo = {}
-    # all_logdir_algo_f = []
+
+    # Obtain all_logdir_algo.
+    # We want to collect results for `baseline_algo` first to compute
+    # suboptimalities
+    all_logdir_algo = os.listdir(logdirs)
+    all_logdir_algo.remove(baseline_algo)
+    all_logdir_algo.insert(0, baseline_algo)
+    baseline_algo_name = None
+    baseline_logdir_algo_f = None
 
     # Loop through all logdirs to get the stats
-    for logdir_algo in os.listdir(logdirs):
+    for logdir_algo in all_logdir_algo:
         logdir_algo_f = os.path.join(logdirs, logdir_algo)
         if not os.path.isdir(logdir_algo_f):
             continue
@@ -153,7 +172,8 @@ def collect_results(logdirs):
         current_algo = None
 
         # All results to plot for currrent algo, key is n_agents, value are
-        # list of Stats
+        # list of Stats indexed by the seed. The same seed corresponds to the
+        # same scen and same cost/value configs.
         to_plot = {}
         for logdir in os.listdir(logdir_algo_f):
             logdir_f = os.path.join(logdir_algo_f, logdir)
@@ -181,6 +201,7 @@ def collect_results(logdirs):
                 current_algo = "Exhaustive PBS"
 
             n_agents = config["agentNum"]
+            seed = config["seed"]
 
             # success? We have well-formed instances, so the only way to fail
             # is time/node out.
@@ -194,12 +215,25 @@ def collect_results(logdirs):
             solution_cost = result["solution_cost"]
             social_welfare = np.sum(values) - solution_cost
 
+            social_welfare_subopt = None
+
+            # Compute suboptimalities
+            if logdir_algo == baseline_algo:
+                social_welfare_subopt = 0
+                baseline_algo_name = current_algo
+                baseline_logdir_algo_f = logdir_algo_f
+            else:
+                baseline_stat = to_plot_algo[(
+                    baseline_algo_name, baseline_logdir_algo_f)][n_agents][seed]
+                social_welfare_subopt = social_welfare - baseline_stat.social_welfare
+
             stat = Stats(runtime=result["runtime"],
                          success=success,
                          solution_cost=solution_cost,
-                         social_welfare=social_welfare)
+                         social_welfare=social_welfare,
+                         social_welfare_subopt=social_welfare_subopt)
 
-            add_to_dict(n_agents, stat, to_plot)
+            add_to_dict(n_agents, stat, seed, to_plot)
 
         to_plot_algo[(current_algo, logdir_algo_f)] = to_plot
     return to_plot_algo
