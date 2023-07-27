@@ -33,6 +33,39 @@ function split_str() {
     echo "${PARTS[2]}$IFS${PARTS[3]}$IFS${PARTS[4]}"
 }
 
+function get_filename() {
+    full_path=$1
+
+    filename_w_suffix=$(get_dirname $full_path)
+
+    # Remove suffix
+    IFS="."
+    read -ra PARTS <<<"$filename_w_suffix"
+    echo "${PARTS[0]}"
+}
+
+function get_cost_value_id() {
+    # Get id of cost, and value from seed
+    seed=$1
+
+    if (($seed % 10 == 0)); then
+        echo "$(($seed / 10))"
+    else
+        echo "$(($seed / 10 + 1))"
+    fi
+}
+
+function get_scen_id() {
+    # Get id scen from seed
+    seed=$1
+
+    if (($seed % 10 == 0)); then
+        echo 10
+    else
+        echo "$(($seed % 10))"
+    fi
+}
+
 # function contains() {
 #     local e match="$1"
 #     shift
@@ -113,6 +146,9 @@ all_algos_exp=()
 all_n_agents_exp=()
 all_seeds_exp=()
 all_root_logdir=()
+all_cost_files=()
+all_value_files=()
+all_scen_files=()
 
 if [ -z "${RELOAD_DIR}" ]; then
     echo "New experiment"
@@ -122,16 +158,25 @@ if [ -z "${RELOAD_DIR}" ]; then
 
     logdir="logs/$(date +'%Y-%m-%d_%H-%M-%S')_${map_file_name}_layer=${N_LAYERS}"
     mkdir -p $logdir
-    for i in $(seq 1 $N_SIM); do
-        for algo in "${algos[@]}"; do
-            for n_agent in $(seq $N_AGENTS_MIN $N_AGENTS_STEP $N_AGENTS_MAX); do
-                logdir_algo="${logdir}/$algo"
-                mkdir -p $logdir_algo
-                # echo "$algo $n_agent $i $logdir_algo"
-                all_algos_exp+=("$algo")
-                all_n_agents_exp+=("$n_agent")
-                all_seeds_exp+=("$i")
-                all_root_logdir+=("$logdir_algo")
+    for algo in "${algos[@]}"; do
+        for n_agent in $(seq $N_AGENTS_MIN $N_AGENTS_STEP $N_AGENTS_MAX); do
+            # Obtain name of the map so that we can infer the scen filenames
+            map_name=$(get_filename $MAP_FILE)
+            i=1 # The seed
+            for cost_value_id in $(seq 1 10); do
+                for scen_id in $(seq 1 10); do
+                    all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
+                    all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
+                    all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    logdir_algo="${logdir}/$algo"
+                    mkdir -p $logdir_algo
+                    # echo "$algo $n_agent $i $logdir_algo"
+                    all_algos_exp+=("$algo")
+                    all_n_agents_exp+=("$n_agent")
+                    all_seeds_exp+=("$i")
+                    all_root_logdir+=("$logdir_algo")
+                    i=$((i + 1))
+                done
             done
         done
     done
@@ -157,21 +202,29 @@ else
                     else
                         # Remove the original exp log directory
                         echo did not run ${exp_fingerprint}, removing...
-                        rm -rf $exp_dir
+                        # rm -rf $exp_dir
                     fi
                 fi
             done
         fi
     done
-
-    # Iterate through and find experiments to rerun
     for i in $(seq 1 $N_SIM); do
+        # Iterate through and find experiments to rerun
         for algo in "${algos[@]}"; do
             for n_agent in $(seq $N_AGENTS_MIN $N_AGENTS_STEP $N_AGENTS_MAX); do
                 exp_fingerprint="${algo}_k=${n_agent}_seed=${i}"
 
                 if [[ ! -n ${have_run[$exp_fingerprint]} ]]; then
+                    # Get cost, value, scen id from seed
+                    cost_value_id=$(get_cost_value_id $i)
+                    scen_id=$(get_scen_id $i)
+
+                    # Obtain name of the map so that we can infer the scen filenames
+                    map_name=$(get_filename $MAP_FILE)
                     echo "Have_run does not contain $exp_fingerprint"
+                    all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
+                    all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
+                    all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
                     mkdir -p $logdir_algo
                     all_algos_exp+=("$algo")
@@ -191,11 +244,11 @@ for ((i = 0; i < ${#all_algos_exp[@]}; i++)); do
         echo "starting task $i.."
         ./build/drone \
             -m $MAP_FILE \
-            -a $SCEN_FILE \
+            -a ${all_scen_files[$i]} \
             -k ${all_n_agents_exp[$i]} \
             -t 120 \
-            --cost config/agent_costs/${COST_MODE}/1000_${all_seeds_exp[$i]}.json \
-            --value config/agent_values/${VALUE_MODE}/1000_${all_seeds_exp[$i]}.json \
+            --cost ${all_cost_files[$i]} \
+            --value ${all_value_files[$i]} \
             --algo ${all_algos_exp[$i]} \
             --suboptimality 1.05 \
             --nLayers $N_LAYERS \
@@ -212,7 +265,7 @@ for ((i = 0; i < ${#all_algos_exp[@]}; i++)); do
         # job to be finished so there is a place to start next one.
         wait -n
     fi
-    # echo "${all_algos_exp[$i]} ${all_n_agents_exp[$i]} ${all_seeds_exp[$i]} ${all_root_logdir[$i]}"
+    # echo "${all_algos_exp[$i]} ${all_n_agents_exp[$i]} ${all_seeds_exp[$i]} ${all_root_logdir[$i]} ${all_scen_files[$i]} ${all_cost_files[$i]} ${all_value_files[$i]}"
 done
 
 # for algo in "${algos[@]}"; do
