@@ -303,8 +303,8 @@ done
 #     done
 # done
 
-# # no more jobs to be started but wait for pending jobs
-# # (all need to be finished)
-# wait
+# no more jobs to be started but wait for pending jobs
+# (all need to be finished)
+wait
 
 echo "all done"
