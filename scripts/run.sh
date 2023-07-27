@@ -202,7 +202,7 @@ else
                     else
                         # Remove the original exp log directory
                         echo did not run ${exp_fingerprint}, removing...
-                        # rm -rf $exp_dir
+                        rm -rf $exp_dir
                     fi
                 fi
             done
