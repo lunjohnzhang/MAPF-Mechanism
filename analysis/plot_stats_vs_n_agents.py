@@ -13,7 +13,8 @@ FIELD_TO_LABEL = {
     "success": "Success Rate",
     "solution_cost": "Solution Cost",
     "social_welfare": "Social Welfare",
-    "social_welfare_subopt": "Social Welfare Subopt"
+    "social_welfare_subopt": "Social Welfare Diff w/ FCFS",
+    "solution_cost_subopt": "Solution Cost Diff w/ FCFS",
 }
 
 ALGO_TO_COLOR_MARKER = {
@@ -31,6 +32,9 @@ class Stats:
     success: int = 0
     solution_cost: float = None
     social_welfare: float = None
+
+    # Diff solution_cost (OUR_ALGO - BASELINE)
+    solution_cost_subopt: float = None
 
     # Diff social_welfare (OUR_ALGO - BAELINE)
     social_welfare_subopt: float = None
@@ -61,7 +65,10 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         breakout = False
         # For solution cost, ignore the entry if success rate is not 100%
         if field_name in [
-                "solution_cost", "social_welfare", "social_welfare_subopt"
+                "solution_cost",
+                "social_welfare",
+                "social_welfare_subopt",
+                "solution_cost_subopt",
         ]:
             for _, stat in stats.items():
                 if stat.success == 0:
@@ -72,7 +79,8 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         if breakout:
             break
         agent_nums.append(n_agent)
-        all_vals.append([getattr(stat, field_name) for _, stat in stats.items()])
+        all_vals.append(
+            [getattr(stat, field_name) for _, stat in stats.items()])
 
     if len(all_vals) == 0:
         return
@@ -82,8 +90,11 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     color, marker = ALGO_TO_COLOR_MARKER[algo]
 
     if field_name in [
-            "runtime", "solution_cost", "social_welfare",
-            "social_welfare_subopt"
+            "runtime",
+            "solution_cost",
+            "social_welfare",
+            "social_welfare_subopt",
+            "solution_cost_subopt",
     ]:
         # Plot mean and 95% cf
         mean_vals = np.mean(all_vals, axis=1)
@@ -216,22 +227,27 @@ def collect_results(logdirs, baseline_algo="PP1"):
             social_welfare = np.sum(values) - solution_cost
 
             social_welfare_subopt = None
+            solution_cost_subopt = None
 
             # Compute suboptimalities
             if logdir_algo == baseline_algo:
                 social_welfare_subopt = 0
+                solution_cost_subopt = 0
                 baseline_algo_name = current_algo
                 baseline_logdir_algo_f = logdir_algo_f
             else:
                 baseline_stat = to_plot_algo[(
-                    baseline_algo_name, baseline_logdir_algo_f)][n_agents][seed]
+                    baseline_algo_name,
+                    baseline_logdir_algo_f)][n_agents][seed]
                 social_welfare_subopt = social_welfare - baseline_stat.social_welfare
+                solution_cost_subopt = solution_cost - baseline_stat.solution_cost
 
             stat = Stats(runtime=result["runtime"],
                          success=success,
                          solution_cost=solution_cost,
                          social_welfare=social_welfare,
-                         social_welfare_subopt=social_welfare_subopt)
+                         social_welfare_subopt=social_welfare_subopt,
+                         solution_cost_subopt=solution_cost_subopt)
 
             add_to_dict(n_agents, stat, seed, to_plot)
 
