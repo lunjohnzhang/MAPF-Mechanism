@@ -316,7 +316,7 @@ def main(logdirs, add_legend=True, legend_only=False):
                 # borderaxespad=0,)
             )
             for line in legend.get_lines():
-                line.set_linewidth(4.0)
+                line.set_linewidth(2.0)
 
         ax.figure.tight_layout()
 
