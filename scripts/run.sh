@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USAGE="Usage: bash scripts/run.sh ALGO N_AGENTS SCEN_FILE MAP_FILE COST_FILE VALUE_FILE N_LAYERS N_RUNS N_SIM N_CORES ROOT_LOG"
+USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX [RELOAD_DIR]"
 
 algos=(
     "PP"
@@ -73,23 +73,18 @@ function get_scen_id() {
 #     return 1
 # }
 
-SCEN_FILE="$1"  # scene file
-MAP_FILE="$2"   # map file
-COST_MODE="$3"  # cost config
-VALUE_MODE="$4" # value config
-N_LAYERS="$5"   # number of layers
-N_RUNS="$6"     # number of runs for Monte Carlo PP
-N_SIM="$7"      # number of simulations to run
-N_CORES="$8"    # max number of cores available
-N_AGENTS_MIN="$9"
-N_AGENTS_STEP="${10}"
-N_AGENTS_MAX="${11}"
-RELOAD_DIR="${12}"
-
-if [ -z "${SCEN_FILE}" ]; then
-    echo "${USAGE}"
-    exit 1
-fi
+# SCEN_FILE="$1"  # scene file
+MAP_FILE="$1"   # map file
+COST_MODE="$2"  # cost config
+VALUE_MODE="$3" # value config
+N_LAYERS="$4"   # number of layers
+N_RUNS="$5"     # number of runs for Monte Carlo PP
+N_SIM="$6"      # number of simulations to run
+N_CORES="$7"    # max number of cores available
+N_AGENTS_MIN="$8"
+N_AGENTS_STEP="$9"
+N_AGENTS_MAX="${10}"
+RELOAD_DIR="${11}"
 
 if [ -z "${MAP_FILE}" ]; then
     echo "${USAGE}"
