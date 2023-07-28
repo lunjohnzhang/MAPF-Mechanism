@@ -23,7 +23,7 @@ ALGO_TO_COLOR_MARKER = {
     "CBS": ("red", "^"),  # triangle_up
     "Monte Carlo PP": ("orange", "s"),  # square
     "First Come First Serve": ("blue", "P"),  # plus
-    "Exhaustive PBS": ("purple", "*"),
+    "Exhaustive PBS": ("purple", "*"), # star
 }
 
 
@@ -275,13 +275,17 @@ def collect_results(logdirs, baseline_algo="PP1"):
     return to_plot_algo
 
 
-def main(logdirs, add_legend=True):
+def main(logdirs, add_legend=True, legend_only=False):
     to_plot_algo = collect_results(logdirs)
 
     for field in fields(Stats):
         print(f"Plotting {field.name}")
 
-        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        figsize = (8, 8)
+        if legend_only:
+            figsize = (20, 8)
+
+        fig, ax = plt.subplots(1, 1, figsize=figsize)
 
         for algo, to_plot in to_plot_algo.items():
             algo_name, logdir_algo_f = algo
@@ -297,12 +301,15 @@ def main(logdirs, add_legend=True):
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         if add_legend:
+            ncol = 1
+            if legend_only:
+                ncol = len(ALGO_TO_COLOR_MARKER.keys())
             handles, labels = ax.get_legend_handles_labels()
             legend = ax.legend(
                 handles,
                 labels,
                 loc="lower left",
-                ncol=1,
+                ncol=ncol,
                 fontsize=25,
                 mode="expand",
                 bbox_to_anchor=(0, 1.02, 1, 0.2),  # for ncols=2
@@ -328,6 +335,9 @@ def main(logdirs, add_legend=True):
             ),
             dpi=300,
         )
+
+        if legend_only:
+            break
 
 
 if __name__ == "__main__":
