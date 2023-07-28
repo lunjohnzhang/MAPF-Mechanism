@@ -240,11 +240,13 @@ fi
 # Ref: https://unix.stackexchange.com/questions/103920/parallelize-a-bash-for-loop/436713#436713
 # Run experiments in random order to distribute the workload
 order=($(seq 1 ${#all_algos_exp[@]} | shuf))
+task_idx=1
+n_tasks=${#all_algos_exp[@]}
 for i in "${order[@]}"; do
 # for ((i = 0; i < ${#all_algos_exp[@]}; i++)); do
     i=$((i - 1))
     (
-        echo "starting task $i.."
+        echo "starting task $task_idx/$n_tasks.."
         ./build/drone \
             -m $MAP_FILE \
             -a ${all_scen_files[$i]} \
@@ -259,8 +261,10 @@ for i in "${order[@]}"; do
             --seed ${all_seeds_exp[$i]} \
             --screen 0 \
             --root_logdir ${all_root_logdir[$i]}
-        echo "Done task $i"
+        echo "Done task $task_idx/$n_tasks"
     ) &
+
+    task_idx=$((task_idx + 1))
 
     # allow to execute up to $N jobs in parallel
     if [[ $(jobs -r -p | wc -l) -ge $N_CORES ]]; then
