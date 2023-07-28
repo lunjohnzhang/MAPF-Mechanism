@@ -15,6 +15,7 @@ FIELD_TO_LABEL = {
     "social_welfare": "Social Welfare",
     "social_welfare_subopt": "Social Welfare Diff w/ FCFS",
     "solution_cost_subopt": "Solution Cost Diff w/ FCFS",
+    "std_payment": "Payment Std",
 }
 
 ALGO_TO_COLOR_MARKER = {
@@ -32,6 +33,10 @@ class Stats:
     success: int = 0
     solution_cost: float = None
     social_welfare: float = None
+
+    # Standard deviation of the payments of the agents. It measures the
+    # "fairness" of the algorithm.
+    std_payment: float = None
 
     # Diff solution_cost (OUR_ALGO - BASELINE)
     solution_cost_subopt: float = None
@@ -51,6 +56,11 @@ def add_to_dict(key, val, seed, the_dict):
 
 def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     """Convert dict of Stats to numpy array and plot"""
+
+    # Ignore payment plotting for CBS and EECBS
+    if algo in ["CBS", "EECBS"] and field_name in ["std_payment"]:
+        return
+
     save_fig = False
     if ax is None:
         save_fig = True
@@ -69,6 +79,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
                 "social_welfare",
                 "social_welfare_subopt",
                 "solution_cost_subopt",
+                "std_payment",
         ]:
             for _, stat in stats.items():
                 if stat.success == 0:
@@ -95,6 +106,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             "social_welfare",
             "social_welfare_subopt",
             "solution_cost_subopt",
+            "std_payment",
     ]:
         # Plot mean and 95% cf
         mean_vals = np.mean(all_vals, axis=1)
@@ -242,12 +254,20 @@ def collect_results(logdirs, baseline_algo="PP1"):
                 social_welfare_subopt = social_welfare - baseline_stat.social_welfare
                 solution_cost_subopt = solution_cost - baseline_stat.solution_cost
 
+            # Compute std of payments
+            # For CBS and EECBS, there is no payment, so ignore
+            std_payment = None
+            if "payments" in result:
+                payments = result["payments"]
+                std_payment = np.std(payments)
+
             stat = Stats(runtime=result["runtime"],
                          success=success,
                          solution_cost=solution_cost,
                          social_welfare=social_welfare,
                          social_welfare_subopt=social_welfare_subopt,
-                         solution_cost_subopt=solution_cost_subopt)
+                         solution_cost_subopt=solution_cost_subopt,
+                         std_payment=std_payment)
 
             add_to_dict(n_agents, stat, seed, to_plot)
 
