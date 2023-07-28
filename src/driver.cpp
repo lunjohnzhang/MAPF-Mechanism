@@ -248,7 +248,7 @@ int main(int argc, char** argv)
                 break;
             lowerbound = ecbs.getLowerBound();
             ecbs.randomRoot = true;
-            cout << "Failed to find solutions in Run " << i << endl;
+            cout << "ECBS: Failed to find solutions in Run " << i << endl;
         }
         ecbs.runtime = runtime;
         // if (vm["saveStats"].as<bool>())
@@ -291,7 +291,7 @@ int main(int argc, char** argv)
         cbs.setConflictSelectionRule(conflict);
         cbs.setNodeSelectionRule(n);
         cbs.setSavingStats(vm["stats"].as<bool>());
-        cbs.setHighLevelSolver(s, vm["suboptimality"].as<double>());
+        cbs.setHighLevelSolver(s, 1.0);
         cbs.setLowLevelSolver(-1, vm["dummyStart"].as<bool>());
         //////////////////////////////////////////////////////////////////////
         // run
@@ -307,7 +307,7 @@ int main(int argc, char** argv)
                 break;
             lowerbound = cbs.getLowerBound();
             cbs.randomRoot = true;
-            cout << "Failed to find solutions in Run " << i << endl;
+            cout << "CBS: Failed to find solutions in Run " << i << endl;
         }
         cbs.runtime = runtime;
         // if (vm["saveStats"].as<bool>())
