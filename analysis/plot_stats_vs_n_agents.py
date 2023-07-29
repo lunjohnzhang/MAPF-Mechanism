@@ -23,7 +23,7 @@ ALGO_TO_COLOR_MARKER = {
     "CBS": ("red", "^"),  # triangle_up
     "Monte Carlo PP": ("orange", "s"),  # square
     "First Come First Serve": ("blue", "P"),  # plus
-    "Exhaustive PBS": ("purple", "*"), # star
+    "Exhaustive PBS": ("purple", "*"),  # star
 }
 
 
@@ -59,7 +59,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
 
     # Ignore payment plotting for CBS and EECBS
     if algo in ["CBS", "EECBS"] and field_name in ["std_payment"]:
-        return
+        return None
 
     save_fig = False
     if ax is None:
@@ -167,6 +167,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             ),
             dpi=300,
         )
+    return agent_nums
 
 
 def collect_results(logdirs, baseline_algo="PP1"):
@@ -287,14 +288,27 @@ def main(logdirs, add_legend=True, legend_only=False):
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
+        longest_agent_nums = None
+
         for algo, to_plot in to_plot_algo.items():
             algo_name, logdir_algo_f = algo
-            plot_stats_single(logdir_algo_f, to_plot, field.name, algo_name,
-                              ax)
+            agent_nums = plot_stats_single(logdir_algo_f, to_plot, field.name,
+                                           algo_name, ax)
+
+            # We want the longest because some agent_nums might be incomplete
+            # because of failed runs
+            if agent_nums is not None and (
+                    longest_agent_nums is None
+                    or len(longest_agent_nums) < len(agent_nums)):
+                longest_agent_nums = agent_nums
 
         # Post process
-        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=25)
-        ax.set_xlabel("Number of Agents", fontsize=25)
+        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=30)
+        ax.set_xlabel("Number of Agents", fontsize=30)
+
+        ax.set_xticks(longest_agent_nums)
+        ax.set_xticklabels(longest_agent_nums)
+
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
         ax.tick_params(axis='both', which='major', labelsize=20)
