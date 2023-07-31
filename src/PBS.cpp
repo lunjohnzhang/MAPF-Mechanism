@@ -30,6 +30,7 @@ PBS::PBS(const Instance& instance, bool sipp, int screen)
     }
 
     this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
+    this->to_be_replanned.resize(num_of_agents, true);
 }
 
 bool PBS::solve(double _time_limit)
@@ -168,6 +169,89 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
                 lookup_table[a1] = true;
             }
         }
+
+        while (!to_replan.empty())
+        {
+            int a, rank;
+            tie(rank, a) = to_replan.top();
+            to_replan.pop();
+            lookup_table[a] = false;
+            if (screen > 2)
+                cout << "Replan agent " << a << endl;
+            // Re-plan path
+            set<int> higher_agents;
+            auto p = ordered_agents.rbegin();
+            std::advance(p, rank);
+            assert(*p == a);
+            getHigherPriorityAgents(p, higher_agents);
+            assert(!higher_agents.empty());
+            if (screen > 2)
+            {
+                cout << "Higher agents: ";
+                for (auto i : higher_agents) cout << i << ",";
+                cout << endl;
+            }
+
+            Path new_path;
+            // Prune the child node if no solution is found.
+            if (!findPathForSingleAgent(*node, higher_agents, a, new_path))
+            {
+                delete node;
+                parent->children[child_id] = nullptr;
+                return false;
+            }
+
+            // Delete old conflicts
+            for (auto c = node->conflicts.begin(); c != node->conflicts.end();)
+            {
+                if ((*c)->a1 == a or (*c)->a2 == a)
+                    c = node->conflicts.erase(c);
+                else
+                    ++c;
+            }
+
+            // Update conflicts and to_replan
+            set<int> lower_agents;
+            auto p2 = ordered_agents.begin();
+            std::advance(p2, num_of_agents - 1 - rank);
+            assert(*p2 == a);
+            getLowerPriorityAgents(p2, lower_agents);
+            if (screen > 2 and !lower_agents.empty())
+            {
+                cout << "Lower agents: ";
+                for (auto i : lower_agents) cout << i << ",";
+                cout << endl;
+            }
+
+            // Find new conflicts
+            for (auto a2 = 0; a2 < num_of_agents; a2++)
+            {
+                // already in to_replan or has higher priority
+                if (a2 == a or lookup_table[a2] or higher_agents.count(a2) > 0)
+                    continue;
+                auto t = clock();
+                if (hasConflicts(a, a2))
+                {
+                    shared_ptr<Conflict> new_conflict(new Conflict());
+                    new_conflict->pbsConflict(a, a2);
+                    node->conflicts.emplace_back(new_conflict);
+
+                    // Has a collision with a lower priority agent
+                    if (lower_agents.count(a2) > 0)
+                    {
+                        if (screen > 1)
+                            cout << "\t" << a2
+                                 << " needs to be replanned due to collisions "
+                                    "with "
+                                 << a << endl;
+                        to_replan.emplace(topological_orders[a2], a2);
+                        lookup_table[a2] = true;
+                    }
+                }
+                runtime_detect_conflicts +=
+                    (double)(clock() - t) / CLOCKS_PER_SEC;
+            }
+        }
     }
 
     // With exhausive PBS, we need to replan all agents with lower priority
@@ -187,87 +271,58 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
             to_replan.emplace(topological_orders[agent], agent);
             lookup_table[agent] = true;
         }
-    }
 
-    while (!to_replan.empty())
-    {
-        int a, rank;
-        tie(rank, a) = to_replan.top();
-        to_replan.pop();
-        lookup_table[a] = false;
-        if (screen > 2)
-            cout << "Replan agent " << a << endl;
-        // Re-plan path
-        set<int> higher_agents;
-        auto p = ordered_agents.rbegin();
-        std::advance(p, rank);
-        assert(*p == a);
-        getHigherPriorityAgents(p, higher_agents);
-        assert(!higher_agents.empty());
-        if (screen > 2)
+        while (!to_replan.empty())
         {
-            cout << "Higher agents: ";
-            for (auto i : higher_agents) cout << i << ",";
-            cout << endl;
-        }
+            int a, rank;
+            tie(rank, a) = to_replan.top();
+            to_replan.pop();
+            lookup_table[a] = false;
+            if (screen > 2)
+                cout << "Replan agent " << a << endl;
+            // Re-plan path
+            set<int> higher_agents;
+            auto p = ordered_agents.rbegin();
+            std::advance(p, rank);
+            assert(*p == a);
+            getHigherPriorityAgents(p, higher_agents);
+            assert(!higher_agents.empty());
+            if (screen > 2)
+            {
+                cout << "Higher agents: ";
+                for (auto i : higher_agents) cout << i << ",";
+                cout << endl;
+            }
 
-        Path new_path;
-        // Prune the child node if no solution is found.
-        if (!findPathForSingleAgent(*node, higher_agents, a, new_path))
-        {
-            delete node;
-            parent->children[child_id] = nullptr;
-            return false;
+            Path new_path;
+            // Prune the child node if no solution is found.
+            if (!findPathForSingleAgent(*node, higher_agents, a, new_path))
+            {
+                // cout << "should never happen" << endl;
+                delete node;
+                parent->children[child_id] = nullptr;
+                return false;
+            }
         }
 
         // Delete old conflicts
-        for (auto c = node->conflicts.begin(); c != node->conflicts.end();)
-        {
-            if ((*c)->a1 == a or (*c)->a2 == a)
-                c = node->conflicts.erase(c);
-            else
-                ++c;
-        }
-
-        // Update conflicts and to_replan
-        set<int> lower_agents;
-        auto p2 = ordered_agents.begin();
-        std::advance(p2, num_of_agents - 1 - rank);
-        assert(*p2 == a);
-        getLowerPriorityAgents(p2, lower_agents);
-        if (screen > 2 and !lower_agents.empty())
-        {
-            cout << "Lower agents: ";
-            for (auto i : lower_agents) cout << i << ",";
-            cout << endl;
-        }
+        node->conflicts.clear();
 
         // Find new conflicts
-        for (auto a2 = 0; a2 < num_of_agents; a2++)
+        auto t = clock();
+        for (auto a = 0; a < num_of_agents; a++)
         {
-            // already in to_replan or has higher priority
-            if (a2 == a or lookup_table[a2] or higher_agents.count(a2) > 0)
-                continue;
-            auto t = clock();
-            if (hasConflicts(a, a2))
+            for (auto a2 = a + 1; a2 < num_of_agents; a2++)
             {
-                shared_ptr<Conflict> new_conflict(new Conflict());
-                new_conflict->pbsConflict(a, a2);
-                node->conflicts.emplace_back(new_conflict);
-
-                // Has a collision with a lower priority agent
-                if (lower_agents.count(a2) > 0)
+                if (hasConflicts(a, a2))
                 {
-                    if (screen > 1)
-                        cout << "\t" << a2
-                             << " needs to be replanned due to collisions with "
-                             << a << endl;
-                    to_replan.emplace(topological_orders[a2], a2);
-                    lookup_table[a2] = true;
+                    shared_ptr<Conflict> new_conflict(new Conflict());
+                    new_conflict->pbsConflict(a, a2);
+                    node->conflicts.emplace_back(new_conflict);
                 }
             }
-            runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
         }
+        runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
     }
 
     num_HL_generated++;
@@ -282,27 +337,39 @@ bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents,
 {
     clock_t t = clock();
 
-    // TODO: add runtime check to the low level
-    //  Build initial constraints based on higher_agents.
-    ConstraintTable initial_constraints(this->instance.num_of_cols,
-                                        this->instance.map_size);
-    for (int a : higher_agents)
+    // Check if current path exist in cache
+    bool exist;
+    tie(exist, new_path) = checkPathCache(a, higher_agents);
+
+    // Path does not exist in cache, replan.
+    if (!exist)
     {
-        initial_constraints.insert2CT(*paths[a]);
+        // TODO: add runtime check to the low level
+        //  Build initial constraints based on higher_agents.
+        ConstraintTable initial_constraints(this->instance.num_of_cols,
+                                            this->instance.map_size);
+        for (int a : higher_agents)
+        {
+            initial_constraints.insert2CT(*paths[a]);
+        }
+        runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
+
+        // new_path = search_engines[a]->findOptimalPath(higher_agents, paths,
+        // a);
+        new_path = search_engines[a]->findOptimalPath(
+            node, initial_constraints, paths, a, 0, dummy_start_node);
+
+        num_LL_expanded += search_engines[a]->num_expanded;
+        num_LL_generated += search_engines[a]->num_generated;
+        runtime_build_CT += search_engines[a]->runtime_build_CT;
+        runtime_build_CAT += search_engines[a]->runtime_build_CAT;
+        runtime_path_finding += (double)(clock() - t) / CLOCKS_PER_SEC;
+        if (new_path.empty())
+            return false;
+
+        // Add new path to cache
+        addPathToCache(a, higher_agents, new_path);
     }
-    runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
-
-    // new_path = search_engines[a]->findOptimalPath(higher_agents, paths, a);
-    new_path = search_engines[a]->findOptimalPath(
-        node, initial_constraints, paths, a, 0, dummy_start_node);
-
-    num_LL_expanded += search_engines[a]->num_expanded;
-    num_LL_generated += search_engines[a]->num_generated;
-    runtime_build_CT += search_engines[a]->runtime_build_CT;
-    runtime_build_CAT += search_engines[a]->runtime_build_CAT;
-    runtime_path_finding += (double)(clock() - t) / CLOCKS_PER_SEC;
-    if (new_path.empty())
-        return false;
 
     // With exhaustive PBS, the same path could be found for the same agent.
     if (this->exhaustive_search)
@@ -697,6 +764,7 @@ bool PBS::terminate(PBSNode* curr)
         // found a solution
         solution_found = true;
         this->n_solutions += 1;
+        // printPriorityGraph();
 
         // With exhaustive PBS, remember the current best solution and
         // continue until all nodes are closed.
@@ -750,6 +818,7 @@ bool PBS::terminate(PBSNode* curr)
         }
         return terminate_search;
     }
+    solution_found = false;
 
     // Terminate if time/node runs out.
     if (timeAndNodeOut())
@@ -1100,6 +1169,85 @@ void PBS::saveResults(boost::filesystem::path filename,
         {"runtime_generate_child", runtime_generate_child},
         {"runtime_preprocessing", runtime_preprocessing},
         {"solver_name", getSolverName()},
-        {"instance_name", instanceName}};
+        {"instance_name", instanceName},
+        {"path_cache_hit", n_cache_hit},
+        {"path_cache_miss", n_cache_miss}};
     write_to_json(results, filename);
+}
+
+// bool PBS::consistentWithTotalOrder(PBSNode* curr)
+// {
+//     vector<int> pp_order{
+//         2,   11,  95,  108, 116, 72,  87,  60, 80,  45,  101, 73, 31,  35,
+//         122, 24,  93,  114, 3,   113, 83,  16, 124, 92,  68,  78, 107, 26,
+//         1,   102, 76,  21,  37,  63,  70,  82, 97,  53,  48,  38, 8,   27,
+//         58,  98,  121, 28,  86,  7,   22,  46, 96,  112, 103, 71, 109, 39,
+//         18,  64,  119, 69,  88,  118, 42,  32, 50,  90,  62,  79, 59,  106,
+//         84,  110, 25,  20,  14,  75,  43,  6,  15,  33,  77,  67, 40,  55,
+//         49,  57,  104, 34,  66,  120, 41,  65, 12,  36,  4,   17, 99,  9,
+//         117, 19,  111, 0,   10,  13,  123, 29, 105, 89,  44,  56, 5,   85,
+//         47,  74,  51,  30,  23,  115, 54,  81, 61,  91,  94,  52, 100};
+//     // Consistent with the partial order of current goal node?
+//     // printPriorityGraph();
+//     bool consistent = true;
+//     for (auto curr_tmp = curr; curr_tmp != nullptr; curr_tmp = curr_tmp->parent)
+//     {
+//         if (curr_tmp->parent != nullptr)  // non-root node
+//         {
+//             int low = get<0>(curr_tmp->constraint);
+//             int high = get<1>(curr_tmp->constraint);
+//             // cout << "Checking " << low << " < " << high << endl;
+//             int low_idx = find_index(pp_order, low);
+//             int high_idx = find_index(pp_order, high);
+//             // In pp_order, high priority agents has smaller index
+//             if (low_idx < high_idx)
+//             {
+//                 // cout << "Inconsistent: low: " << low << ", high: " << high <<
+//                 // endl;
+//                 consistent = false;
+//                 break;
+//             }
+//         }
+//     }
+//     return consistent;
+// }
+
+tuple<bool, Path> PBS::checkPathCache(int agent_id,
+                                      const set<int>& higher_agents)
+{
+    // Form the key
+    auto key = getCacheKey(agent_id, higher_agents);
+
+    // Cache hit?
+    if (this->path_cache.find(key) != this->path_cache.end())
+    {
+        this->n_cache_hit += 1;
+        return make_tuple(true, this->path_cache[key]);
+    }
+    this->n_cache_miss += 1;
+
+    return make_tuple(false, Path());
+}
+
+void PBS::addPathToCache(int agent_id, const set<int>& higher_agents,
+                         Path& new_path)
+{
+    // Form the key
+    auto key = getCacheKey(agent_id, higher_agents);
+
+    // Add to cache
+    this->path_cache[key] = new_path;
+}
+
+pair<int, set<pair<int, Path>>> PBS::getCacheKey(int agent_id,
+                                                 const set<int>& higher_agents)
+{
+    // Form the key
+    set<pair<int, Path>> higher_agents_path;
+    for (int higher_agent : higher_agents)
+    {
+        higher_agents_path.emplace(
+            make_pair(higher_agent, *this->paths[higher_agent]));
+    }
+    return make_pair(agent_id, higher_agents_path);
 }

@@ -67,6 +67,14 @@ void PP::preprocess(bool compute_distance_to_start,
 double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
 {
     assert(ordering.size() == agents.size());
+    if (screen > 1)
+    {
+        cout << "Current order: ";
+        for (int id : ordering)
+            cout << id << ", ";
+        cout << endl;
+    }
+
     clock_t start_time = clock();
     double sum_of_costs = 0;
     dependency_graph.resize(ordering.size());

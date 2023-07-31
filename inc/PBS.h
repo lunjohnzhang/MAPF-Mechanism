@@ -63,11 +63,13 @@ public:
     ~PBS();
 
     // Save results
-    // void saveResults(const string& fileName, const string& instanceName) const;
+    // void saveResults(const string& fileName, const string& instanceName)
+    // const;
     void saveCT(const string& fileName) const;     // write the CT to a file
     void savePaths(const string& fileName) const;  // write the paths to a file
     // write mechanism related results
-    void saveResults(boost::filesystem::path filename, const string& instanceName) const;
+    void saveResults(boost::filesystem::path filename,
+                     const string& instanceName) const;
     void clear();  // used for rapid random  restart
 private:
     conflict_selection conflict_seletion_rule;
@@ -108,6 +110,28 @@ private:
 
     vector<Path*> best_paths;
     vector<Path*> paths;
+
+    // Exhaustive PBS improvement:
+    // 1. replan until we hit the first collision outside of priority graph.
+    // 2. have a map to cache the planned paths
+    vector<bool> to_be_replanned;
+    // Map to cache the replanned paths.
+    // Key is a pair, where the first entry is the id of agent i, and the
+    // second entry is a set of pairs, where each pair is the agent id and path
+    // of the higher priority agents.
+    // Value is the replanned path of the agent
+    map<pair<int, set<pair<int, Path>>>, Path> path_cache;
+    int n_cache_hit = 0;
+    int n_cache_miss = 0;
+
+    // Check if given agent and paths of higher priority agents are in
+    // path_cach. If yes, return.
+    tuple<bool, Path> checkPathCache(int agent_id,
+                                     const set<int>& higher_agents);
+    void addPathToCache(int agent_id, const set<int>& higher_agents,
+                        Path& new_path);
+    pair<int, set<pair<int, Path>>> getCacheKey(int agent_id,
+                                     const set<int>& higher_agents);
 
     // used to find (single) agents' paths and mdd
     vector<SingleAgentSolver*> search_engines;
@@ -163,4 +187,6 @@ private:
 
     void topologicalSort(list<int>& stack);
     void topologicalSortUtil(int v, vector<bool>& visited, list<int>& stack);
+
+    // bool consistentWithTotalOrder(PBSNode* curr);
 };

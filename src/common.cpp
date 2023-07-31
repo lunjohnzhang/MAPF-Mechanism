@@ -139,3 +139,13 @@ bool areDoubleSame(double dFirstVal, double dSecondVal)
 {
     return std::abs(dFirstVal - dSecondVal) < 1E-5;
 }
+
+int find_index(vector<int> v, int to_find)
+{
+    for(int i = 0; i < v.size(); i++)
+    {
+        if (v[i] == to_find)
+            return i;
+    }
+    return -1;
+}

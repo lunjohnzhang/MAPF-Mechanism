@@ -72,6 +72,13 @@ struct PathEntry
     //  return mdd_width == 1;
     //}
     PathEntry(int loc = -1) { location = loc; }
+
+    // Comparison operator for sorting
+    bool operator<(const PathEntry& other) const
+    {
+        return location < other.location;
+    }
+
 };
 
 typedef vector<PathEntry> Path;
@@ -126,3 +133,5 @@ void write_config_to_file(
 double weighted_path_cost(vector<Path*> paths, vector<double> costs);
 
 bool areDoubleSame(double dFirstVal, double dSecondVal);
+
+int find_index(vector<int> v, int to_find);
