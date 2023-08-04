@@ -48,6 +48,9 @@ public:
     void solve(double timelimit);
     const Instance& global_instance;
     bool solution_found;
+    void saveResults(boost::filesystem::path filename,
+                     const string& instanceName) const;
+    void savePaths(const string& fileName) const;
 
 private:
     bool sipp;
@@ -57,8 +60,34 @@ private:
     int num_of_agents;
     bool timeout = false;
     double remain_runtime = 0;
-    double runtime = 0;
     clock_t start_time;
+    double solution_cost = 0;
+
+    // Node stats
+    uint64_t num_HL_expanded = 0;
+    uint64_t num_HL_generated = 0;
+    uint64_t num_LL_expanded = 0;
+    uint64_t num_LL_generated = 0;
+
+    // Path cache
+    int n_cache_hit;
+    int n_cache_miss;
+
+    // Runtime
+    // total runtime
+    double runtime = 0;
+    // runtime of generating child nodes
+    double runtime_generate_child = 0;
+    // runtime of building constraint table
+    double runtime_build_CT = 0;
+    // runtime of building conflict avoidance table
+    double runtime_build_CAT = 0;
+    // runtime of finding paths for single agents
+    double runtime_path_finding = 0;
+    // runtime of detecting new conflicts for single agents
+    double runtime_detect_conflicts = 0;
+    // runtime of building heuristic table for the low level
+    double runtime_preprocessing = 0;
 
     vector<MetaAgent*> all_meta_agents;
 
@@ -82,4 +111,5 @@ private:
 
     void solveMetaAgent(MetaAgent* meta_agent);
 
+    string getSolverName() const;
 };

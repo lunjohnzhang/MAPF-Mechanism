@@ -59,9 +59,13 @@ bool IDPBS::hasConflictsAmongMA()
             {
                 this->conflict_map[i][j] = true;
                 has_conflicts = true;
+                this->solution_found = false;
             }
         }
     }
+    if (!has_conflicts)
+        this->solution_found = true;
+
     return has_conflicts;
 }
 
@@ -199,32 +203,121 @@ void IDPBS::solve(double timelimit)
         this->all_meta_agents = new_meta_agents;
     }
 
-    double sum_of_cost = 0;
+    // Get solution cost.
     for (auto ma : this->all_meta_agents)
-        sum_of_cost += ma->pbs_solver->solution_cost;
-    cout << "sum of cost " << sum_of_cost << endl;
+        this->solution_cost += ma->pbs_solver->solution_cost;
+    cout << "sum of cost: " << this->solution_cost
+         << ", runtime: " << this->runtime
+         << ", HL expanded: " << num_HL_expanded
+         << ", LL expanded: " << num_LL_expanded << endl;
 }
 
 void IDPBS::solveMetaAgent(MetaAgent* meta_agent)
 {
     if (!meta_agent->solved)
     {
-        bool solution_found = meta_agent->solve(this->remain_runtime);
+        bool curr_solution_found = meta_agent->solve(this->remain_runtime);
+
+        // Update stats
+        auto curr_pbs = meta_agent->pbs_solver;
         this->runtime = (double)(clock() - this->start_time) / CLOCKS_PER_SEC;
         this->remain_runtime -= this->runtime;
+        this->runtime_build_CT += curr_pbs->runtime_build_CT;
+        this->runtime_build_CAT += curr_pbs->runtime_build_CAT;
+        this->runtime_path_finding += curr_pbs->runtime_path_finding;
+        this->runtime_detect_conflicts += curr_pbs->runtime_detect_conflicts;
+        this->runtime_preprocessing += curr_pbs->runtime_preprocessing;
+        this->runtime_generate_child += curr_pbs->runtime_generate_child;
+        this->num_HL_expanded += curr_pbs->num_HL_expanded;
+        this->num_HL_generated += curr_pbs->num_HL_generated;
+        this->num_LL_expanded += curr_pbs->num_LL_expanded;
+        this->num_LL_generated += curr_pbs->num_LL_generated;
+        this->n_cache_hit += curr_pbs->n_cache_hit;
+        this->n_cache_miss += curr_pbs->n_cache_miss;
+        this->runtime_build_CT += curr_pbs->runtime_build_CT;
 
         // Timeout
         if (this->remain_runtime <= 0)
         {
-            timeout = true;
+            this->solution_found = false;
+            this->timeout = true;
             return;
         }
 
         // No solution
-        if (!solution_found)
+        if (!curr_solution_found)
         {
             this->solution_found = false;
             return;
         }
     }
 }
+
+void IDPBS::saveResults(boost::filesystem::path filename,
+                        const string& instanceName) const
+{
+    json results = {
+        {"map_dimension", vector<int>{this->global_instance.num_of_rows,
+                                      this->global_instance.num_of_cols,
+                                      this->global_instance.num_of_layers}},
+        {"costs", this->global_instance.costs},
+        {"values", this->global_instance.values},
+        {"start_coordinates", this->global_instance.convertAgentLocations(
+                                  this->global_instance.start_locations)},
+        {"goal_coordinates", this->global_instance.convertAgentLocations(
+                                 this->global_instance.goal_locations)},
+        // {"payments", payments},
+        // {"utilities", utilities},
+        {"timeout", timeout},
+        // {"nodeout", nodeout},
+        {"runtime", runtime},
+        {"solution_cost", solution_cost},
+        {"num_HL_expanded", num_HL_expanded},
+        {"num_HL_generated", num_HL_generated},
+        {"num_LL_expanded", num_LL_expanded},
+        {"num_LL_generated", num_LL_generated},
+        {"runtime_detect_conflicts", runtime_detect_conflicts},
+        {"runtime_build_CT", runtime_build_CT},
+        {"runtime_build_CAT", runtime_build_CAT},
+        {"runtime_path_finding", runtime_path_finding},
+        {"runtime_generate_child", runtime_generate_child},
+        {"runtime_preprocessing", runtime_preprocessing},
+        {"solver_name", getSolverName()},
+        {"instance_name", instanceName},
+        {"path_cache_hit", n_cache_hit},
+        {"path_cache_miss", n_cache_miss}};
+    write_to_json(results, filename);
+}
+
+void IDPBS::savePaths(const string& fileName) const
+{
+    // Map from agent global id to their path
+    map<int, Path*> final_paths;
+
+    for (auto ma : this->all_meta_agents)
+    {
+        for (int global_id : ma->agents)
+        {
+            final_paths[global_id] = ma->getBestPathByGlobalID(global_id);
+        }
+    }
+
+    assert(final_paths.size() == this->num_of_agents);
+
+    std::ofstream output;
+    output.open(fileName, std::ios::out);
+    for (int i = 0; i < num_of_agents; i++)
+    {
+        output << "Agent " << i << ": ";
+        for (const auto& t : *final_paths[i])
+            output << "(" << this->global_instance.getRowCoordinate(t.location)
+                   << "," << this->global_instance.getColCoordinate(t.location)
+                   << ","
+                   << this->global_instance.getLayerCoordinate(t.location)
+                   << ")->";
+        output << endl;
+    }
+    output.close();
+}
+
+string IDPBS::getSolverName() const { return "IDPBS"; }

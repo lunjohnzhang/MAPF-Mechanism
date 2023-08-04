@@ -30,6 +30,9 @@ public:
     PBSNode* dummy_start = nullptr;
     PBSNode* goal_node = nullptr;
 
+    int n_cache_hit = 0;
+    int n_cache_miss = 0;
+
     const Instance& instance;
 
     bool solution_found = false;
@@ -126,8 +129,6 @@ private:
     // of the higher priority agents.
     // Value is the replanned path of the agent
     map<pair<int, set<pair<int, Path>>>, Path> path_cache;
-    int n_cache_hit = 0;
-    int n_cache_miss = 0;
 
     // Check if given agent and paths of higher priority agents are in
     // path_cach. If yes, return.

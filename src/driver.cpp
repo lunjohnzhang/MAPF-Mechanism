@@ -349,6 +349,9 @@ int main(int argc, char** argv)
                     vm["dummyStart"].as<bool>(),
                     vm["exhaustiveSearch"].as<bool>());
         idpbs.solve(vm["cutoffTime"].as<double>());
+        if (idpbs.solution_found && vm["savePath"].as<bool>())
+            idpbs.savePaths((logdir / "paths.txt").string());
+        idpbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
     }
 
     return 0;
