@@ -34,23 +34,24 @@ void PP::preprocess(bool compute_distance_to_start,
                     bool compute_distance_to_goal,
                     bool compute_mdd)  // compute information in each agent
 {
-    assert(compute_distance_to_goal ||
-           !compute_mdd);  // when compute_mdd is true, compute_distance_to_goal
-                           // must be true
+    // when compute_mdd is true, compute_distance_to_goal must be true
+    assert(compute_distance_to_goal || !compute_mdd);
     clock_t start_time = clock();
     if (compute_distance_to_start)
     {
         for (auto& agent : agents)
         {
-            agent.distance_to_start =
-                instance.getDistances(agent.start_location);
+            agent.distance_to_start = instance.getDistances(
+                agent.start_location, agent.start_location,
+                agent.goal_location);
         }
     }
     if (compute_distance_to_goal)
     {
         for (auto& agent : agents)
         {
-            agent.distance_to_goal = instance.getDistances(agent.goal_location);
+            agent.distance_to_goal = instance.getDistances(
+                agent.goal_location, agent.start_location, agent.goal_location);
         }
     }
     if (compute_mdd)
@@ -70,8 +71,7 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
     if (screen > 1)
     {
         cout << "Current order: ";
-        for (int id : ordering)
-            cout << id << ", ";
+        for (int id : ordering) cout << id << ", ";
         cout << endl;
     }
 

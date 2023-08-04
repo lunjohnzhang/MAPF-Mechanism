@@ -589,7 +589,8 @@ int Instance::getDegree(int curr) const
     return degree;
 }
 
-const vector<int>* Instance::getDistances(int root_location)
+const vector<int>* Instance::getDistances(int root_location, int start_location,
+                                          int goal_location)
 {
     auto it = distance_matrix.find(root_location);
     if (it != distance_matrix.end())
@@ -614,7 +615,8 @@ const vector<int>* Instance::getDistances(int root_location)
             // f-val, and then highest g-val)
     };
 
-    vector<int> rst(map_size, MAX_TIMESTEP);
+    // Plus 1 to include dummy start location
+    vector<int> rst(map_size + 1, MAX_TIMESTEP);
 
     // generate a heap that can save nodes (and a open_handle)
     boost::heap::pairing_heap<Node, boost::heap::compare<Node::compare_node>>
@@ -636,6 +638,12 @@ const vector<int>* Instance::getDistances(int root_location)
             }
         }
     }
+
+    if (root_location == start_location)
+        rst[GLOBAL_VAR::dummy_start_loc] = 0;
+    else if (root_location == goal_location)
+        rst[GLOBAL_VAR::dummy_start_loc] = rst[start_location] + 1;
+
     distance_matrix[root_location] = rst;
     return &distance_matrix[root_location];
 }

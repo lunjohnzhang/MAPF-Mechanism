@@ -119,7 +119,8 @@ public:
     // Keep only the global agents and initialize the id_map.
     map<int, int> initPartialInstance(set<int> global_agents);
 
-    const vector<int>* getDistances(int root_location);
+    const vector<int>* getDistances(int root_location, int start_location,
+                                    int goal_location);
 
     void saveAgentProfile(boost::filesystem::path filename);
 
