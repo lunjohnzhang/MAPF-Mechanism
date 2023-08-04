@@ -6,6 +6,7 @@
 #include <boost/tokenizer.hpp>
 
 #include "ECBS.h"
+#include "IDPBS.h"
 #include "PBS.h"
 #include "PP.h"
 
@@ -26,7 +27,7 @@ int main(int argc, char** argv)
 
         // Algo, PP1 refers to PP with nRuns = 1, which is
         // first-come-first-serve
-        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP', 'PBS', 'PP1']")
+        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP', 'PBS', 'PP1', 'IDPBS']")
 
         // params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
@@ -328,7 +329,7 @@ int main(int argc, char** argv)
                             vm["exhaustiveSearch"].as<bool>());
 
         // run
-        double runtime = 0;
+        // double runtime = 0;
         pbs.solve(vm["cutoffTime"].as<double>());
         // if (vm["saveStats"].as<bool>())
         //     pbs.saveResults((logdir / "stats.csv").string(),
@@ -341,6 +342,13 @@ int main(int argc, char** argv)
         "stats.csv").string().substr(0, pos);     // get the name without
         extension cbs.saveCT(output_name); // for debug*/
         pbs.clearSearchEngines();
+    }
+    else if (algo == "IDPBS")
+    {
+        IDPBS idpbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>(),
+                    vm["dummyStart"].as<bool>(),
+                    vm["exhaustiveSearch"].as<bool>());
+        idpbs.solve(vm["cutoffTime"].as<double>());
     }
 
     return 0;

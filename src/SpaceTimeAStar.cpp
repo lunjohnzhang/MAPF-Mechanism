@@ -114,9 +114,10 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
             auto existing_next = *it;
             // it has smaller f value
             if (existing_next->getFVal() > next->getFVal() ||
-                // or it remains the same but there's fewer conflicts
+                // or it remains the same but location is "better" (our tie
+                // breaking)
                 (existing_next->getFVal() == next->getFVal() &&
-                 existing_next->num_of_conflicts > next->num_of_conflicts))
+                 existing_next->parent->location > next->parent->location))
             {
                 existing_next->copy(*next);  // update existing node
                 // if its in the closed list (reopen)
@@ -267,11 +268,14 @@ Path SpaceTimeAStar::findOptimalPath(const HLNode& node,
             // update existing node's if needed (only in the open_list)
 
             auto existing_next = *it;
+            // if (existing_next->parent->location == GLOBAL_VAR::dummy_start_loc)
+            // assert(existing_next->parent->location != next->parent->location);
             // if f-val decreased through this new path
             if (existing_next->getFVal() > next->getFVal() ||
-                // or it remains the same but there's fewer conflicts
+                // or it remains the same but location is "better" (our tie
+                // breaking)
                 (existing_next->getFVal() == next->getFVal() &&
-                 existing_next->num_of_conflicts > next->num_of_conflicts))
+                 existing_next->parent->location > next->parent->location))
             {
                 existing_next->copy(*next);  // update existing node
                 // if its in the closed list (reopen)

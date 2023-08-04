@@ -30,7 +30,8 @@ public:
           depth(parent.depth + 1),
           makespan(parent.makespan),
           conflicts(parent.conflicts),
-          parent(&parent)
+          parent(&parent),
+          to_be_replanned(parent.to_be_replanned)
     {
     }
     void clear();
@@ -46,6 +47,9 @@ public:
 
     // Remove virtual function implementation warning. Should never be used.
     inline double getFHatVal() const override { return -1; }
+
+    // Remember which agents are in to_be_replanned set.
+    vector<bool> to_be_replanned;
 };
 
 std::ostream& operator<<(std::ostream& os, const PBSNode& node);

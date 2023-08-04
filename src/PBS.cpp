@@ -30,7 +30,6 @@ PBS::PBS(const Instance& instance, bool sipp, int screen)
     }
 
     this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
-    this->to_be_replanned.resize(num_of_agents, true);
 }
 
 bool PBS::solve(double _time_limit)
@@ -91,6 +90,26 @@ bool PBS::solve(double _time_limit)
         printResults();
         cout << "Found " << this->n_solutions
              << " solutions, min cost: " << solution_cost << endl;
+        cout << "N solutions without overlap: " << this->all_sols.size()
+             << endl;
+        // cout << "N solutions without overlap: " << this->n_solutions -
+        // this->n_overlap_solutions << endl; for (auto item :
+        // this->all_sol_priority_g)
+        // {
+        //     string graph_str = item.first;
+        //     vector<Path> curr_paths = item.second;
+        //     cout << graph_str << endl;
+        //     for (int i = 0; i < num_of_agents; i++)
+        //     {
+        //         cout << "Agent " << i << " ("
+        //              << search_engines[i]
+        //                     ->my_heuristic[search_engines[i]->start_location]
+        //              << " -->" << curr_paths[i].size() - 1 << "): ";
+        //         for (const auto& t : curr_paths[i]) cout << t.location <<
+        //         "->"; cout << endl;
+        //     }
+        //     cout << endl;
+        // }
     }
     return solution_found;
 }
@@ -129,13 +148,14 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
 
     // lookup table to quickly determine if an agent needs replanning.
     vector<bool> lookup_table(num_of_agents, false);
-    to_replan.emplace(topological_orders[low], low);
-    lookup_table[low] = true;
 
     // With regular PBS, we replan agent low and agents with lower priority
     // than low and have conflicts with agent low.
     if (!this->exhaustive_search)
     {
+        to_replan.emplace(topological_orders[low], low);
+        lookup_table[low] = true;
+
         // find conflicts where one agent is higher than high and the other
         // agent is lower than low
         set<int> higher_agents;
@@ -257,8 +277,79 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
     // With exhausive PBS, we need to replan all agents with lower priority
     // than agent low, because their path might get better after agent low is
     // replanned, even if they have no conflicts with agent low.
+    // else
+    // {
+    //     // Get lower priority agents
+    //     set<int> lower_agents;
+    //     auto p2 = ordered_agents.begin();
+    //     std::advance(p2, num_of_agents - 1 - topological_orders[low]);
+    //     assert(*p2 == low);
+    //     getLowerPriorityAgents(p2, lower_agents);
+
+    //     for (auto agent : lower_agents)
+    //     {
+    //         to_replan.emplace(topological_orders[agent], agent);
+    //         lookup_table[agent] = true;
+    //     }
+
+    //     while (!to_replan.empty())
+    //     {
+    //         int a, rank;
+    //         tie(rank, a) = to_replan.top();
+    //         to_replan.pop();
+    //         lookup_table[a] = false;
+    //         if (screen > 2)
+    //             cout << "Replan agent " << a << endl;
+    //         // Re-plan path
+    //         set<int> higher_agents;
+    //         auto p = ordered_agents.rbegin();
+    //         std::advance(p, rank);
+    //         assert(*p == a);
+    //         getHigherPriorityAgents(p, higher_agents);
+    //         assert(!higher_agents.empty());
+    //         if (screen > 2)
+    //         {
+    //             cout << "Higher agents: ";
+    //             for (auto i : higher_agents) cout << i << ",";
+    //             cout << endl;
+    //         }
+
+    //         Path new_path;
+    //         // Prune the child node if no solution is found.
+    //         if (!findPathForSingleAgent(*node, higher_agents, a, new_path))
+    //         {
+    //             // cout << "should never happen" << endl;
+    //             delete node;
+    //             parent->children[child_id] = nullptr;
+    //             return false;
+    //         }
+    //     }
+
+    //     // Delete old conflicts
+    //     node->conflicts.clear();
+
+    //     // Find new conflicts
+    //     auto t = clock();
+    //     for (auto a = 0; a < num_of_agents; a++)
+    //     {
+    //         for (auto a2 = a + 1; a2 < num_of_agents; a2++)
+    //         {
+    //             if (hasConflicts(a, a2))
+    //             {
+    //                 shared_ptr<Conflict> new_conflict(new Conflict());
+    //                 new_conflict->pbsConflict(a, a2);
+    //                 node->conflicts.emplace_back(new_conflict);
+    //             }
+    //         }
+    //     }
+    //     runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+    // }
     else
     {
+        // Update to_be_replanned
+        node->to_be_replanned[low] = true;
+        node->to_be_replanned[high] = false;
+
         // Get lower priority agents
         set<int> lower_agents;
         auto p2 = ordered_agents.begin();
@@ -266,11 +357,24 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
         assert(*p2 == low);
         getLowerPriorityAgents(p2, lower_agents);
 
+        // Set all lower priority agents than low also as to_be_replanned
         for (auto agent : lower_agents)
         {
-            to_replan.emplace(topological_orders[agent], agent);
-            lookup_table[agent] = true;
+            node->to_be_replanned[agent] = true;
         }
+
+        // Add all to_be_replanned agents to to_replan
+        for (int agent = 0; agent < num_of_agents; agent++)
+        {
+            if (node->to_be_replanned[agent])
+            {
+                to_replan.emplace(topological_orders[agent], agent);
+                lookup_table[agent] = true;
+            }
+        }
+
+        // Delete old conflicts
+        node->conflicts.clear();
 
         while (!to_replan.empty())
         {
@@ -286,7 +390,7 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
             std::advance(p, rank);
             assert(*p == a);
             getHigherPriorityAgents(p, higher_agents);
-            assert(!higher_agents.empty());
+            // assert(!higher_agents.empty());
             if (screen > 2)
             {
                 cout << "Higher agents: ";
@@ -303,26 +407,56 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
                 parent->children[child_id] = nullptr;
                 return false;
             }
-        }
 
-        // Delete old conflicts
-        node->conflicts.clear();
-
-        // Find new conflicts
-        auto t = clock();
-        for (auto a = 0; a < num_of_agents; a++)
-        {
-            for (auto a2 = a + 1; a2 < num_of_agents; a2++)
+            // If there is a conflict between the currently replanned agent with
+            // any agents not in to_be_replanned, stop replanning.
+            auto t = clock();
+            set<int> conflict_agents =
+                hasConflictsWithNotTobeReplanned(a, node);
+            runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+            if (conflict_agents.size() > 0)
             {
-                if (hasConflicts(a, a2))
+                for (int conflict_a2 : conflict_agents)
                 {
+                    // cout << "child: Agent " << a << " has conflict with agent "
+                    //      << conflict_a2 << endl;
                     shared_ptr<Conflict> new_conflict(new Conflict());
-                    new_conflict->pbsConflict(a, a2);
+                    new_conflict->pbsConflict(a, conflict_a2);
                     node->conflicts.emplace_back(new_conflict);
                 }
+                break;
             }
+
+            // Current agent has no conflicts with any agents that are not in
+            // to_be_replanned. Therefore add it not to_be_replanned.
+            node->to_be_replanned[a] = false;
         }
-        runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+
+        // printPaths();
+
+        // Find new conflicts
+        // auto t = clock();
+        // if (node->conflicts.empty())
+        // {
+        //     for (auto a = 0; a < num_of_agents; a++)
+        //     {
+        //         for (auto a2 = a + 1; a2 < num_of_agents; a2++)
+        //         {
+        //             if (!node->to_be_replanned[a] &&
+        //                 !node->to_be_replanned[a2] && hasConflicts(a, a2))
+        //             {
+        //                 shared_ptr<Conflict> new_conflict(new Conflict());
+        //                 new_conflict->pbsConflict(a, a2);
+        //                 node->conflicts.emplace_back(new_conflict);
+        //                 node->to_be_replanned[a] = true;
+        //                 node->to_be_replanned[a2] = true;
+        //                 break;
+        //             }
+        //         }
+        //         if (!node->conflicts.empty())
+        //             break;
+        //     }
+        // }
     }
 
     num_HL_generated++;
@@ -371,14 +505,24 @@ bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents,
         addPathToCache(a, higher_agents, new_path);
     }
 
-    // With exhaustive PBS, the same path could be found for the same agent.
-    if (this->exhaustive_search)
-        assert(paths[a] != nullptr);
-    else
+    // if (this->exhaustive_search)
+    //     assert(paths[a] != nullptr);
+    // else
+    //     assert(paths[a] != nullptr and !isSamePath(*paths[a], new_path));
+    if (!this->exhaustive_search)
         assert(paths[a] != nullptr and !isSamePath(*paths[a], new_path));
+    // else
+    // {
+    //     if (paths[a] != nullptr)
+    //         assert(!isSamePath(*paths[a], new_path));
+    // }
 
-    node.cost += (int)new_path.size() - (int)paths[a]->size();
-    if (node.makespan >= paths[a]->size())
+    int old_path_length = 0;
+    if (paths[a] != nullptr)
+        old_path_length = (int)paths[a]->size() - 1;
+
+    node.cost += (int)new_path.size() - 1 - old_path_length;
+    if (node.makespan > old_path_length)
     {
         node.makespan = max(node.makespan, new_path.size() - 1);
     }
@@ -390,7 +534,10 @@ bool PBS::findPathForSingleAgent(PBSNode& node, const set<int>& higher_agents,
             if (i == a and new_path.size() - 1 > node.makespan)
                 node.makespan = new_path.size() - 1;
             else
-                node.makespan = max(node.makespan, paths[i]->size() - 1);
+            {
+                if (paths[i] != nullptr)
+                    node.makespan = max(node.makespan, paths[i]->size() - 1);
+            }
         }
     }
     node.paths.emplace_back(a, new_path);
@@ -475,6 +622,22 @@ bool PBS::hasConflicts(int a1, const set<int>& agents) const
     }
     return false;
 }
+
+set<int> PBS::hasConflictsWithNotTobeReplanned(int a1, PBSNode* node) const
+{
+    set<int> conflict_agents;
+    for (int a2 = 0; a2 < num_of_agents; a2++)
+    {
+        // a2 is not in the to_be_replanned set and has conflict with a1
+        if (a1 != a2 && !node->to_be_replanned[a2] && hasConflicts(a1, a2))
+        {
+            conflict_agents.insert(a2);
+            node->to_be_replanned[a2] = true;
+        }
+    }
+    return conflict_agents;
+}
+
 shared_ptr<Conflict> PBS::chooseConflict(const PBSNode& node) const
 {
     if (screen == 3)
@@ -486,7 +649,11 @@ shared_ptr<Conflict> PBS::chooseConflict(const PBSNode& node) const
 int PBS::getSumOfCosts() const
 {
     int cost = 0;
-    for (const auto& path : paths) cost += (int)path->size() - 1;
+    for (const auto& path : paths)
+    {
+        if (path != nullptr)
+            cost += (int)path->size() - 1;
+    }
     return cost;
 }
 inline void PBS::pushNode(PBSNode* node)
@@ -536,12 +703,15 @@ void PBS::printPaths() const
 {
     for (int i = 0; i < num_of_agents; i++)
     {
-        cout << "Agent " << i << " ("
-             << search_engines[i]
-                    ->my_heuristic[search_engines[i]->start_location]
-             << " -->" << paths[i]->size() - 1 << "): ";
-        for (const auto& t : *paths[i]) cout << t.location << "->";
-        cout << endl;
+        if (paths[i] != nullptr)
+        {
+            cout << "Agent " << i << " ("
+                 << search_engines[i]
+                        ->my_heuristic[search_engines[i]->start_location]
+                 << " -->" << paths[i]->size() - 1 << "): ";
+            for (const auto& t : *paths[i]) cout << t.location << "->";
+            cout << endl;
+        }
     }
 }
 
@@ -759,12 +929,48 @@ bool PBS::terminate(PBSNode* curr)
     runtime = (double)(clock() - start) / CLOCKS_PER_SEC;
     if (curr->conflicts.empty())  // no conflicts
     {
+        // if (tobeReplanned(curr))
+        //     cout << "Error: some agents need to be replanned" << endl;
         bool terminate_search = false;
 
         // found a solution
         solution_found = true;
         this->n_solutions += 1;
         // printPriorityGraph();
+
+        // ******************* Debug *******************
+        // Overlap solution?
+        string curr_priority_graph_str = stringifyPriorityGraph();
+        vector<Path> current_sol;
+        for (int i = 0; i < num_of_agents; i++)
+            current_sol.emplace_back(Path(*paths[i]));
+        // // Try to find the value.
+        // auto it = this->all_sol_priority_g.find(curr_priority_graph_str);
+
+        // // Check if the priority graph was found before.
+        // if (it != this->all_sol_priority_g.end())
+        // {
+        //     // The graph was found.
+        //     std::cout << "Graph " << curr_priority_graph_str
+        //               << " was found in before." << std::endl;
+        // }
+        // else
+        // {
+        //     this->all_sol_priority_g[curr_priority_graph_str] = current_sol;
+        // }
+
+        if (this->all_sols.find(current_sol) != this->all_sols.end())
+        {
+            // cout << "Overlap solution" << endl;
+            this->n_overlap_solutions += 1;
+        }
+        else
+            this->all_sols.insert(current_sol);
+
+        // cout << "Solution " << this->n_solutions << endl;
+        // printPaths();
+        // cout << endl;
+        // ******************* Debug *******************
 
         // With exhaustive PBS, remember the current best solution and
         // continue until all nodes are closed.
@@ -844,52 +1050,129 @@ bool PBS::timeAndNodeOut()
     return false;
 }
 
+// bool PBS::generateRoot()
+// {
+//     auto root = new PBSNode();
+//     root->cost = 0;
+//     paths.reserve(num_of_agents);
+//     best_paths.resize(num_of_agents, nullptr);
+
+//     set<int> higher_agents;
+//     for (auto i = 0; i < num_of_agents; i++)
+//     {
+//         // CAT cat(dummy_start->makespan + 1);  // initialized to false
+//         // updateReservationTable(cat, i, *dummy_start);
+//         //  auto new_path = search_engines[i]->findOptimalPath(higher_agents,
+//         //  paths, i); For root node, `initial_constraints` contains no
+//         //  constraints
+//         ConstraintTable initial_constraints(this->instance.num_of_cols,
+//                                             this->instance.map_size);
+//         auto new_path = search_engines[i]->findOptimalPath(
+//             *root, initial_constraints, paths, i, 0, dummy_start_node);
+//         num_LL_expanded += search_engines[i]->num_expanded;
+//         num_LL_generated += search_engines[i]->num_generated;
+//         if (new_path.empty())
+//         {
+//             cout << "No path exists for agent " << i << endl;
+//             return false;
+//         }
+//         root->paths.emplace_back(i, new_path);
+//         paths.emplace_back(&root->paths.back().second);
+//         root->makespan = max(root->makespan, new_path.size() - 1);
+//         root->cost += (int)new_path.size() - 1;
+//     }
+//     auto t = clock();
+//     root->depth = 0;
+//     for (int a1 = 0; a1 < num_of_agents; a1++)
+//     {
+//         for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
+//         {
+//             if (hasConflicts(a1, a2))
+//             {
+//                 shared_ptr<Conflict> new_conflict(new Conflict());
+//                 new_conflict->pbsConflict(a1, a2);
+//                 root->conflicts.emplace_back(new_conflict);
+//             }
+//         }
+//     }
+//     runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+//     num_HL_generated++;
+//     root->time_generated = num_HL_generated;
+//     if (screen > 1)
+//         cout << "Generate " << *root << endl;
+//     pushNode(root);
+//     dummy_start = root;
+//     if (screen >= 2)  // print start and goals
+//     {
+//         printPaths();
+//     }
+
+//     return true;
+// }
+
 bool PBS::generateRoot()
 {
     auto root = new PBSNode();
     root->cost = 0;
-    paths.reserve(num_of_agents);
+    paths.resize(num_of_agents, nullptr);
     best_paths.resize(num_of_agents, nullptr);
+    root->to_be_replanned.resize(num_of_agents, true);
 
     set<int> higher_agents;
-    for (auto i = 0; i < num_of_agents; i++)
+    for (auto a1 = 0; a1 < num_of_agents; a1++)
     {
-        // CAT cat(dummy_start->makespan + 1);  // initialized to false
-        // updateReservationTable(cat, i, *dummy_start);
-        //  auto new_path = search_engines[i]->findOptimalPath(higher_agents,
-        //  paths, i); For root node, `initial_constraints` contains no
-        //  constraints
+        // For root node, `initial_constraints` contains no constraints
         ConstraintTable initial_constraints(this->instance.num_of_cols,
                                             this->instance.map_size);
-        auto new_path = search_engines[i]->findOptimalPath(
-            *root, initial_constraints, paths, i, 0, dummy_start_node);
-        num_LL_expanded += search_engines[i]->num_expanded;
-        num_LL_generated += search_engines[i]->num_generated;
+        auto new_path = search_engines[a1]->findOptimalPath(
+            *root, initial_constraints, paths, a1, 0, dummy_start_node);
+        num_LL_expanded += search_engines[a1]->num_expanded;
+        num_LL_generated += search_engines[a1]->num_generated;
         if (new_path.empty())
         {
-            cout << "No path exists for agent " << i << endl;
+            cout << "No path exists for agent " << a1 << endl;
             return false;
         }
-        root->paths.emplace_back(i, new_path);
-        paths.emplace_back(&root->paths.back().second);
+        root->paths.emplace_back(a1, new_path);
+        paths[a1] = &root->paths.back().second;
         root->makespan = max(root->makespan, new_path.size() - 1);
         root->cost += (int)new_path.size() - 1;
-    }
-    auto t = clock();
-    root->depth = 0;
-    for (int a1 = 0; a1 < num_of_agents; a1++)
-    {
-        for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
+
+        // Check conflicts of the current planned agents and agents not in the
+        // to_be_replanned set. If so, stop planning more agents.
+        auto t = clock();
+        set<int> conflict_agents = hasConflictsWithNotTobeReplanned(a1, root);
+        runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+        if (conflict_agents.size() > 0)
         {
-            if (hasConflicts(a1, a2))
+            for (int conflict_a2 : conflict_agents)
             {
+                // cout << "root: Agent " << a1 << " has conflict with agent "
+                //      << conflict_a2 << endl;
                 shared_ptr<Conflict> new_conflict(new Conflict());
-                new_conflict->pbsConflict(a1, a2);
+                new_conflict->pbsConflict(a1, conflict_a2);
                 root->conflicts.emplace_back(new_conflict);
             }
+            break;
         }
+
+        // Current agent has no conflicts with any agents that are not in
+        // to_be_replanned. Therefore add it not to_be_replanned.
+        root->to_be_replanned[a1] = false;
     }
-    runtime_detect_conflicts += (double)(clock() - t) / CLOCKS_PER_SEC;
+    root->depth = 0;
+    // for (int a1 = 0; a1 < num_of_agents; a1++)
+    // {
+    //     for (int a2 = a1 + 1; a2 < num_of_agents; a2++)
+    //     {
+    //         if (hasConflicts(a1, a2))
+    //         {
+    //             shared_ptr<Conflict> new_conflict(new Conflict());
+    //             new_conflict->pbsConflict(a1, a2);
+    //             root->conflicts.emplace_back(new_conflict);
+    //         }
+    //     }
+    // }
     num_HL_generated++;
     root->time_generated = num_HL_generated;
     if (screen > 1)
@@ -1190,7 +1473,8 @@ void PBS::saveResults(boost::filesystem::path filename,
 //     // Consistent with the partial order of current goal node?
 //     // printPriorityGraph();
 //     bool consistent = true;
-//     for (auto curr_tmp = curr; curr_tmp != nullptr; curr_tmp = curr_tmp->parent)
+//     for (auto curr_tmp = curr; curr_tmp != nullptr; curr_tmp =
+//     curr_tmp->parent)
 //     {
 //         if (curr_tmp->parent != nullptr)  // non-root node
 //         {
@@ -1202,7 +1486,8 @@ void PBS::saveResults(boost::filesystem::path filename,
 //             // In pp_order, high priority agents has smaller index
 //             if (low_idx < high_idx)
 //             {
-//                 // cout << "Inconsistent: low: " << low << ", high: " << high <<
+//                 // cout << "Inconsistent: low: " << low << ", high: " << high
+//                 <<
 //                 // endl;
 //                 consistent = false;
 //                 break;
@@ -1250,4 +1535,35 @@ pair<int, set<pair<int, Path>>> PBS::getCacheKey(int agent_id,
             make_pair(higher_agent, *this->paths[higher_agent]));
     }
     return make_pair(agent_id, higher_agents_path);
+}
+
+bool PBS::tobeReplanned(PBSNode* node)
+{
+    for (auto replan : node->to_be_replanned)
+    {
+        if (replan)
+            return true;
+    }
+    return false;
+}
+
+string PBS::stringifyPriorityGraph() const
+{
+    string priority_graph_str = "";
+    for (int a1 = 0; a1 < num_of_agents; a1++)
+    {
+        for (int a2 = 0; a2 < num_of_agents; a2++)
+        {
+            if (priority_graph[a1][a2])
+                priority_graph_str +=
+                    std::to_string(a1) + "<" + std::to_string(a2) + ",";
+        }
+    }
+    return priority_graph_str;
+}
+
+Path* PBS::getBestPathByGlobalID(int agent_global_id,
+                                 map<int, int> id_map) const
+{
+    return this->best_paths[id_map.at(agent_global_id)];
 }

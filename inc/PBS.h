@@ -71,6 +71,10 @@ public:
     void saveResults(boost::filesystem::path filename,
                      const string& instanceName) const;
     void clear();  // used for rapid random  restart
+
+    Path* getBestPathByGlobalID(int agent_global_id,
+                                map<int, int> id_map) const;
+
 private:
     conflict_selection conflict_seletion_rule;
 
@@ -108,13 +112,14 @@ private:
 
     int num_of_agents;
 
-    vector<Path*> best_paths;
     vector<Path*> paths;
+    vector<Path*> best_paths;
 
     // Exhaustive PBS improvement:
-    // 1. replan until we hit the first collision outside of priority graph.
+    // 1. replan until we hit the first collision outside of to_be_replanned
+    //    set.
     // 2. have a map to cache the planned paths
-    vector<bool> to_be_replanned;
+
     // Map to cache the replanned paths.
     // Key is a pair, where the first entry is the id of agent i, and the
     // second entry is a set of pairs, where each pair is the agent id and path
@@ -131,7 +136,7 @@ private:
     void addPathToCache(int agent_id, const set<int>& higher_agents,
                         Path& new_path);
     pair<int, set<pair<int, Path>>> getCacheKey(int agent_id,
-                                     const set<int>& higher_agents);
+                                                const set<int>& higher_agents);
 
     // used to find (single) agents' paths and mdd
     vector<SingleAgentSolver*> search_engines;
@@ -143,6 +148,9 @@ private:
 
     bool hasConflicts(int a1, int a2) const;
     bool hasConflicts(int a1, const set<int>& agents) const;
+    // Return the first agent that is not in to_be_replanned and has conflicts
+    // with a1. If none, return empty set.
+    set<int> hasConflictsWithNotTobeReplanned(int a1, PBSNode* node) const;
     shared_ptr<Conflict> chooseConflict(const PBSNode& node) const;
     int getSumOfCosts() const;
     inline void releaseNodes();
@@ -188,5 +196,11 @@ private:
     void topologicalSort(list<int>& stack);
     void topologicalSortUtil(int v, vector<bool>& visited, list<int>& stack);
 
+    // Debug related
+    bool tobeReplanned(PBSNode* node);
+    string stringifyPriorityGraph() const;
+    map<string, vector<Path>> all_sol_priority_g;
+    set<vector<Path>> all_sols;
+    int n_overlap_solutions = 0;
     // bool consistentWithTotalOrder(PBSNode* curr);
 };

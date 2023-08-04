@@ -662,3 +662,31 @@ vector<tuple<int, int, int>> Instance::convertAgentLocations(
     }
     return agent_locations;
 }
+
+map<int, int> Instance::initPartialInstance(set<int> global_agents)
+{
+    int n_local_agents = global_agents.size();
+    vector<int> new_start_locations(n_local_agents, -1);
+    vector<int> new_goal_locations(n_local_agents, -1);
+    vector<double> new_costs(n_local_agents, -1);
+    vector<double> new_values(n_local_agents, -1);
+    int local_a_id = 0;
+    map<int, int> id_map;
+
+    for (int a : global_agents)
+    {
+        id_map[a] = local_a_id;
+        new_start_locations[local_a_id] = this->start_locations[a];
+        new_goal_locations[local_a_id] = this->goal_locations[a];
+        new_costs[local_a_id] = this->costs[a];
+        new_values[local_a_id] = this->values[a];
+        local_a_id += 1;
+    }
+
+    this->start_locations = new_start_locations;
+    this->goal_locations = new_goal_locations;
+    this->costs = new_costs;
+    this->values = new_values;
+    this->num_of_agents = global_agents.size();
+    return id_map;
+}

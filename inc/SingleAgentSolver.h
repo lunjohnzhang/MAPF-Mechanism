@@ -23,16 +23,20 @@ public:
         {
             if (n1->g_val + n1->h_val == n2->g_val + n2->h_val)
             {
-                if (n1->h_val == n2->h_val)
-                {
-                    // Break ties by location id
-                    return n1->location > n2->location;
-                }
-                // break ties towards smaller h_vals (closer
-                // to goal location)
-                return n1->h_val >= n2->h_val;
+                assert (n1->location != n2->location);
+
+                // Break ties determinstically by location id
+                return n1->location > n2->location;
+                // if (n1->h_val == n2->h_val)
+                // {
+                //     // Break ties by location id
+
+                // }
+                // // break ties towards smaller h_vals (closer
+                // // to goal location)
+                // return n1->h_val >= n2->h_val;
             }
-            return n1->g_val + n1->h_val >= n2->g_val + n2->h_val;
+            return n1->g_val + n1->h_val > n2->g_val + n2->h_val;
         }
     };  // used by OPEN (heap) to compare nodes (top of the heap has min f-val,
         // and then highest g-val)
