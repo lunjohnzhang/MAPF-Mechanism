@@ -115,8 +115,8 @@ void IDPBS::findMergeMetaAgents()
         }
     }
     // Sort the new meta agents such that those with less agents comes first.
-    // Then those with less agents will be merged first in the next call of the
-    // function.
+    // Then those meta agents with less agents will be merged first in the next
+    // call of the function.
     std::sort(this->merge_meta_agents.begin(), this->merge_meta_agents.end(),
               [this](const set<int>& a, const set<int>& b) -> bool
               {
@@ -127,7 +127,7 @@ void IDPBS::findMergeMetaAgents()
                       for (auto a : this->all_meta_agents[ma]->agents)
                           n_agents_a += 1;
                   }
-                  for (auto ma : a)
+                  for (auto ma : b)
                   {
                       for (auto a : this->all_meta_agents[ma]->agents)
                           n_agents_b += 1;
