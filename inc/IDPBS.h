@@ -2,6 +2,9 @@
 
 #include "PBS.h"
 #include "SingleAgentSolver.h"
+#include <parlay/parallel.h>
+#include <parlay/primitives.h>
+#include <parlay/sequence.h>
 
 // Merged agents
 struct MetaAgent
@@ -61,7 +64,8 @@ private:
     bool timeout = false;
     double remain_runtime = 0;
     clock_t start_time;
-    double solution_cost = 0;
+    double solution_cost = -2;
+    int pbs_screen = 0;
 
     // Node stats
     uint64_t num_HL_expanded = 0;
@@ -89,14 +93,15 @@ private:
     // runtime of building heuristic table for the low level
     double runtime_preprocessing = 0;
 
-    vector<MetaAgent*> all_meta_agents;
+    parlay::sequence<MetaAgent*> all_meta_agents;
+    parlay::sequence<set<int>> merge_meta_agents;
 
     // conflict_map[i][j] = true indicates that meta agent i and meta agents j
     // has conflicts. Note: no need to merge if a meta agent does not conflict
     // with any other meta agents.
     vector<vector<bool>> conflict_map;
 
-    MetaAgent* mergeMetaAgents(set<int> meta_agent_ids);
+    MetaAgent* mergeMetaAgents(size_t merge_id);
 
     // Check conflicts between agents a1 and a2 of meta agents ma1 and ma2
     bool hasConflicts(int ma1, int a1, int ma2, int a2);
@@ -105,11 +110,15 @@ private:
     // Check conflicts among all meta agents
     bool hasConflictsAmongMA();
     // Return a list of set of agents to be merged
-    vector<set<int>> findMergeMetaAgents();
+    void findMergeMetaAgents();
 
     void DFS(vector<bool>& visited, set<int>& component, int curr);
 
     void solveMetaAgent(MetaAgent* meta_agent);
 
     string getSolverName() const;
+
+    void printResult() const;
+
+    void printMetaAgents() const;
 };
