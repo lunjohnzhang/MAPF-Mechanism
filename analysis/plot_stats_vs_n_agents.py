@@ -64,7 +64,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     save_fig = False
     if ax is None:
         save_fig = True
-        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(8, 5.5))
 
     to_plot = sorted(to_plot.items())
     agent_nums = []
@@ -149,7 +149,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         ax.set_xlabel("Number of Agents", fontsize=25)
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=25)
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         ax.figure.tight_layout()
@@ -170,7 +170,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     return agent_nums
 
 
-def collect_results(logdirs, baseline_algo="PP1"):
+def collect_results(logdirs, baseline_algo="PP"):
     # All results to plot, key is the current algo, value is the `to_plot` dict
     # of the current algo
     print(f"Collecting results")
@@ -279,6 +279,17 @@ def collect_results(logdirs, baseline_algo="PP1"):
 def main(logdirs, add_legend=True, legend_only=False):
     to_plot_algo = collect_results(logdirs)
 
+    ###################### For debugging ######################
+    pp = to_plot_algo[('Monte Carlo PP', 'logs/to_show/demo/PP')]
+    pbs = to_plot_algo[('Exhaustive PBS', 'logs/to_show/demo/PBS')]
+    for i in range(1, 101):
+        assert pp[25][i].solution_cost + 1e-3 >= pbs[25][i].solution_cost
+        print(f"Seed {i}, pp={pp[25][i].solution_cost}, pbs={pbs[25][i].solution_cost}")
+    exit()
+
+    ###################### For debugging ######################
+
+
     for field in fields(Stats):
         print(f"Plotting {field.name}")
 
@@ -303,15 +314,15 @@ def main(logdirs, add_legend=True, legend_only=False):
                 longest_agent_nums = agent_nums
 
         # Post process
-        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=30)
-        ax.set_xlabel("Number of Agents", fontsize=30)
+        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=25)
+        ax.set_xlabel("Number of Agents", fontsize=25)
 
         ax.set_xticks(longest_agent_nums)
         ax.set_xticklabels(longest_agent_nums)
 
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=25)
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         if add_legend:
