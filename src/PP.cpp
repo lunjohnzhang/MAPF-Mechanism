@@ -391,10 +391,10 @@ void PP::saveResults(boost::filesystem::path filename) const
     vector<double> utilities(this->agents.size());
     for (int i = 0; i < this->agents.size(); i++)
     {
-        payments.emplace_back(
+        payments[i] =
             min_sum_of_cost_wo_i[i] -
             (min_sum_of_cost -
-             all_weighted_path_lengths[min_sum_of_cost_idx][i]));
+             all_weighted_path_lengths[min_sum_of_cost_idx][i]);
 
         utilities[i] = this->instance.values[i] -
                        this->instance.costs[i] *
