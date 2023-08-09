@@ -418,7 +418,8 @@ bool PBS::generateChild(int child_id, PBSNode* parent, int low, int high)
             {
                 for (int conflict_a2 : conflict_agents)
                 {
-                    // cout << "child: Agent " << a << " has conflict with agent "
+                    // cout << "child: Agent " << a << " has conflict with agent
+                    // "
                     //      << conflict_a2 << endl;
                     shared_ptr<Conflict> new_conflict(new Conflict());
                     new_conflict->pbsConflict(a, conflict_a2);
@@ -1391,7 +1392,7 @@ void PBS::storeBestPath()
 }
 
 void PBS::saveResults(boost::filesystem::path filename,
-                      const string& instanceName) const
+                      const string& instanceName)
 {
     // Calculate (if necessary) and store the following results:
     // 1. Weighted sum of path length by the costs of the agents.
@@ -1416,10 +1417,18 @@ void PBS::saveResults(boost::filesystem::path filename,
                 (this->solution_cost -
                  this->instance.costs[i] * (this->best_paths[i]->size() - 1));
 
-            utilities[i] =
+            double curr_welfare =
                 this->instance.values[i] -
-                this->instance.costs[i] * (this->best_paths[i]->size() - 1) -
-                payments[i];
+                this->instance.costs[i] * (this->best_paths[i]->size() - 1);
+
+            utilities[i] = curr_welfare - payments[i];
+
+            // If utility is negative, we assign "no path" to the agent and set
+            // social welfare of that agent to 0
+            if (utilities[i] >= 0)
+            {
+                this->social_welfare += curr_welfare;
+            }
         }
     }
 
@@ -1440,6 +1449,7 @@ void PBS::saveResults(boost::filesystem::path filename,
         {"runtime", runtime},
         {"n_solutions", n_solutions},
         {"solution_cost", solution_cost},
+        {"social_welfare", social_welfare},
         {"num_HL_expanded", num_HL_expanded},
         {"num_HL_generated", num_HL_generated},
         {"num_LL_expanded", num_LL_expanded},

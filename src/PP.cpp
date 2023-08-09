@@ -372,7 +372,7 @@ void PP::printDependencyGraph() const
     }
 }
 
-void PP::saveResults(boost::filesystem::path filename) const
+void PP::saveResults(boost::filesystem::path filename)
 {
     // Calculate (if necessary) and store the following results:
     // 1. Weighted sum of path length by the costs of the agents.
@@ -391,15 +391,23 @@ void PP::saveResults(boost::filesystem::path filename) const
     vector<double> utilities(this->agents.size());
     for (int i = 0; i < this->agents.size(); i++)
     {
-        payments[i] =
-            min_sum_of_cost_wo_i[i] -
-            (min_sum_of_cost -
-             all_weighted_path_lengths[min_sum_of_cost_idx][i]);
+        payments[i] = min_sum_of_cost_wo_i[i] -
+                      (min_sum_of_cost -
+                       all_weighted_path_lengths[min_sum_of_cost_idx][i]);
 
-        utilities[i] = this->instance.values[i] -
-                       this->instance.costs[i] *
-                           all_weighted_path_lengths[min_sum_of_cost_idx][i] -
-                       payments[i];
+        double curr_welfare =
+            this->instance.values[i] -
+            this->instance.costs[i] *
+                all_weighted_path_lengths[min_sum_of_cost_idx][i];
+
+        utilities[i] = curr_welfare - payments[i];
+
+        // If utility is negative, we assign "no path" to the agent and set
+        // social welfare of that agent to 0
+        if (utilities[i] >= 0)
+        {
+            this->social_welfare += curr_welfare;
+        }
     }
 
     json mechanism_results = {
@@ -420,6 +428,7 @@ void PP::saveResults(boost::filesystem::path filename) const
         {"avg_sum_of_cost", avg_sum_of_cost},
         {"min_suboptimality", min_suboptimality},
         {"solution_cost", min_sum_of_cost},
+        {"social_welfare", social_welfare},
         {"min_sum_of_cost_idx", min_sum_of_cost_idx},
         {"min_sum_of_cost_wo_i", min_sum_of_cost_wo_i},
         {"all_weighted_path_lengths", all_weighted_path_lengths},

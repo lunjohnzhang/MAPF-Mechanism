@@ -40,6 +40,7 @@ public:
     // The cost of the solution. If using exhaustive PBS, it's the cost of the
     // best solution.
     double solution_cost = -2;
+    double social_welfare = 0;
 
     // Under exhaustive PBS, remember the best solution w/o each agent i.
     vector<double> solution_costs_wo_i;
@@ -72,7 +73,7 @@ public:
     void savePaths(const string& fileName) const;  // write the paths to a file
     // write mechanism related results
     void saveResults(boost::filesystem::path filename,
-                     const string& instanceName) const;
+                     const string& instanceName);
     void clear();  // used for rapid random  restart
 
     Path* getBestPathByGlobalID(int agent_global_id,

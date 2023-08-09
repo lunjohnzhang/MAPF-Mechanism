@@ -64,7 +64,7 @@ public:
     void printOrdering() const;
     void printDependencyGraph() const;
     void savePaths(const string& fileName) const;
-    void saveResults(boost::filesystem::path filename) const;
+    void saveResults(boost::filesystem::path filename);
     void storeBestPath();
 
 private:
@@ -90,6 +90,7 @@ private:
     double avg_sum_of_cost = 0;
     double min_suboptimality = INT_MAX;
     double min_sum_of_cost = MAX_COST;
+    double social_welfare = 0;
 
     // Idx of the run that gets the min sum of cost
     int min_sum_of_cost_idx = -1;

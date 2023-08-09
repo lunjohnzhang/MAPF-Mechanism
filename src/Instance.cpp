@@ -66,11 +66,29 @@ Instance::Instance(const string& map_fname, const string& agent_fname,
     this->costs.resize(num_of_agents);
     this->values.resize(num_of_agents);
 
+    // Compute heuristic here to compute the costs.
+    // TODO: We compute heuristic multiple times (here and in single agent
+    // solver). Refractor to compute only once.
     for (int i = 0; i < this->num_of_agents; i++)
     {
-        this->costs[i] = cost_config_json["vals"][i];
-        this->values[i] = value_config_json["vals"][i];
+        getDistances(goal_locations[i], start_locations[i], goal_locations[i]);
     }
+
+    for (int i = 0; i < this->num_of_agents; i++)
+    {
+        this->values[i] = value_config_json["vals"][i];
+
+        // Compute cost as cost =
+        // costFactor*value/shortestPathWithoutConstraints
+        this->costs[i] =
+            (double)cost_config_json["vals"][i] * this->values[i] /
+            (double)distance_matrix[goal_locations[i]][start_locations[i]];
+    }
+    // Cleared because dummy start loc is not properly set here so the
+    // heuristic of dummy start loc is wrong.
+    // TODO: sort out deadlock between dummy start loc setting and heuristic
+    // computing.
+    distance_matrix.clear();
 }
 
 int Instance::randomWalk(int curr, int steps) const
