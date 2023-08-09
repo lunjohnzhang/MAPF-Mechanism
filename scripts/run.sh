@@ -5,9 +5,9 @@ USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS 
 algos=(
     "PP"
     "PP1"
-    "PBS"
-    "ECBS"
-    "CBS"
+    # "PBS"
+    # "ECBS"
+    # "CBS"
 )
 
 function get_dirname() {
