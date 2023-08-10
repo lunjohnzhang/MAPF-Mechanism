@@ -3,11 +3,11 @@
 USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX [RELOAD_DIR]"
 
 algos=(
-    "PP"
-    "PP1"
-    # "PBS"
+    # "PP"
+    # "PP1"
+    "PBS"
     # "ECBS"
-    # "CBS"
+    "CBS"
 )
 
 function get_dirname() {
