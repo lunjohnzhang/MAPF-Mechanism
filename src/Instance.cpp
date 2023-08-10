@@ -499,7 +499,8 @@ bool Instance::loadAgents()
         char_separator<char> sep(",");
         tokenizer<char_separator<char>> tok(line, sep);
         tokenizer<char_separator<char>>::iterator beg = tok.begin();
-        num_of_agents = atoi((*beg).c_str());
+        int stored_num_of_agents = atoi((*beg).c_str());
+        assert (stored_num_of_agents >= num_of_agents);
         start_locations.resize(num_of_agents);
         goal_locations.resize(num_of_agents);
         for (int i = 0; i < num_of_agents; i++)
@@ -512,13 +513,17 @@ bool Instance::loadAgents()
             int row = atoi((*c_beg).c_str());
             c_beg++;
             int col = atoi((*c_beg).c_str());
-            start_locations[i] = linearizeCoordinate(row, col, 0);
+            c_beg++;
+            int layer = atoi((*c_beg).c_str());
+            start_locations[i] = linearizeCoordinate(row, col, layer);
             // read goal [row,col] for agent i
             c_beg++;
             row = atoi((*c_beg).c_str());
             c_beg++;
             col = atoi((*c_beg).c_str());
-            goal_locations[i] = linearizeCoordinate(row, col, 0);
+            c_beg++;
+            layer = atoi((*c_beg).c_str());
+            goal_locations[i] = linearizeCoordinate(row, col, layer);
         }
     }
     myfile.close();
