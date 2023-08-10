@@ -942,10 +942,10 @@ bool PBS::terminate(PBSNode* curr)
 
         // ******************* Debug *******************
         // Overlap solution?
-        string curr_priority_graph_str = stringifyPriorityGraph();
-        vector<Path> current_sol;
-        for (int i = 0; i < num_of_agents; i++)
-            current_sol.emplace_back(Path(*paths[i]));
+        // string curr_priority_graph_str = stringifyPriorityGraph();
+        // vector<Path> current_sol;
+        // for (int i = 0; i < num_of_agents; i++)
+        //     current_sol.emplace_back(Path(*paths[i]));
         // // Try to find the value.
         // auto it = this->all_sol_priority_g.find(curr_priority_graph_str);
 
@@ -961,13 +961,13 @@ bool PBS::terminate(PBSNode* curr)
         //     this->all_sol_priority_g[curr_priority_graph_str] = current_sol;
         // }
 
-        if (this->all_sols.find(current_sol) != this->all_sols.end())
-        {
-            // cout << "Overlap solution" << endl;
-            this->n_overlap_solutions += 1;
-        }
-        else
-            this->all_sols.insert(current_sol);
+        // if (this->all_sols.find(current_sol) != this->all_sols.end())
+        // {
+        //     // cout << "Overlap solution" << endl;
+        //     this->n_overlap_solutions += 1;
+        // }
+        // else
+        //     this->all_sols.insert(current_sol);
 
         // cout << "Solution " << this->n_solutions << endl;
         // printPaths();
