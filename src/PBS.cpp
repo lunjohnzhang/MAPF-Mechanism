@@ -64,6 +64,7 @@ bool PBS::solve(double _time_limit)
                 break;
 
             // Not time/node out, continue to the next node.
+            curr->clear();
             continue;
         }
 
