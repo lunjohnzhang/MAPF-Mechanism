@@ -263,7 +263,11 @@ def collect_results(logdirs, baseline_algo="PP"):
                 payments = result["payments"]
                 std_payment = np.std(payments)
 
-            stat = Stats(runtime=result["runtime"],
+            runtime = result["runtime"]
+            if current_algo == "CBS":
+                runtime = result["total_runtime"]
+
+            stat = Stats(runtime=runtime,
                          success=success,
                          solution_cost=solution_cost,
                          social_welfare=social_welfare,
