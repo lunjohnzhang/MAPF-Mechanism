@@ -126,26 +126,39 @@ void Instance::generateRandomAgents(int warehouse_width)
         int k = 0;
         while (k < num_of_agents)
         {
-            int x = rand() % num_of_rows, y = rand() % num_of_cols,
-                z = rand() % num_of_layers;
-            int start = linearizeCoordinate(x, y, z);
-            if (my_map[start] || starts[start])
+            int x = rand() % num_of_rows, y = rand() % num_of_cols;
+            // Always start at the ground level
+            int start = linearizeCoordinate(x, y, 0);
+            // if (my_map[start] || starts[start])
+            //     continue;
+            // We can have multiple agents start from the same place.
+            if (my_map[start])
                 continue;
 
             // update start
             start_locations[k] = start;
-            starts[start] = true;
+            // starts[start] = true;
 
             // find goal
             bool flag = false;
-            int goal =
-                rand() % map_size;  // randomWalk(start, RANDOM_WALK_STEPS);
-            while (my_map[goal] || goals[goal])
-                goal = rand() % map_size;  // randomWalk(goal, 1);
+            x = rand() % num_of_rows;
+            y = rand() % num_of_cols;
+            // Always end at the ground level
+            int goal = linearizeCoordinate(x, y, 0);
+            // while (my_map[goal] || goals[goal])
+            //     goal = rand() % map_size;
+            // We can have multiple agents end at the same place.
+            while (my_map[goal] || start == goal)
+            {
+                x = rand() % num_of_rows;
+                y = rand() % num_of_cols;
+                // Always end at the ground level
+                goal = linearizeCoordinate(x, y, 0);
+            }
 
             // update goal
             goal_locations[k] = goal;
-            goals[goal] = true;
+            // goals[goal] = true;
 
             k++;
         }

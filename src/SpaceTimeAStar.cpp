@@ -91,8 +91,7 @@ Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
 
             // compute cost to next_id via curr node
             int next_g_val = curr->g_val + 1;
-            int next_h_val =
-                max(curr->getFVal() - next_g_val, heuristics[next_location]);
+            int next_h_val = heuristics[next_location];
 
             // generate (maybe temporary) node
             auto next = new AStarNode(next_location, next_g_val, next_h_val,
@@ -411,8 +410,7 @@ pair<Path, int> SpaceTimeAStar::findSuboptimalPath(
 
             // compute cost to next_id via curr node
             int next_g_val = curr->g_val + 1;
-            int next_h_val =
-                max(lowerbound - next_g_val, my_heuristic[next_location]);
+            int next_h_val = my_heuristic[next_location];
             if (next_g_val + next_h_val > constraint_table.length_max)
                 continue;
 

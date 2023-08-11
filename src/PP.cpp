@@ -79,8 +79,12 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
     double sum_of_costs = 0;
     dependency_graph.resize(ordering.size());
     // vector<double> weighted_path_lengths(agents.size());
+    int n = 0;
     for (int id : ordering)
     {
+        if (screen > 1)
+            cout << "Planning " << n << "th agent: " << id << endl;
+        n += 1;
         path_table.hit_agents.clear();
         agents[id].path = single_agent_planner.findOptimalPath(
             path_table, *agents[id].distance_to_goal, agents[id].start_location,
