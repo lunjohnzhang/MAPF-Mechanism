@@ -40,10 +40,12 @@ public:
     // The cost of the solution. If using exhaustive PBS, it's the cost of the
     // best solution.
     double solution_cost = -2;
-    double social_welfare = 0;
+    double max_social_welfare = INT_MIN;
 
     // Under exhaustive PBS, remember the best solution w/o each agent i.
     vector<double> solution_costs_wo_i;
+    // [i] stores the max welfare without agent i
+    vector<double> max_welfare_wo_i;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     // set params

@@ -30,6 +30,7 @@ PBS::PBS(const Instance& instance, bool sipp, int screen)
     }
 
     this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
+    this->max_welfare_wo_i.resize(num_of_agents, INT_MIN);
 }
 
 bool PBS::solve(double _time_limit)
@@ -90,7 +91,8 @@ bool PBS::solve(double _time_limit)
     {
         printResults();
         cout << "Found " << this->n_solutions
-             << " solutions, min cost: " << solution_cost << endl;
+             << " solutions, min cost: " << solution_cost
+             << ", max welfare: " << max_social_welfare << endl;
         cout << "N solutions without overlap: " << this->all_sols.size()
              << endl;
         // cout << "N solutions without overlap: " << this->n_solutions -
@@ -982,10 +984,21 @@ bool PBS::terminate(PBSNode* curr)
             double weighted_sol_cost =
                 weighted_path_cost(this->paths, this->instance.costs);
 
-            // Store the best path/solution cost as of the current solution
-            if (solution_cost == -2 || solution_cost > weighted_sol_cost)
+            double curr_welfare = 0;
+            for (int i = 0; i < num_of_agents; i++)
+            {
+                curr_welfare += max(this->instance.values[i] -
+                                        (double)(this->paths[i]->size() - 1) *
+                                            this->instance.costs[i],
+                                    0.0);
+            }
+
+            // Store the best path/solution cost with the max social welfare as
+            // of the current solution
+            if (solution_cost == -2 || curr_welfare > max_social_welfare)
             {
                 solution_cost = weighted_sol_cost;
+                max_social_welfare = curr_welfare;
                 goal_node = curr;
                 storeBestPath();
             }
@@ -993,16 +1006,20 @@ bool PBS::terminate(PBSNode* curr)
             // Store the best solution cost without each agent.
             for (int i = 0; i < this->num_of_agents; i++)
             {
-                // Calculate current solution cost without agent i
-                double curr_sol_cost_wo_i =
-                    weighted_sol_cost -
+                double curr_weighted_path_len =
                     this->instance.costs[i] *
-                        (double)(this->paths[i]->size() - 1);
+                    (double)(this->paths[i]->size() - 1);
+                double curr_sum_of_cost_wo_i =
+                    weighted_sol_cost - curr_weighted_path_len;
+                double curr_welfare_wo_i =
+                    curr_welfare -
+                    max(0.0, this->instance.values[i] - curr_weighted_path_len);
 
                 // Better?
-                if (curr_sol_cost_wo_i < this->solution_costs_wo_i[i])
+                if (curr_welfare_wo_i > this->max_welfare_wo_i[i])
                 {
-                    this->solution_costs_wo_i[i] = curr_sol_cost_wo_i;
+                    this->max_welfare_wo_i[i] = curr_welfare_wo_i;
+                    this->solution_costs_wo_i[i] = curr_sum_of_cost_wo_i;
                 }
             }
 
@@ -1426,10 +1443,10 @@ void PBS::saveResults(boost::filesystem::path filename,
 
             // If utility is negative, we assign "no path" to the agent and set
             // social welfare of that agent to 0
-            if (utilities[i] >= 0)
-            {
-                this->social_welfare += curr_welfare;
-            }
+            // if (utilities[i] >= 0)
+            // {
+            //     this->social_welfare += curr_welfare;
+            // }
         }
     }
 
@@ -1450,7 +1467,7 @@ void PBS::saveResults(boost::filesystem::path filename,
         {"runtime", runtime},
         {"n_solutions", n_solutions},
         {"solution_cost", solution_cost},
-        {"social_welfare", social_welfare},
+        {"social_welfare", max_social_welfare},
         {"num_HL_expanded", num_HL_expanded},
         {"num_HL_generated", num_HL_generated},
         {"num_LL_expanded", num_LL_expanded},

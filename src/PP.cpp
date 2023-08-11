@@ -17,6 +17,7 @@ PP::PP(Instance& instance, int screen, int seed)
     this->gen = mt19937(this->seed);
 
     this->min_sum_of_cost_wo_i.resize(this->agents.size(), MAX_COST);
+    this->max_welfare_wo_i.resize(this->agents.size(), INT_MIN);
     this->best_paths.resize(this->agents.size(), nullptr);
 }
 
@@ -65,7 +66,8 @@ void PP::preprocess(bool compute_distance_to_start,
     runtime_preprocessing = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }
 
-double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
+tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
+                                   double time_out_sec)
 {
     assert(ordering.size() == agents.size());
     if (screen > 1)
@@ -77,6 +79,7 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
 
     clock_t start_time = clock();
     double sum_of_costs = 0;
+    double curr_welfare = 0;
     dependency_graph.resize(ordering.size());
     // vector<double> weighted_path_lengths(agents.size());
     int n = 0;
@@ -93,6 +96,7 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
         if (time_out_sec < (double)(clock() - start_time) / CLOCKS_PER_SEC)
         {
             sum_of_costs = MAX_COST;
+            curr_welfare = INT_MIN;
             failed_agent_id = id;
             break;
         }
@@ -106,6 +110,7 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
         if (agents[id].path.empty())
         {
             sum_of_costs = MAX_COST;
+            curr_welfare = INT_MIN;
             failed_agent_id = id;
             break;  // failed, id is the failing agent. in its dependency graph,
                     // at least one pair should be reversed
@@ -113,6 +118,8 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
         double curr_agent_weighted_path_len =
             (double)(agents[id].path.size() - 1) * this->instance.costs[id];
         sum_of_costs += curr_agent_weighted_path_len;
+        curr_welfare +=
+            max(this->instance.values[id] - curr_agent_weighted_path_len, 0.0);
         path_table.insertPath(agents[id].id, agents[id].path);
         all_weighted_path_lengths[run_id][id] = curr_agent_weighted_path_len;
     }
@@ -122,20 +129,25 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
     {
         for (int i = 0; i < agents.size(); i++)
         {
-            double curr_sum_of_cost_wo_i =
-                sum_of_costs -
+            double curr_weighted_path_len =
                 (double)(agents[i].path.size() - 1) * this->instance.costs[i];
+            double curr_sum_of_cost_wo_i =
+                sum_of_costs - curr_weighted_path_len;
+            double curr_welfare_wo_i =
+                curr_welfare -
+                max(0.0, this->instance.values[i] - curr_weighted_path_len);
 
             // Better?
-            if (curr_sum_of_cost_wo_i < this->min_sum_of_cost_wo_i[i])
+            if (curr_welfare_wo_i > this->max_welfare_wo_i[i])
             {
+                this->max_welfare_wo_i[i] = curr_welfare_wo_i;
                 this->min_sum_of_cost_wo_i[i] = curr_sum_of_cost_wo_i;
             }
         }
     }
 
     runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-    return sum_of_costs;
+    return std::make_tuple(sum_of_costs, curr_welfare);
 }
 
 void PP::storeBestPath()
@@ -174,7 +186,8 @@ void PP::run(int n_runs, double time_out_sec)
         this->preprocess(true, true, true);
         this->computeRandomOrdering();
         int failed_agent_id = -1;
-        double sum_of_cost = run_once(failed_agent_id, i);
+        double sum_of_cost, curr_welfare;
+        std::tie(sum_of_cost, curr_welfare) = run_once(failed_agent_id, i);
 
         // Current run is failed
         if (failed_agent_id >= 0)
@@ -202,12 +215,21 @@ void PP::run(int n_runs, double time_out_sec)
             avg_suboptimality += suboptimality;
             n_success += 1;
             avg_sum_of_cost += sum_of_cost;
-            if (suboptimality < min_suboptimality)
-                min_suboptimality = suboptimality;
-            if (sum_of_cost < min_sum_of_cost)
+            // if (suboptimality < min_suboptimality)
+            //     min_suboptimality = suboptimality;
+            // if (sum_of_cost < min_sum_of_cost)
+            // {
+            //     min_sum_of_cost = sum_of_cost;
+            //     min_sum_of_cost_idx = i;
+            // }
+            // We want the path that corresponds to the maximum welfare.
+            if (curr_welfare > max_social_welfare)
             {
+                max_social_welfare = curr_welfare;
                 min_sum_of_cost = sum_of_cost;
+                max_welfare_idx = i;
                 min_sum_of_cost_idx = i;
+                min_suboptimality = suboptimality;
                 storeBestPath();
             }
 
@@ -239,8 +261,12 @@ void PP::run(int n_runs, double time_out_sec)
     avg_sum_of_cost /= n_success;
     cout << "Average suboptimality: " << avg_suboptimality << endl;
     cout << "Average sum of cost: " << avg_sum_of_cost << endl;
-    cout << "Minimum suboptimality: " << min_suboptimality << endl;
-    cout << "Minimum sum of cost: " << min_sum_of_cost << endl;
+    // cout << "Minimum suboptimality: " << min_suboptimality << endl;
+    // cout << "Minimum sum of cost idx: " << min_sum_of_cost_idx << endl;
+    cout << "Maximum social welfare: " << max_social_welfare << endl;
+    cout << "Maximum social welfare idx: " << max_welfare_idx << endl;
+    cout << "Sum of cost of max social welfare path: " << min_sum_of_cost
+         << endl;
     cout << "Total runtime: " << total_runtime << endl;
 }
 
@@ -395,23 +421,22 @@ void PP::saveResults(boost::filesystem::path filename)
     vector<double> utilities(this->agents.size());
     for (int i = 0; i < this->agents.size(); i++)
     {
-        payments[i] = min_sum_of_cost_wo_i[i] -
-                      (min_sum_of_cost -
-                       all_weighted_path_lengths[min_sum_of_cost_idx][i]);
+        payments[i] =
+            min_sum_of_cost_wo_i[i] -
+            (min_sum_of_cost - all_weighted_path_lengths[max_welfare_idx][i]);
 
         double curr_welfare = this->instance.values[i] -
-                              all_weighted_path_lengths[min_sum_of_cost_idx][i];
+                              all_weighted_path_lengths[max_welfare_idx][i];
 
         utilities[i] = curr_welfare - payments[i];
 
         // If utility is negative, we assign "no path" to the agent and set
         // social welfare of that agent to 0
-        if (utilities[i] >= 0)
-        {
-            this->social_welfare += max(0.0, curr_welfare);
-        }
+        // if (utilities[i] >= 0)
+        // {
+        //     this->social_welfare += max(0.0, curr_welfare);
+        // }
     }
-    cout << "Social welfare: " << social_welfare << endl;
 
     json mechanism_results = {
         // Agent profile
@@ -431,8 +456,9 @@ void PP::saveResults(boost::filesystem::path filename)
         {"avg_sum_of_cost", avg_sum_of_cost},
         {"min_suboptimality", min_suboptimality},
         {"solution_cost", min_sum_of_cost},
-        {"social_welfare", social_welfare},
+        {"social_welfare", max_social_welfare},
         {"min_sum_of_cost_idx", min_sum_of_cost_idx},
+        {"max_welfare_idx", max_welfare_idx},
         {"min_sum_of_cost_wo_i", min_sum_of_cost_wo_i},
         {"all_weighted_path_lengths", all_weighted_path_lengths},
         {"failed_runs", failed_runs},
