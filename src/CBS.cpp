@@ -1840,12 +1840,16 @@ void CBS::saveResults(boost::filesystem::path filename,
     mechanism_results["payments"] = payments;
     mechanism_results["utilities"] = utilities;
     mechanism_results["payment_calculate_success"] = payment_calculate_success;
+    mechanism_results["total_runtime"] = total_runtime;
 
     write_to_json(mechanism_results, filename);
 }
 
 bool CBS::computeVCGPayment()
 {
+    total_runtime = runtime;
+    double time_remain = this->time_limit - runtime;
+
     // Sequentially set each cost to 0 and obtain the solutions
     this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
     double opt_solution_cost = solution_cost;
@@ -1874,13 +1878,14 @@ bool CBS::computeVCGPayment()
         search_engines.resize(num_of_agents);
         for (int j = 0; j < num_of_agents; j++)
             search_engines[j] = new SpaceTimeAStar(local_instance, j);
-        runtime_preprocessing += (double)(clock() - t) / CLOCKS_PER_SEC;
-        runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
+        runtime_preprocessing = (double)(clock() - t) / CLOCKS_PER_SEC;
         mutex_helper.search_engines = search_engines;
 
         // Run
         this->bypass = false;
-        solve(this->time_limit - runtime);
+        solve(time_remain / num_of_agents);
+        total_runtime += runtime;
+        runtime_calculate_payment += (double)(clock() - t) / CLOCKS_PER_SEC;
         if (!solution_found)
         {
             timeout = true;

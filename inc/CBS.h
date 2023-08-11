@@ -19,7 +19,9 @@ public:
 
     /////////////////////////////////////////////////////////////////////////////////////
     // stats
-    // total runtime
+    // total runtime of n runs, used for payment calculation
+    double total_runtime = 0;
+    // runtime of one run
     double runtime = 0;
     // runtime of generating child nodes
     double runtime_generate_child = 0;
@@ -33,6 +35,8 @@ public:
     double runtime_detect_conflicts = 0;
     // runtime of building heuristic table for the low level
     double runtime_preprocessing = 0;
+    // Runtime of calculating payment
+    double runtime_calculate_payment = 0;
 
     uint64_t num_cardinal_conflicts = 0;
     uint64_t num_corridor_conflicts = 0;
