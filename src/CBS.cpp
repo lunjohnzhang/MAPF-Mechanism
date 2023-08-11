@@ -417,9 +417,16 @@ bool CBS::findPathForSingleAgent(CBSNode* node, int ag, int lowerbound)
     {
         assert(!isSamePath(*paths[ag], new_path));
         node->paths.emplace_back(ag, new_path);
-        node->g_val =
-            node->g_val - ((int)paths[ag]->size() - (int)new_path.size()) *
-                              search_engines[ag]->instance.costs[ag];
+        node->path_cost =
+            node->path_cost - ((int)paths[ag]->size() - (int)new_path.size()) *
+                                  search_engines[ag]->instance.costs[ag];
+
+        // Compute g_val as sum of -max(0, v[i] - c[i] * path_length) for each i
+        // i.e. the opposite of social welfare of the current agent
+        double prev_welfare = computeWelfare(*paths[ag], ag);
+        double curr_welfare = computeWelfare(new_path, ag);
+        node->g_val = node->g_val - prev_welfare + curr_welfare;
+
         paths[ag] = &node->paths.back().second;
         node->makespan = max(node->makespan, new_path.size() - 1);
         return true;
@@ -430,6 +437,25 @@ bool CBS::findPathForSingleAgent(CBSNode* node, int ag, int lowerbound)
     }
 }
 
+double CBS::computeWelfare(Path& path, int ag)
+{
+    double curr_v = search_engines[ag]->instance.values[ag];
+    double curr_c = search_engines[ag]->instance.costs[ag];
+
+    // double prev_welfare = curr_v - curr_c * ((int)paths[ag]->size() - 1);
+    // double curr_welfare = curr_v - curr_c * ((int)new_path.size() - 1);
+
+    double welfare = curr_v - curr_c * ((int)path.size() - 1);
+
+    // CBS natrually minimize instead of maximize. We are trying to
+    // maximize the welfare, so we need to take the opposite.
+    welfare = -max(0.0, welfare);
+    // cout << "welfare = " << welfare << endl;
+    // curr_welfare = -max(0.0, curr_welfare);
+
+    return welfare;
+}
+
 bool CBS::generateChild(CBSNode* node, CBSNode* parent)
 {
     clock_t t1 = clock();
@@ -438,6 +464,7 @@ bool CBS::generateChild(CBSNode* node, CBSNode* parent)
     node->g_val = parent->g_val;
     node->makespan = parent->makespan;
     node->depth = parent->depth + 1;
+    node->path_cost = parent->path_cost;
     /*int agent, x, y, t;
     constraint_type type;
     assert(node->constraints.size() > 0);
@@ -890,8 +917,8 @@ void CBS::printResults() const
     else if (solution_cost == -3)  // nodes out
         cout << "Nodesout,";
 
-    cout << solution_cost << "," << runtime << "," << num_HL_expanded << ","
-         << num_LL_expanded << ","
+    cout << social_welfare << "," << solution_cost << "," << runtime << ","
+         << num_HL_expanded << "," << num_LL_expanded << ","
          <<  // HL_num_generated << "," << LL_num_generated << "," <<
         cost_lowerbound << "," << dummy_start->g_val << ","
          << dummy_start->g_val + dummy_start->h_val << "," << endl;
@@ -1296,7 +1323,7 @@ bool CBS::solve(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
                     delete (child[i]);
                     continue;
                 }
-                else if (bypass && child[i]->g_val == curr->g_val &&
+                else if (bypass && child[i]->path_cost == curr->path_cost &&
                          child[i]->distance_to_go <
                              curr->distance_to_go)  // Bypass1
                 {
@@ -1350,6 +1377,7 @@ bool CBS::solve(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
                 {
                     if (solved[i])
                     {
+                        assert(child[i]->constraints.size() > 0);
                         pushNode(child[i]);
                         curr->children.push_back(child[i]);
                         if (screen > 1)
@@ -1408,7 +1436,12 @@ bool CBS::terminate(HLNode* curr)
     {  // found a solution
         solution_found = true;
         goal_node = curr;
-        solution_cost = goal_node->getFHatVal() - goal_node->cost_to_go;
+        // solution_cost = goal_node->getFHatVal() - goal_node->cost_to_go;
+        // Calculate solution_cost as weighted sum of path lenght
+        solution_cost = goal_node->path_cost;
+        // g_val actually stores the negative social welfare.
+        // Negate back to get the actual social welfare
+        social_welfare = -goal_node->g_val;
         if (!validateSolution())
         {
             cout << "Solution invalid!!!" << endl;
@@ -1597,8 +1630,9 @@ bool CBS::generateRoot()
             paths[i] = &paths_found_initially[i];
             root->makespan =
                 max(root->makespan, paths_found_initially[i].size() - 1);
-            root->g_val += ((int)paths_found_initially[i].size() - 1) *
-                           search_engines[i]->instance.costs[i];
+            root->path_cost += ((int)paths_found_initially[i].size() - 1) *
+                               search_engines[i]->instance.costs[i];
+            root->g_val += computeWelfare(paths_found_initially[i], i);
             num_LL_expanded += search_engines[i]->num_expanded;
             num_LL_generated += search_engines[i]->num_generated;
         }
@@ -1610,8 +1644,9 @@ bool CBS::generateRoot()
             paths[i] = &paths_found_initially[i];
             root->makespan =
                 max(root->makespan, paths_found_initially[i].size() - 1);
-            root->g_val += ((int)paths_found_initially[i].size() - 1) *
-                           search_engines[i]->instance.costs[i];
+            root->path_cost += ((int)paths_found_initially[i].size() - 1) *
+                               search_engines[i]->instance.costs[i];
+            root->g_val += computeWelfare(paths_found_initially[i], i);
         }
     }
 
@@ -1663,7 +1698,7 @@ void CBS::clearSearchEngines()
 bool CBS::validateSolution() const
 {
     // check whether the solution cost is within the bound
-    if (solution_cost > cost_lowerbound * suboptimality)
+    if (-social_welfare > cost_lowerbound * suboptimality)
     {
         cout << "Solution cost exceeds the sub-optimality bound!" << endl;
         return false;
@@ -1756,6 +1791,7 @@ void CBS::saveResults(boost::filesystem::path filename,
         {"nodeout", nodeout},
         {"runtime", runtime},
         {"solution_cost", solution_cost},
+        {"social_welfare", social_welfare},
         {"num_HL_expanded", num_HL_expanded},
         {"num_HL_generated", num_HL_generated},
         {"num_LL_expanded", num_LL_expanded},

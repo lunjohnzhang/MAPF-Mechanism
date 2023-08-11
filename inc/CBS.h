@@ -61,6 +61,7 @@ public:
 
     bool solution_found = false;
     double solution_cost = -2;
+    double social_welfare;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     // set params
@@ -129,7 +130,7 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     // Runs the algorithm until the problem is solved or time is exhausted
-    bool solve(double time_limit, int cost_lowerbound = 0,
+    bool solve(double time_limit, int cost_lowerbound = MIN_COST,
                int cost_upperbound = MAX_COST);
 
     int getLowerBound() const { return cost_lowerbound; }
@@ -183,7 +184,7 @@ protected:
     double agentSuboptimality = 1.0;
     double cost_lowerbound = 0;
     double inadmissible_cost_lowerbound;
-    int node_limit = MAX_NODES;
+    int node_limit = MAX_NODES_CBS;
     int cost_upperbound = MAX_COST;
     bool dummy_start_node = false;
     bool timeout = false;
@@ -235,6 +236,8 @@ protected:
 
     // check the conflict is cardinal, semi-cardinal or non-cardinal
     void computeConflictPriority(shared_ptr<Conflict>& con, CBSNode& node);
+
+    double computeWelfare(Path& path, int ag);
 
 private:  // CBS only, cannot be used by ECBS
     // it is called open list in ECBS
