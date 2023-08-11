@@ -242,8 +242,9 @@ Path SpaceTimeAStar::findOptimalPath(const HLNode& node,
 
             // compute cost to next_id via curr node
             int next_g_val = curr->g_val + 1;
-            int next_h_val =
-                max(lowerbound - next_g_val, my_heuristic[next_location]);
+            // int next_h_val =
+            //     max(lowerbound - next_g_val, my_heuristic[next_location]);
+            int next_h_val = my_heuristic[next_location];
             if (next_g_val + next_h_val > constraint_table.length_max)
                 continue;
 
