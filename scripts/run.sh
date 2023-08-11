@@ -3,11 +3,11 @@
 USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX [RELOAD_DIR]"
 
 algos=(
-    # "PP"
-    # "PP1"
-    "PBS"
+    "PP"
+    "PP1"
+    # "PBS"
     # "ECBS"
-    "CBS"
+    # "CBS"
 )
 
 function get_dirname() {
@@ -162,7 +162,8 @@ if [ -z "${RELOAD_DIR}" ]; then
                 for scen_id in $(seq 1 10); do
                     all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
                     all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
-                    all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    all_scen_files+=("custom_scens/${map_name}-layer=$N_LAYERS-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
                     mkdir -p $logdir_algo
                     # echo "$algo $n_agent $i $logdir_algo"
@@ -219,7 +220,8 @@ else
                     echo "Have_run does not contain $exp_fingerprint"
                     all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
                     all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
-                    all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    all_scen_files+=("custom_scens/${map_name}-layer=$N_LAYERS-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
                     mkdir -p $logdir_algo
                     all_algos_exp+=("$algo")
