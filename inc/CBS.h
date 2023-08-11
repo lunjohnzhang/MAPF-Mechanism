@@ -144,7 +144,7 @@ public:
 
     // Save results
     void saveResults(boost::filesystem::path filename,
-                     const string& instanceName) const;
+                     const string& instanceName);
     // void saveStats(const string& fileName, const string& instanceName);
     void saveCT(const string& fileName) const;     // write the CT to a file
     void savePaths(const string& fileName) const;  // write the paths to a file
@@ -198,6 +198,10 @@ protected:
     vector<Path*> paths;
     vector<Path> paths_found_initially;  // contain initial paths found
     // vector<MDD*> mdds_initially;  // contain initial paths found
+
+    vector<double> payments;
+    vector<double> utilities;
+    bool payment_calculate_success = false;
 
     // used to find (single) agents' paths and mdd
     vector<SingleAgentSolver*> search_engines;
@@ -261,4 +265,8 @@ private:  // CBS only, cannot be used by ECBS
     // update information
     inline void updatePaths(CBSNode* curr);
     void printPaths() const;
+
+    vector<double> solution_costs_wo_i;
+    // Compute VCG payment for CBS
+    bool computeVCGPayment();
 };

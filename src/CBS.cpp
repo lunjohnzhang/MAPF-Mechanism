@@ -1772,7 +1772,7 @@ void CBS::clear()
 }
 
 void CBS::saveResults(boost::filesystem::path filename,
-                      const string& instanceName) const
+                      const string& instanceName)
 {
     json mechanism_results = {
         {"map_dimension",
@@ -1827,5 +1827,83 @@ void CBS::saveResults(boost::filesystem::path filename,
         {"runtime_preprocessing", runtime_preprocessing},
         {"solver_name", getSolverName()},
         {"instance_name", instanceName}};
+
+    if (solution_found)
+    {
+        payment_calculate_success = computeVCGPayment();
+        if (payment_calculate_success)
+            cout << "Payment computed successfuly" << endl;
+        else
+            cout << "Payment calculation failed" << endl;
+    }
+
+    mechanism_results["payments"] = payments;
+    mechanism_results["utilities"] = utilities;
+    mechanism_results["payment_calculate_success"] = payment_calculate_success;
+
     write_to_json(mechanism_results, filename);
+}
+
+bool CBS::computeVCGPayment()
+{
+    // Sequentially set each cost to 0 and obtain the solutions
+    this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
+    double opt_solution_cost = solution_cost;
+    Instance global_instance(this->search_engines[0]->instance);
+
+    // Save best paths
+    vector<Path*> best_paths(num_of_agents, nullptr);
+    for (int i = 0; i < num_of_agents; i++)
+    {
+        best_paths[i] = new Path(*this->paths[i]);
+    }
+
+    // Get solution cost wo i by calling solve with each agents cost set to 0.
+    for (int i = 0; i < this->num_of_agents; i++)
+    {
+        clock_t t = clock();
+        // Clear previous run.
+        clear();
+
+        // Get new instance and set cost[i] to 0
+        Instance local_instance(global_instance);
+        local_instance.costs[i] = 0;
+
+        // Clear current search engine and set new ones with cost[i] = 0
+        clearSearchEngines();
+        search_engines.resize(num_of_agents);
+        for (int j = 0; j < num_of_agents; j++)
+            search_engines[j] = new SpaceTimeAStar(local_instance, j);
+        runtime_preprocessing += (double)(clock() - t) / CLOCKS_PER_SEC;
+        runtime += (double)(clock() - t) / CLOCKS_PER_SEC;
+        mutex_helper.search_engines = search_engines;
+
+        // Run
+        this->bypass = false;
+        solve(this->time_limit - runtime);
+        if (!solution_found)
+        {
+            timeout = true;
+            return false;
+        }
+        this->solution_costs_wo_i[i] = solution_cost;
+    }
+
+    this->payments.resize(this->num_of_agents, INT_MAX);
+    this->utilities.resize(this->num_of_agents, INT_MAX);
+
+    for (int i = 0; i < this->num_of_agents; i++)
+    {
+        payments[i] = this->solution_costs_wo_i[i] -
+                      (opt_solution_cost -
+                       global_instance.costs[i] * (best_paths[i]->size() - 1));
+
+        double curr_welfare =
+            global_instance.values[i] -
+            global_instance.costs[i] * (best_paths[i]->size() - 1);
+
+        utilities[i] = curr_welfare - payments[i];
+    }
+
+    return true;
 }
