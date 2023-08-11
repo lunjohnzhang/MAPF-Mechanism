@@ -15,10 +15,17 @@ public:
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     // Runs the algorithm until the problem is solved or time is exhausted
-    bool solve(double time_limit, int cost_lowerbound = 0);
+    bool solve(double time_limit, int cost_lowerbound = MIN_COST);
     void clear();  // used for rapid random  restart
 
 private:
+    // lower bound of the negated welfare (always negative)
+    double welfare_lowerbound = 0;
+
+    // Add an additional subopt for path cost.
+    // Path cost are minimized, therefore this subopt >= 1
+    double suboptimality_cost = 1.0;
+
     vector<int> min_f_vals;  // lower bounds of the cost of the shortest path
     vector<pair<Path, int> >
         paths_found_initially;  // contain initial paths found

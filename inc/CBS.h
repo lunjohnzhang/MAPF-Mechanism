@@ -119,6 +119,8 @@ public:
     {
         solver_type = s;
         suboptimality = w;
+        // Set the cost subopt as the reciprocal of welfare w (`suboptimality`).
+        suboptimality_cost = 1.0 / w;
     }
     void setNodeLimit(int n) { node_limit = n; }
     void setLowLevelSolver(double w, bool dummy_start_node)
@@ -180,6 +182,7 @@ protected:
     int screen;
 
     double time_limit;
+    // We maximize social welfare, therefore subopt <= 1
     double suboptimality = 1.0;
     double agentSuboptimality = 1.0;
     double cost_lowerbound = 0;

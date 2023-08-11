@@ -2,9 +2,17 @@
 
 bool ECBS::solve(double time_limit, int _cost_lowerbound)
 {
+    // Note: the use of `cost_lowerbound` is different in ECBS and CBS.
+    // In CBS we always choose the node with min f, so we can let
+    // `cost_lowerbound` to be the lower bound of the negative social welfare
+    //being minimized. But in ECBS there is an inadmissible f_hat function, so
+    //we need to keep `cost_lowerbound` as the lowerbound of the path cost and
+    //use an additional `welfare_lowerbound` as the lowerbound of the negated
+    //social welfare.
     this->cost_lowerbound = _cost_lowerbound;
     this->inadmissible_cost_lowerbound = 0;
     this->time_limit = time_limit;
+    this->welfare_lowerbound = MIN_COST;
 
     if (screen > 0)  // 1 or 2
     {
@@ -96,7 +104,7 @@ bool ECBS::solve(double time_limit, int _cost_lowerbound)
                                 break;
                             }*/
                             if ((double)path.second.first.size() - 1 >
-                                suboptimality *
+                                suboptimality_cost *
                                     fmin_copy[path.first])  // Our bypassing
                             {
                                 foundBypass = false;
