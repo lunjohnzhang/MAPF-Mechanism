@@ -395,10 +395,8 @@ void PP::saveResults(boost::filesystem::path filename)
                       (min_sum_of_cost -
                        all_weighted_path_lengths[min_sum_of_cost_idx][i]);
 
-        double curr_welfare =
-            this->instance.values[i] -
-            this->instance.costs[i] *
-                all_weighted_path_lengths[min_sum_of_cost_idx][i];
+        double curr_welfare = this->instance.values[i] -
+                              all_weighted_path_lengths[min_sum_of_cost_idx][i];
 
         utilities[i] = curr_welfare - payments[i];
 
@@ -406,9 +404,10 @@ void PP::saveResults(boost::filesystem::path filename)
         // social welfare of that agent to 0
         if (utilities[i] >= 0)
         {
-            this->social_welfare += curr_welfare;
+            this->social_welfare += max(0.0, curr_welfare);
         }
     }
+    cout << "Social welfare: " << social_welfare << endl;
 
     json mechanism_results = {
         // Agent profile
