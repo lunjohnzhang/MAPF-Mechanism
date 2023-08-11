@@ -88,7 +88,7 @@ int main(int argc, char** argv)
             "corridor reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false),
             "target reasoning")
-		("sipp", po::value<bool>()->default_value(0),
+		("sipp", po::value<bool>()->default_value(false),
             "using SIPPS as the low-level solver")
 		;
     // clang-format on
@@ -297,7 +297,7 @@ int main(int argc, char** argv)
         //////////////////////////////////////////////////////////////////////
         // run
         double runtime = 0;
-        int lowerbound = 0;
+        int lowerbound = MIN_COST;
         int runs = vm["nRestarts"].as<int>() + 1;
         for (int i = 0; i < runs; i++)
         {
