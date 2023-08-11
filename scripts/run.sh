@@ -163,7 +163,7 @@ if [ -z "${RELOAD_DIR}" ]; then
                     all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
                     all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
                     # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
-                    all_scen_files+=("custom_scens/${map_name}-layer=$N_LAYERS-${scen_id}.scen")
+                    all_scen_files+=("custom_scens/${map_name}-my-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
                     mkdir -p $logdir_algo
                     # echo "$algo $n_agent $i $logdir_algo"
@@ -221,7 +221,7 @@ else
                     all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
                     all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
                     # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
-                    all_scen_files+=("custom_scens/${map_name}-layer=$N_LAYERS-${scen_id}.scen")
+                    all_scen_files+=("custom_scens/${map_name}-my-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
                     mkdir -p $logdir_algo
                     all_algos_exp+=("$algo")
