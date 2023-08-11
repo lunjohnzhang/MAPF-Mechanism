@@ -235,9 +235,10 @@ def collect_results(logdirs, baseline_algo="PP"):
                 success = 1
 
             # Social welfare is sum of values - solution cost
-            values = result["values"]
+            # values = result["values"]
             solution_cost = result["solution_cost"]
-            social_welfare = np.sum(values) - solution_cost
+            social_welfare = result[
+                "social_welfare"] if "social_welfare" in result else 0
 
             social_welfare_subopt = None
             solution_cost_subopt = None
@@ -280,15 +281,14 @@ def main(logdirs, add_legend=True, legend_only=False):
     to_plot_algo = collect_results(logdirs)
 
     ###################### For debugging ######################
-    pp = to_plot_algo[('Monte Carlo PP', 'logs/to_show/demo/PP')]
-    pbs = to_plot_algo[('Exhaustive PBS', 'logs/to_show/demo/PBS')]
-    for i in range(1, 101):
-        assert pp[25][i].solution_cost + 1e-3 >= pbs[25][i].solution_cost
-        print(f"Seed {i}, pp={pp[25][i].solution_cost}, pbs={pbs[25][i].solution_cost}")
-    exit()
+    # pp = to_plot_algo[('Monte Carlo PP', 'logs/to_show/demo/PP')]
+    # pbs = to_plot_algo[('Exhaustive PBS', 'logs/to_show/demo/PBS')]
+    # for i in range(1, 101):
+    #     assert pp[25][i].solution_cost + 1e-3 >= pbs[25][i].solution_cost
+    #     print(f"Seed {i}, pp={pp[25][i].solution_cost}, pbs={pbs[25][i].solution_cost}")
+    # exit()
 
     ###################### For debugging ######################
-
 
     for field in fields(Stats):
         print(f"Plotting {field.name}")
