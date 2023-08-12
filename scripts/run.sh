@@ -160,8 +160,8 @@ if [ -z "${RELOAD_DIR}" ]; then
             i=1 # The seed
             for cost_value_id in $(seq 1 10); do
                 for scen_id in $(seq 1 10); do
-                    all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
-                    all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
+                    all_cost_files+=("config/agent_costs/${COST_MODE}/10000_${cost_value_id}.json")
+                    all_value_files+=("config/agent_values/${VALUE_MODE}/10000_${cost_value_id}.json")
                     # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
                     all_scen_files+=("custom_scens/${map_name}-my-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
@@ -218,8 +218,8 @@ else
                     # Obtain name of the map so that we can infer the scen filenames
                     map_name=$(get_filename $MAP_FILE)
                     echo "Have_run does not contain $exp_fingerprint"
-                    all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
-                    all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
+                    all_cost_files+=("config/agent_costs/${COST_MODE}/10000_${cost_value_id}.json")
+                    all_value_files+=("config/agent_values/${VALUE_MODE}/10000_${cost_value_id}.json")
                     # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
                     all_scen_files+=("custom_scens/${map_name}-my-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
@@ -285,8 +285,8 @@ done
 #                     -a "$SCEN_FILE" \
 #                     -k "$n_agent" \
 #                     -t 120 \
-#                     --cost config/agent_costs/${COST_MODE}/1000_$i.json \
-#                     --value config/agent_values/${VALUE_MODE}/1000_$i.json \
+#                     --cost config/agent_costs/${COST_MODE}/10000_$i.json \
+#                     --value config/agent_values/${VALUE_MODE}/10000_$i.json \
 #                     --algo $algo \
 #                     --suboptimality 1.05 \
 #                     --nLayers $N_LAYERS \
