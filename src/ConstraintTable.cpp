@@ -150,7 +150,9 @@ void ConstraintTable::insert2CT(const Path& path)
             prev_timestep = timestep;
         }
     }
-    insert2CT(path.back().location, (int)path.size() - 1, MAX_TIMESTEP);
+    // We ignore target conflicts
+    // insert2CT(path.back().location, (int)path.size() - 1, MAX_TIMESTEP);
+    insert2CT(path.back().location, (int)path.size() - 1, (int)path.size());
 }
 
 void ConstraintTable::insertLandmark(size_t loc, int t)
@@ -229,6 +231,8 @@ list<pair<int, int> > ConstraintTable::decodeBarrier(int x, int y, int t) const
 bool ConstraintTable::constrained(size_t loc, int t) const
 {
     assert(loc >= 0);
+    if (loc == GLOBAL_VAR::dummy_start_loc)
+        return false;
     if (loc < map_size)
     {
         const auto& it = landmarks.find(t);
@@ -251,6 +255,9 @@ bool ConstraintTable::constrained(size_t loc, int t) const
 bool ConstraintTable::constrained(size_t curr_loc, size_t next_loc,
                                   int next_t) const
 {
+    if (curr_loc == GLOBAL_VAR::dummy_start_loc &&
+        next_loc == GLOBAL_VAR::dummy_start_loc)
+        return false;
     return constrained(getEdgeIndex(curr_loc, next_loc), next_t);
 }
 
