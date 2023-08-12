@@ -13,135 +13,7 @@ void SpaceTimeAStar::updatePath(const LLNode* goal, vector<PathEntry>& path)
     std::reverse(path.begin(), path.end());
 }
 
-Path SpaceTimeAStar::findOptimalPath(PathTable& path_table,
-                                     const vector<int>& heuristics,
-                                     int start_location, int goal_location,
-                                     double time_out_sec, bool dummy_start_node)
-{
-    optimal = true;  // using A* search
-    Path path;
-    num_expanded = 0;
-    num_generated = 0;
-
-    // generate start and add it to the OPEN list
-    AStarNode* start;
-    if (dummy_start_node)
-    {
-        // Create dummy start node if specified
-        start = new AStarNode(GLOBAL_VAR::dummy_start_loc, 0,
-                              1 + heuristics[start_location], nullptr, 0, 0);
-    }
-    else
-    {
-        start = new AStarNode(start_location, 0, heuristics[start_location],
-                              nullptr, 0, 0);
-    }
-
-    num_generated++;
-    start->open_handle = open_list.push(start);
-    start->in_openlist = true;
-    allNodes_table.insert(start);
-    min_f_val = (int)start->getFVal();
-    clock_t start_time = clock();
-    while (!open_list.empty())
-    {
-        if (time_out_sec < (double)(clock() - start_time) / CLOCKS_PER_SEC)
-        {
-            cout << "fail in findOptimalPath()" << endl;
-            break;
-        }
-        auto* curr = popNode();
-        assert(curr->location >= 0);
-        // check if the popped node is a goal
-        if (curr->location == goal_location)  // arrive at the goal location
-        {
-            updatePath(curr, path);
-            break;
-        }
-
-        list<int> next_locations;
-        if (curr->location == GLOBAL_VAR::dummy_start_loc)
-        {
-            next_locations.emplace_back(start_location);
-            next_locations.emplace_back(curr->location);
-        }
-        else
-        {
-            next_locations = instance.getNeighbors(curr->location);
-            next_locations.emplace_back(curr->location);
-        }
-        for (int next_location : next_locations)
-        {
-            int next_timestep = curr->timestep + 1;
-            if (path_table.makespan + 1 < next_timestep)
-            {
-                // now everything is static, so switch to space A* where we
-                // always use the same timestep
-                if (next_location == curr->location)
-                {
-                    continue;
-                }
-                next_timestep--;
-            }
-
-            if (path_table.constrained(
-                    curr->location, next_location, next_timestep,
-                    curr->g_val + 1 + heuristics[next_location]))
-                continue;
-
-            // compute cost to next_id via curr node
-            int next_g_val = curr->g_val + 1;
-            int next_h_val = heuristics[next_location];
-
-            // generate (maybe temporary) node
-            auto next = new AStarNode(next_location, next_g_val, next_h_val,
-                                      curr, next_timestep, 0, false);
-            if (next_location == goal_location &&
-                curr->location == goal_location)
-                next->wait_at_goal = true;
-
-            // try to retrieve it from the hash table
-            auto it = allNodes_table.find(next);
-            if (it == allNodes_table.end())
-            {
-                pushNode(next);
-                allNodes_table.insert(next);
-                continue;
-            }
-
-            // update existing node's if needed (only in the open_list)
-            auto existing_next = *it;
-            // it has smaller f value
-            if (existing_next->getFVal() > next->getFVal() ||
-                // or it remains the same but location is "better" (our tie
-                // breaking)
-                (existing_next->getFVal() == next->getFVal() &&
-                 existing_next->parent->location > next->parent->location))
-            {
-                existing_next->copy(*next);  // update existing node
-                // if its in the closed list (reopen)
-                if (!existing_next->in_openlist)
-                {
-                    pushNode(existing_next);
-                }
-                else
-                {
-                    // increase because #conflicts improved
-                    open_list.increase(existing_next->open_handle);
-                }
-            }
-            // not needed anymore -- we already generated it before
-            delete (next);
-        }  // end for loop that generates successors
-    }      // end while loop
-
-    releaseNodes();
-    return path;
-}
-
-Path SpaceTimeAStar::findOptimalPath(const HLNode& node,
-                                     const ConstraintTable& initial_constraints,
-                                     const vector<Path*>& paths, int agent,
+Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
                                      int lowerbound, bool dummy_start_node)
 {
     optimal = true;  // using A* search
@@ -151,21 +23,11 @@ Path SpaceTimeAStar::findOptimalPath(const HLNode& node,
 
     // build constraint table
     auto t = clock();
-    ConstraintTable constraint_table(initial_constraints);
-    // initial constraints for PBS already contains all the required constraints
-    if (node.getName() != "PBS Node")
-    {
-        constraint_table.insert2CT(node, agent);
-    }
-    runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
+
     if (constraint_table.constrained(start_location, 0))
     {
         return path;
     }
-
-    t = clock();
-    constraint_table.insert2CAT(agent, paths);
-    runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
 
     // the earliest timestep that the agent can hold its goal location. The
     // length_min is considered here.
@@ -296,6 +158,39 @@ Path SpaceTimeAStar::findOptimalPath(const HLNode& node,
 
     releaseNodes();
     return path;
+}
+
+
+Path SpaceTimeAStar::findOptimalPath(const HLNode& node,
+                                     const ConstraintTable& initial_constraints,
+                                     const vector<Path*>& paths, int agent,
+                                     int lowerbound, bool dummy_start_node)
+{
+    optimal = true;  // using A* search
+    Path path;
+    num_expanded = 0;
+    num_generated = 0;
+
+    // build constraint table
+    auto t = clock();
+    ConstraintTable constraint_table(initial_constraints);
+    // initial constraints for PBS already contains all the required constraints
+    if (node.getName() != "PBS Node")
+    {
+        constraint_table.insert2CT(node, agent);
+    }
+    runtime_build_CT = (double)(clock() - t) / CLOCKS_PER_SEC;
+    if (constraint_table.constrained(start_location, 0))
+    {
+        return path;
+    }
+
+    t = clock();
+    constraint_table.insert2CAT(agent, paths);
+    runtime_build_CAT = (double)(clock() - t) / CLOCKS_PER_SEC;
+
+
+    return findOptimalPath(constraint_table, lowerbound, dummy_start_node);
 }
 
 // find path by time-space A* search

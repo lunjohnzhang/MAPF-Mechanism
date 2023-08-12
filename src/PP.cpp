@@ -4,7 +4,7 @@ PP::PP(Instance& instance, int screen, int seed)
     : instance(instance),
       screen(screen),
       seed(seed),
-      path_table(instance.map_size + 1),  // plus 1 to include dummy start loc
+    //   path_table(instance.map_size + 1),  // plus 1 to include dummy start loc
       single_agent_planner(instance, 0)
 {
     agents.reserve(instance.num_of_agents);
@@ -23,7 +23,7 @@ PP::PP(Instance& instance, int screen, int seed)
 
 void PP::reset()
 {
-    path_table.reset();
+    // path_table.reset();
     for (int i = 0; i < instance.num_of_agents; i++)
     {
         agents[i].path.clear();
@@ -55,14 +55,14 @@ void PP::preprocess(bool compute_distance_to_start,
                 agent.goal_location, agent.start_location, agent.goal_location);
         }
     }
-    if (compute_mdd)
-    {
-        for (auto& agent : agents)
-        {
-            agent.mdd.buildMDD(instance, *agent.distance_to_goal,
-                               agent.start_location);
-        }
-    }
+    // if (compute_mdd)
+    // {
+    //     for (auto& agent : agents)
+    //     {
+    //         agent.mdd.buildMDD(instance, *agent.distance_to_goal,
+    //                            agent.start_location);
+    //     }
+    // }
     runtime_preprocessing = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }
 
@@ -81,6 +81,8 @@ tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
     double sum_of_costs = 0;
     double curr_welfare = 0;
     dependency_graph.resize(ordering.size());
+    ConstraintTable constraint_table(this->instance.num_of_cols,
+                                     this->instance.map_size);
     // vector<double> weighted_path_lengths(agents.size());
     int n = 0;
     for (int id : ordering)
@@ -88,10 +90,26 @@ tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
         if (screen > 1)
             cout << "Planning " << n << "th agent: " << id << endl;
         n += 1;
-        path_table.hit_agents.clear();
+        // path_table.hit_agents.clear();
+        // agents[id].path = single_agent_planner.findOptimalPath(
+        //             path_table, *agents[id].distance_to_goal,
+        //             agents[id].start_location, agents[id].goal_location,
+        //             time_out_sec, dummy_start_node);
         agents[id].path = single_agent_planner.findOptimalPath(
-            path_table, *agents[id].distance_to_goal, agents[id].start_location,
-            agents[id].goal_location, time_out_sec, dummy_start_node);
+                    constraint_table, 0, dummy_start_node);
+        // agents[id].path = single_agent_planner.findOptimalPath(
+        //     constraint_table, 0, dummy_start_node);
+        // agents[id].path = single_agent_planner.findOptimalPath(
+        //     path_table, *agents[id].distance_to_goal,
+        //     agents[id].start_location, agents[id].goal_location,
+        //     time_out_sec, dummy_start_node);
+
+        if (failed_agent_id == 183)
+        {
+            agents[id].path = single_agent_planner.findOptimalPath(
+                    constraint_table, 0, dummy_start_node);
+        }
+
 
         if (time_out_sec < (double)(clock() - start_time) / CLOCKS_PER_SEC)
         {
@@ -120,8 +138,11 @@ tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
         sum_of_costs += curr_agent_weighted_path_len;
         curr_welfare +=
             max(this->instance.values[id] - curr_agent_weighted_path_len, 0.0);
-        path_table.insertPath(agents[id].id, agents[id].path);
+        // path_table.insertPath(agents[id].id, agents[id].path);
         all_weighted_path_lengths[run_id][id] = curr_agent_weighted_path_len;
+
+        // Add current path to constraint table
+        constraint_table.insert2CT(agents[id].path);
     }
 
     // Success: update min sum of cost without agent i
@@ -183,17 +204,19 @@ void PP::run(int n_runs, double time_out_sec)
 
     for (int i = 0; i < n_runs; i++)
     {
-        this->preprocess(true, true, true);
+        this->preprocess(true, true, false);
         this->computeRandomOrdering();
         int failed_agent_id = -1;
         double sum_of_cost, curr_welfare;
-        std::tie(sum_of_cost, curr_welfare) = run_once(failed_agent_id, i);
+        std::tie(sum_of_cost, curr_welfare) =
+            run_once(failed_agent_id, i, time_out_sec);
 
         // Current run is failed
         if (failed_agent_id >= 0)
         {
             cout << "Failed agent: " << failed_agent_id << endl;
             cout << "Run " << i << " failed" << endl;
+            total_runtime += this->runtime;
             failed_runs.emplace_back(i);
         }
         else

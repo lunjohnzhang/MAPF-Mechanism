@@ -15,7 +15,7 @@ struct Agent
 
     // actual distance from goal_location to any location on the map
     const vector<int>* distance_to_goal = nullptr;
-    MDD mdd;
+    // MDD mdd;
 
     Path path;
 
@@ -71,7 +71,7 @@ private:
     // input params
     Instance& instance;
     int screen;
-    PathTable path_table;
+    // PathTable path_table;
     SpaceTimeAStar single_agent_planner;
     vector<Path*> best_paths;
 

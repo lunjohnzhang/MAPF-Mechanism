@@ -1,6 +1,6 @@
 ﻿#pragma once
-#include "SingleAgentSolver.h"
 #include "PathTable.h"
+#include "SingleAgentSolver.h"
 
 class AStarNode : public LLNode
 {
@@ -63,7 +63,8 @@ public:
                          const ConstraintTable& initial_constraints,
                          const vector<Path*>& paths, int agent, int lower_bound,
                          bool dummy_start_node) override;
-    Path findOptimalPath(PathTable& path_table, const vector<int>& heuristics, int start_location, int goal_location, double time_out_sec=6.0, bool dummy_start_node=false);
+    Path findOptimalPath(const ConstraintTable& constraint_table,
+                         int lowerbound, bool dummy_start_node);
     pair<Path, int> findSuboptimalPath(
         const HLNode& node, const ConstraintTable& initial_constraints,
         const vector<Path*>& paths, int agent, int lowerbound, double w,
