@@ -7,7 +7,7 @@ algos=(
     "PP1"
     # "PBS"
     # "ECBS"
-    "CBS"
+    # "CBS"
 )
 
 function get_dirname() {
