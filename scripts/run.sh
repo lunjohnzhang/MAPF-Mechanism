@@ -248,7 +248,7 @@ for i in "${order[@]}"; do
             -m $MAP_FILE \
             -a ${all_scen_files[$i]} \
             -k ${all_n_agents_exp[$i]} \
-            -t 120 \
+            -t 600 \
             --cost ${all_cost_files[$i]} \
             --value ${all_value_files[$i]} \
             --algo ${all_algos_exp[$i]} \
