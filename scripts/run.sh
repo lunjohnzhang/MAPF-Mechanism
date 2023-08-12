@@ -1,6 +1,6 @@
 #!/bin/bash
 
-USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX [RELOAD_DIR]"
+USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX TIME_LIMIT [RELOAD_DIR]"
 
 algos=(
     "PP"
@@ -84,8 +84,8 @@ N_CORES="$7"    # max number of cores available
 N_AGENTS_MIN="$8"
 N_AGENTS_STEP="$9"
 N_AGENTS_MAX="${10}"
-RELOAD_DIR="${11}"
-TIME_LIMIT="${12}"
+TIME_LIMIT="${11}"
+RELOAD_DIR="${12}"
 
 if [ -z "${MAP_FILE}" ]; then
     echo "${USAGE}"
@@ -133,6 +133,11 @@ if [ -z "${N_AGENTS_STEP}" ]; then
 fi
 
 if [ -z "${N_AGENTS_MAX}" ]; then
+    echo "${USAGE}"
+    exit 1
+fi
+
+if [ -z "${TIME_LIMIT}" ]; then
     echo "${USAGE}"
     exit 1
 fi
