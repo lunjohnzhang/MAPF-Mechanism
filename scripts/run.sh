@@ -85,6 +85,7 @@ N_AGENTS_MIN="$8"
 N_AGENTS_STEP="$9"
 N_AGENTS_MAX="${10}"
 RELOAD_DIR="${11}"
+TIME_LIMIT="${12}"
 
 if [ -z "${MAP_FILE}" ]; then
     echo "${USAGE}"
@@ -248,7 +249,7 @@ for i in "${order[@]}"; do
             -m $MAP_FILE \
             -a ${all_scen_files[$i]} \
             -k ${all_n_agents_exp[$i]} \
-            -t 600 \
+            -t ${TIME_LIMIT} \
             --cost ${all_cost_files[$i]} \
             --value ${all_value_files[$i]} \
             --algo ${all_algos_exp[$i]} \
