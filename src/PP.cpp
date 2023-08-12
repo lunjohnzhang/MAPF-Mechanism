@@ -4,7 +4,8 @@ PP::PP(Instance& instance, int screen, int seed)
     : instance(instance),
       screen(screen),
       seed(seed),
-    //   path_table(instance.map_size + 1),  // plus 1 to include dummy start loc
+      //   path_table(instance.map_size + 1),  // plus 1 to include dummy start
+      //   loc
       single_agent_planner(instance, 0)
 {
     agents.reserve(instance.num_of_agents);
@@ -96,7 +97,7 @@ tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
         //             agents[id].start_location, agents[id].goal_location,
         //             time_out_sec, dummy_start_node);
         agents[id].path = single_agent_planner.findOptimalPath(
-                    constraint_table, 0, dummy_start_node);
+            constraint_table, 0, dummy_start_node);
         // agents[id].path = single_agent_planner.findOptimalPath(
         //     constraint_table, 0, dummy_start_node);
         // agents[id].path = single_agent_planner.findOptimalPath(
@@ -104,18 +105,12 @@ tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
         //     agents[id].start_location, agents[id].goal_location,
         //     time_out_sec, dummy_start_node);
 
-        if (failed_agent_id == 183)
-        {
-            agents[id].path = single_agent_planner.findOptimalPath(
-                    constraint_table, 0, dummy_start_node);
-        }
-
-
         if (time_out_sec < (double)(clock() - start_time) / CLOCKS_PER_SEC)
         {
             sum_of_costs = MAX_COST;
             curr_welfare = INT_MIN;
             failed_agent_id = id;
+            solution_found = false;
             break;
         }
         // for (auto& agent : path_table.hit_agents)
@@ -130,6 +125,7 @@ tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
             sum_of_costs = MAX_COST;
             curr_welfare = INT_MIN;
             failed_agent_id = id;
+            solution_found = false;
             break;  // failed, id is the failing agent. in its dependency graph,
                     // at least one pair should be reversed
         }
@@ -214,10 +210,11 @@ void PP::run(int n_runs, double time_out_sec)
         // Current run is failed
         if (failed_agent_id >= 0)
         {
-            cout << "Failed agent: " << failed_agent_id << endl;
-            cout << "Run " << i << " failed" << endl;
+            cout << "PP: Failed agent: " << failed_agent_id << endl;
+            cout << "PP: Run " << i << " failed" << endl;
             total_runtime += this->runtime;
             failed_runs.emplace_back(i);
+            break; // All runs should succeed with current setting
         }
         else
         {
@@ -267,8 +264,9 @@ void PP::run(int n_runs, double time_out_sec)
             if (time_out_sec < total_runtime)
             {
                 timeout = true;
+                solution_found = false;
                 cout << "Timeout at run " << i << endl;
-                return;
+                break;
             }
 
             if (screen > 0)
@@ -280,16 +278,23 @@ void PP::run(int n_runs, double time_out_sec)
         }
         this->reset();
     }
-    avg_suboptimality /= n_success;
-    avg_sum_of_cost /= n_success;
-    cout << "Average suboptimality: " << avg_suboptimality << endl;
-    cout << "Average sum of cost: " << avg_sum_of_cost << endl;
-    // cout << "Minimum suboptimality: " << min_suboptimality << endl;
-    // cout << "Minimum sum of cost idx: " << min_sum_of_cost_idx << endl;
-    cout << "Maximum social welfare: " << max_social_welfare << endl;
-    cout << "Maximum social welfare idx: " << max_welfare_idx << endl;
-    cout << "Sum of cost of max social welfare path: " << min_sum_of_cost
-         << endl;
+
+    // All runs succeeded
+    if (n_success == n_runs)
+    {
+        solution_found = true;
+        avg_suboptimality /= n_success;
+        avg_sum_of_cost /= n_success;
+        cout << "Average suboptimality: " << avg_suboptimality << endl;
+        cout << "Average sum of cost: " << avg_sum_of_cost << endl;
+        // cout << "Minimum suboptimality: " << min_suboptimality << endl;
+        // cout << "Minimum sum of cost idx: " << min_sum_of_cost_idx << endl;
+        cout << "Maximum social welfare: " << max_social_welfare << endl;
+        cout << "Maximum social welfare idx: " << max_welfare_idx << endl;
+        cout << "Sum of cost of max social welfare path: " << min_sum_of_cost
+             << endl;
+    }
+
     cout << "Total runtime: " << total_runtime << endl;
 }
 
@@ -439,26 +444,30 @@ void PP::saveResults(boost::filesystem::path filename)
     // 5. Agent profile.
     // 6. Any MAPF related stats.
 
-    // Calculate payment
     vector<double> payments(this->agents.size());
     vector<double> utilities(this->agents.size());
-    for (int i = 0; i < this->agents.size(); i++)
+
+    // Calculate payment
+    if (solution_found)
     {
-        payments[i] =
-            min_sum_of_cost_wo_i[i] -
-            (min_sum_of_cost - all_weighted_path_lengths[max_welfare_idx][i]);
+        for (int i = 0; i < this->agents.size(); i++)
+        {
+            payments[i] = min_sum_of_cost_wo_i[i] -
+                          (min_sum_of_cost -
+                           all_weighted_path_lengths[max_welfare_idx][i]);
 
-        double curr_welfare = this->instance.values[i] -
-                              all_weighted_path_lengths[max_welfare_idx][i];
+            double curr_welfare = this->instance.values[i] -
+                                  all_weighted_path_lengths[max_welfare_idx][i];
 
-        utilities[i] = curr_welfare - payments[i];
+            utilities[i] = curr_welfare - payments[i];
 
-        // If utility is negative, we assign "no path" to the agent and set
-        // social welfare of that agent to 0
-        // if (utilities[i] >= 0)
-        // {
-        //     this->social_welfare += max(0.0, curr_welfare);
-        // }
+            // If utility is negative, we assign "no path" to the agent and set
+            // social welfare of that agent to 0
+            // if (utilities[i] >= 0)
+            // {
+            //     this->social_welfare += max(0.0, curr_welfare);
+            // }
+        }
     }
 
     json mechanism_results = {
@@ -487,6 +496,7 @@ void PP::saveResults(boost::filesystem::path filename)
         {"failed_runs", failed_runs},
         {"timeout", timeout},
         {"runtime", total_runtime},
+        {"solution_found", solution_found},
         // Mechanism stats
         {"payments", payments},
         {"utilities", utilities}};

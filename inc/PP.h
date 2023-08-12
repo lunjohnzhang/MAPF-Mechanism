@@ -34,6 +34,7 @@ public:
     vector<int> ordering;
     vector<set<int>> dependency_graph;  // entry[i][j] means that agent i has
                                         // lower priority than agent j
+    bool solution_found;
 
     PP(Instance& instance, int screen, int seed);
     void setLowLevelSolver(bool dummy_start_node)

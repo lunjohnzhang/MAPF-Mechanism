@@ -276,7 +276,7 @@ int main(int argc, char** argv)
         pp.setLowLevelSolver(vm["dummyStart"].as<bool>());
         pp.run(runs, vm["cutoffTime"].as<double>());
         pp.saveResults(logdir / "result.json");
-        if (vm["savePath"].as<bool>())
+        if (vm["savePath"].as<bool>() && pp.solution_found)
             pp.savePaths((logdir / "paths.txt").string());
     }
     else if (algo == "CBS")
