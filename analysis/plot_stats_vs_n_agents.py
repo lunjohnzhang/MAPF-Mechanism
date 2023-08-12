@@ -13,7 +13,7 @@ FIELD_TO_LABEL = {
     "success": "Success Rate",
     "solution_cost": "Solution Cost",
     "social_welfare": "Social Welfare",
-    "social_welfare_subopt": "Social Welfare Diff w/ FCFS",
+    "social_welfare_subopt": "Social Welfare Div w/ FCFS",
     "solution_cost_subopt": "Solution Cost Diff w/ FCFS",
     "std_payment": "Payment Std",
 }
@@ -170,7 +170,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     return agent_nums
 
 
-def collect_results(logdirs, baseline_algo="PP"):
+def collect_results(logdirs, baseline_algo="PP1"):
     # All results to plot, key is the current algo, value is the `to_plot` dict
     # of the current algo
     print(f"Collecting results")
@@ -245,7 +245,7 @@ def collect_results(logdirs, baseline_algo="PP"):
 
             # Compute suboptimalities
             if logdir_algo == baseline_algo:
-                social_welfare_subopt = 0
+                social_welfare_subopt = 1
                 solution_cost_subopt = 0
                 baseline_algo_name = current_algo
                 baseline_logdir_algo_f = logdir_algo_f
@@ -253,7 +253,7 @@ def collect_results(logdirs, baseline_algo="PP"):
                 baseline_stat = to_plot_algo[(
                     baseline_algo_name,
                     baseline_logdir_algo_f)][n_agents][seed]
-                social_welfare_subopt = social_welfare - baseline_stat.social_welfare
+                social_welfare_subopt = social_welfare / baseline_stat.social_welfare
                 solution_cost_subopt = solution_cost - baseline_stat.solution_cost
 
             # Compute std of payments
@@ -264,7 +264,7 @@ def collect_results(logdirs, baseline_algo="PP"):
                 std_payment = np.std(payments)
 
             runtime = result["runtime"]
-            if current_algo == "CBS":
+            if current_algo == "CBS" and success == 1:
                 runtime = result["total_runtime"]
 
             stat = Stats(runtime=runtime,
@@ -297,7 +297,7 @@ def main(logdirs, add_legend=True, legend_only=False):
     for field in fields(Stats):
         print(f"Plotting {field.name}")
 
-        figsize = (8, 8)
+        figsize = (8, 5.5)
         if legend_only:
             figsize = (20, 8)
 
