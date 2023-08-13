@@ -135,7 +135,8 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     elif field_name in ["success"]:
         # plot success rate
         success_rate = np.sum(all_vals, axis=1) / all_vals.shape[1]
-
+        if algo == "CBS":
+            breakpoint()
         ax.plot(
             agent_nums,
             success_rate,
@@ -171,7 +172,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     return agent_nums
 
 
-def collect_results(logdirs, baseline_algo="PP1"):
+def collect_results(logdirs, baseline_algo="CBS"):
     # All results to plot, key is the current algo, value is the `to_plot` dict
     # of the current algo
     print(f"Collecting results")
@@ -272,6 +273,9 @@ def collect_results(logdirs, baseline_algo="PP1"):
             if current_algo == "CBS" and success == 1:
                 runtime = result["total_runtime"]
 
+            if current_algo == "CBS" and not success:
+                print(logdir_f)
+
             stat = Stats(runtime=runtime,
                          success=success,
                          solution_cost=solution_cost,
@@ -326,8 +330,9 @@ def main(logdirs, add_legend=True, legend_only=False):
         ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=25)
         ax.set_xlabel("Number of Agents", fontsize=25)
 
-        ax.set_xticks(longest_agent_nums)
-        ax.set_xticklabels(longest_agent_nums)
+        if longest_agent_nums is not None:
+            ax.set_xticks(longest_agent_nums)
+            ax.set_xticklabels(longest_agent_nums)
 
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
