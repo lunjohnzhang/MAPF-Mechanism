@@ -146,7 +146,7 @@ void Instance::generateRandomAgents(int warehouse_width)
             else
                 connected = true;
 
-            while (my_map[start] || my_map[goal] || !connected)
+            while (my_map[start] || my_map[goal] || !connected || start == goal)
             {
                 x = rand() % num_of_rows;
                 y = rand() % num_of_cols;
