@@ -356,6 +356,25 @@ void CBS::classifyConflicts(CBSNode& node)
             }
         }
 
+        // Rectangle reasoning
+        if (rectangle_reasoning && (int)paths[con->a1]->size() > timestep &&
+            (int)paths[con->a2]->size() >
+                timestep &&  // conflict happens before both agents reach their
+                             // goal locations
+            type == constraint_type::VERTEX)  // vertex conflict
+        {
+            auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+            auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+            auto rectangle =
+                rectangle_helper.run(paths, timestep, a1, a2, mdd1, mdd2);
+            if (rectangle != nullptr)
+            {
+                computeSecondPriorityForConflict(*rectangle, node);
+                node.conflicts.push_back(rectangle);
+                continue;
+            }
+        }
+
         computeSecondPriorityForConflict(*con, node);
         node.conflicts.push_back(con);
     }
@@ -1222,6 +1241,8 @@ string CBS::getSolverName() const
     default:
         break;
     }
+    if (rectangle_reasoning)
+        name += "+R";
     if (corridor_reasoning)
         name += "+C";
     if (target_reasoning)
@@ -1526,6 +1547,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
       paths_found_initially(paths_found_initially),
       search_engines(search_engines),
       mdd_helper(initial_constraints, search_engines),
+      rectangle_helper(search_engines[0]->instance),
       mutex_helper(search_engines[0]->instance, initial_constraints),
       corridor_helper(search_engines, initial_constraints),
       heuristic_helper(search_engines.size(), paths, search_engines,
@@ -1540,6 +1562,7 @@ CBS::CBS(const Instance& instance, bool sipp, int screen)
       suboptimality(1),
       num_of_agents(instance.getDefaultNumberOfAgents()),
       mdd_helper(initial_constraints, search_engines),
+      rectangle_helper(instance),
       mutex_helper(instance, initial_constraints),
       corridor_helper(search_engines, initial_constraints),
       heuristic_helper(instance.getDefaultNumberOfAgents(), paths,
@@ -1825,6 +1848,7 @@ void CBS::saveResults(boost::filesystem::path filename,
         {"runtime_path_finding", runtime_path_finding},
         {"runtime_generate_child", runtime_generate_child},
         {"runtime_preprocessing", runtime_preprocessing},
+        {"runtime_rectangle_reasoning", rectangle_helper.accumulated_runtime},
         {"solver_name", getSolverName()},
         {"instance_name", instanceName}};
 

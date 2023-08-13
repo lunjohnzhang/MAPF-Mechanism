@@ -1,6 +1,7 @@
 #pragma once
 #include "CorridorReasoning.h"
 #include "MDD.h"
+#include "RectangleReasoning.h"
 
 enum heuristics_type
 {
@@ -148,6 +149,7 @@ class CBSHeuristic
 {
 public:
     heuristics_type type;
+    bool rectangle_reasoning;  // using rectangle reasoning
     bool corridor_reasoning;   // using corridor reasoning
     bool target_reasoning;     // using target reasoning
     bool mutex_reasoning;      // using mutex reasoning

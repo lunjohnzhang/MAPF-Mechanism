@@ -2,6 +2,7 @@
 #include "CBSHeuristic.h"
 #include "CorridorReasoning.h"
 #include "MutexReasoning.h"
+#include "RectangleReasoning.h"
 
 enum high_level_solver_type
 {
@@ -78,6 +79,11 @@ public:
     {
         PC = p;
         heuristic_helper.PC = p;
+    }
+    void setRectangleReasoning(bool r)
+    {
+        rectangle_reasoning = r;
+        heuristic_helper.rectangle_reasoning = r;
     }
     void setCorridorReasoning(bool c)
     {
@@ -161,18 +167,20 @@ public:
     }
 
 protected:
-    bool corridor_reasoning;  // using corridor reasoning
-    bool target_reasoning;    // using target reasoning
-    bool disjoint_splitting;  // disjoint splitting
-    bool mutex_reasoning;     // using mutex reasoning
-    bool bypass;              // using Bypass1
-    bool PC;                  // prioritize conflicts
+    bool rectangle_reasoning;  // using rectangle reasoning
+    bool corridor_reasoning;   // using corridor reasoning
+    bool target_reasoning;     // using target reasoning
+    bool disjoint_splitting;   // disjoint splitting
+    bool mutex_reasoning;      // using mutex reasoning
+    bool bypass;               // using Bypass1
+    bool PC;                   // prioritize conflicts
     bool save_stats;
     high_level_solver_type solver_type;  // the solver for the high-level search
     conflict_selection conflict_selection_rule;
     node_selection node_selection_rule;
 
     MDDTable mdd_helper;
+    RectangleReasoning rectangle_helper;
     CorridorReasoning corridor_helper;
     MutexReasoning mutex_helper;
     CBSHeuristic heuristic_helper;

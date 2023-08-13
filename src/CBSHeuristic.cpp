@@ -592,6 +592,15 @@ bool CBSHeuristic::buildWeightedDependencyGraph(CBSNode& node, vector<int>& CG)
             CG[idx] = get<0>(got->second);
             CG[a2 * num_of_agents + a1] = CG[idx];
         }
+        else if (rectangle_reasoning)
+        {
+            auto rst = solve2Agents(a1, a2, node, false);
+            assert(rst.first >= 0);
+            lookupTable[a1][a2][HTableEntry(a1, a2, &node)] =
+                make_tuple(rst.first, rst.second, 1);
+            CG[idx] = rst.first;
+            CG[a2 * num_of_agents + a1] = rst.first;
+        }
         else
         {
             bool cardinal = conflict->priority == conflict_priority::CARDINAL;
@@ -781,6 +790,7 @@ pair<int, int> CBSHeuristic::solve2Agents(int a1, int a2, const CBSNode& node,
     cbs.setDisjointSplitting(disjoint_splitting);
     cbs.setBypass(false);  // I guess that bypassing does not help two-agent
                            // path finding???
+    cbs.setRectangleReasoning(rectangle_reasoning);
     cbs.setCorridorReasoning(corridor_reasoning);
     cbs.setTargetReasoning(target_reasoning);
     cbs.setMutexReasoning(mutex_reasoning);
@@ -841,6 +851,7 @@ tuple<int, int, int> CBSHeuristic::solve2Agents(int a1, int a2,
     cbs.setDisjointSplitting(disjoint_splitting);
     cbs.setBypass(false);  // I guess that bypassing does not help two-agent
                            // path finding???
+    cbs.setRectangleReasoning(rectangle_reasoning);
     cbs.setCorridorReasoning(corridor_reasoning);
     cbs.setTargetReasoning(target_reasoning);
     cbs.setMutexReasoning(mutex_reasoning);

@@ -84,6 +84,8 @@ int main(int argc, char** argv)
 		("bypass", po::value<bool>()->default_value(true), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false),
             "disjoint splitting")
+        ("rectangleReasoning", po::value<bool>()->default_value(true),
+            "rectangle reasoning")
 		("corridorReasoning", po::value<bool>()->default_value(true),
             "corridor reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false),
@@ -218,6 +220,11 @@ int main(int argc, char** argv)
          << endl
          << endl;
 
+    // Turn on rectangle reasoning only in 2D maps.
+    bool rectangle_reasoning = false;
+    if(vm["rectangleReasoning"].as<bool>() && instance.num_of_layers == 1)
+        rectangle_reasoning = true;
+
     //////////////////////////////////////////////////////////////////////
     // initialize the solver
     if (vm["lowLevelSolver"].as<bool>() && algo == "ECBS")
@@ -226,6 +233,7 @@ int main(int argc, char** argv)
         ecbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
         ecbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
         ecbs.setBypass(vm["bypass"].as<bool>());
+        ecbs.setRectangleReasoning(rectangle_reasoning);
         ecbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         ecbs.setHeuristicType(h, h_hat);
         ecbs.setTargetReasoning(false);
@@ -285,6 +293,7 @@ int main(int argc, char** argv)
         cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
         cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
         cbs.setBypass(vm["bypass"].as<bool>());
+        cbs.setRectangleReasoning(rectangle_reasoning);
         cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         cbs.setHeuristicType(h, h_hat);
         cbs.setTargetReasoning(false);
