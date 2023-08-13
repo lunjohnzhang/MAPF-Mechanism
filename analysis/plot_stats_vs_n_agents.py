@@ -135,8 +135,6 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     elif field_name in ["success"]:
         # plot success rate
         success_rate = np.sum(all_vals, axis=1) / all_vals.shape[1]
-        if algo == "CBS":
-            breakpoint()
         ax.plot(
             agent_nums,
             success_rate,
@@ -145,6 +143,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             label=algo,
             markersize=15,
         )
+        ax.set_ylim(-0.1, 1.1)
 
     if save_fig:
         ax.set_ylabel(FIELD_TO_LABEL[field_name], fontsize=25)
@@ -172,7 +171,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     return agent_nums
 
 
-def collect_results(logdirs, baseline_algo="CBS"):
+def collect_results(logdirs, baseline_algo="PP1"):
     # All results to plot, key is the current algo, value is the `to_plot` dict
     # of the current algo
     print(f"Collecting results")
