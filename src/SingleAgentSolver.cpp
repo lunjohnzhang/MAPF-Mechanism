@@ -55,4 +55,6 @@ void SingleAgentSolver::compute_heuristics()
     }
     my_heuristic[GLOBAL_VAR::dummy_start_loc] =
         my_heuristic[start_location] + 1;
+    // cout << "heuristic at dummy start: " << my_heuristic[GLOBAL_VAR::dummy_start_loc] << endl;
+    // cout << "heuristic at start: " << my_heuristic[start_location] << endl;
 }

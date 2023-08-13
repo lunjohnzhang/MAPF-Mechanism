@@ -123,44 +123,48 @@ void Instance::generateRandomAgents(int warehouse_width)
     if (warehouse_width == 0)  // Generate agents randomly
     {
         // Choose random start locations
-        int k = 0;
-        while (k < num_of_agents)
+        int start, goal, x, y;
+        bool connected;
+
+        for (int k = 0; k < num_of_agents; k++)
         {
-            int x = rand() % num_of_rows, y = rand() % num_of_cols;
-            // Always start at the ground level
-            int start = linearizeCoordinate(x, y, 0);
-            // if (my_map[start] || starts[start])
-            //     continue;
-            // We can have multiple agents start from the same place.
-            if (my_map[start])
-                continue;
-
-            // update start
-            start_locations[k] = start;
-            // starts[start] = true;
-
-            // find goal
-            bool flag = false;
+            // Always start/end at the ground level
+            // We can have multiple agents start/end at the same place.
             x = rand() % num_of_rows;
             y = rand() % num_of_cols;
-            // Always end at the ground level
-            int goal = linearizeCoordinate(x, y, 0);
-            // while (my_map[goal] || goals[goal])
-            //     goal = rand() % map_size;
-            // We can have multiple agents end at the same place.
-            while (my_map[goal] || start == goal)
+            start = linearizeCoordinate(x, y, 0);
+            x = rand() % num_of_rows;
+            y = rand() % num_of_cols;
+            goal = linearizeCoordinate(x, y, 0);
+
+            // While generating our own agents in any map, need to make sure
+            // there is a path between the start and goal
+            getDistances(goal, start, goal, false);
+
+            if (distance_matrix[goal][start] == MAX_TIMESTEP)
+                connected = false;
+            else
+                connected = true;
+
+            while (my_map[start] || my_map[goal] || !connected)
             {
                 x = rand() % num_of_rows;
                 y = rand() % num_of_cols;
-                // Always end at the ground level
+                start = linearizeCoordinate(x, y, 0);
+                x = rand() % num_of_rows;
+                y = rand() % num_of_cols;
                 goal = linearizeCoordinate(x, y, 0);
+
+                getDistances(goal, start, goal, false);
+
+                if (distance_matrix[goal][start] == MAX_TIMESTEP)
+                    connected = false;
+                else
+                    connected = true;
             }
-
-            // update goal
+            start_locations[k] = start;
             goal_locations[k] = goal;
-            // goals[goal] = true;
-
-            k++;
+            distance_matrix.clear();
         }
     }
     else  // Generate agents for warehouse scenario
@@ -513,7 +517,7 @@ bool Instance::loadAgents()
         tokenizer<char_separator<char>> tok(line, sep);
         tokenizer<char_separator<char>>::iterator beg = tok.begin();
         int stored_num_of_agents = atoi((*beg).c_str());
-        assert (stored_num_of_agents >= num_of_agents);
+        assert(stored_num_of_agents >= num_of_agents);
         start_locations.resize(num_of_agents);
         goal_locations.resize(num_of_agents);
         for (int i = 0; i < num_of_agents; i++)
@@ -626,11 +630,19 @@ int Instance::getDegree(int curr) const
 }
 
 const vector<int>* Instance::getDistances(int root_location, int start_location,
-                                          int goal_location)
+                                          int goal_location, bool find_all)
 {
     auto it = distance_matrix.find(root_location);
     if (it != distance_matrix.end())
         return &(it->second);
+
+    // If not find all, we stop when we find the `real_goal`, which is start if
+    // root is goal and is goal is root is start.
+    int stop_non_root;
+    if (root_location == start_location)
+        stop_non_root = goal_location;
+    else if (root_location == goal_location)
+        stop_non_root = start_location;
 
     struct Node
     {
@@ -664,6 +676,8 @@ const vector<int>* Instance::getDistances(int root_location, int start_location,
     {
         Node curr = heap.top();
         heap.pop();
+        if (!find_all && curr.location == stop_non_root)
+            break;
         for (int next_location : getNeighbors(curr.location))
         {
             if (rst[next_location] > curr.value + 1)

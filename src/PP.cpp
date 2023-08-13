@@ -200,7 +200,10 @@ void PP::run(int n_runs, double time_out_sec)
 
     for (int i = 0; i < n_runs; i++)
     {
-        this->preprocess(true, true, false);
+        // Don't need distance to goal here because we use heuristic in
+        // single_agent_solver
+        // TODO: delete distance_to_goal and distance_to_start if necessary
+        this->preprocess(true, false, false);
         this->computeRandomOrdering();
         int failed_agent_id = -1;
         double sum_of_cost, curr_welfare;

@@ -26,6 +26,7 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
 
     if (constraint_table.constrained(start_location, 0))
     {
+        // cout << "called" << endl;
         return path;
     }
 
@@ -59,6 +60,8 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
     {
         auto* curr = popNode();
         assert(curr->location >= 0);
+        // cout << "Expanding " << curr->location << ", Goal: " << goal_location
+        //      << endl;
         // check if the popped node is a goal
         if (curr->location == goal_location)  // arrive at the goal location
         {
@@ -84,6 +87,7 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
         }
         for (int next_location : next_locations)
         {
+            // cout << "Generating " << next_location << endl;
             int next_timestep = curr->timestep + 1;
             if (static_timestep < next_timestep)
             {
@@ -99,7 +103,14 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
             if (constraint_table.constrained(next_location, next_timestep) ||
                 constraint_table.constrained(curr->location, next_location,
                                              next_timestep))
+            {
+                // if (constraint_table.constrained(next_location, next_timestep))
+                //     cout << "vertex constrained" << endl;
+                // if (constraint_table.constrained(curr->location, next_location,
+                //                                  next_timestep))
+                //     cout << "edge constrained" << endl;
                 continue;
+            }
 
             // compute cost to next_id via curr node
             int next_g_val = curr->g_val + 1;
@@ -107,7 +118,10 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
             //     max(lowerbound - next_g_val, my_heuristic[next_location]);
             int next_h_val = my_heuristic[next_location];
             if (next_g_val + next_h_val > constraint_table.length_max)
+            {
+                // cout << "n_g + n_h = " << next_g_val << " + " << next_h_val << " vs " << "len_max = " << constraint_table.length_max << endl;
                 continue;
+            }
 
             int next_internal_conflicts =
                 curr->num_of_conflicts +
@@ -130,9 +144,10 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
             // update existing node's if needed (only in the open_list)
 
             auto existing_next = *it;
-            // if (existing_next->parent->location == GLOBAL_VAR::dummy_start_loc)
-            // assert(existing_next->parent->location != next->parent->location);
-            // if f-val decreased through this new path
+            // if (existing_next->parent->location ==
+            // GLOBAL_VAR::dummy_start_loc)
+            // assert(existing_next->parent->location !=
+            // next->parent->location); if f-val decreased through this new path
             if (existing_next->getFVal() > next->getFVal() ||
                 // or it remains the same but location is "better" (our tie
                 // breaking)
@@ -154,12 +169,12 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
             // not needed anymore -- we already generated it before
             delete (next);
         }  // end for loop that generates successors
-    }      // end while loop
+        // cout << endl;
+    }  // end while loop
 
     releaseNodes();
     return path;
 }
-
 
 Path SpaceTimeAStar::findOptimalPath(const HLNode& node,
                                      const ConstraintTable& initial_constraints,
