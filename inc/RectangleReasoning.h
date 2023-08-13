@@ -30,43 +30,50 @@ private:
                          list<Constraint>& B);
     bool isEntryBarrier(const Constraint& b1, const Constraint& b2, int dir1);
     bool isExitBarrier(const Constraint& b1, const Constraint& b2, int dir1);
-    pair<int, int> getIntersection(const Constraint& b1, const Constraint& b2);
-    bool blockedNodes(const vector<PathEntry>& path, const pair<int, int>& Rs,
-                      const pair<int, int>& Rg, int Rg_t, int dir);
-    bool isCut(const Constraint& b, const pair<int, int>& Rs,
-               const pair<int, int>& Rg);
+    tuple<int, int, int> getIntersection(const Constraint& b1,
+                                         const Constraint& b2);
+    bool blockedNodes(const vector<PathEntry>& path,
+                      const tuple<int, int, int>& Rs,
+                      const tuple<int, int, int>& Rg, int Rg_t, int dir);
+    bool isCut(const Constraint& b, const tuple<int, int, int>& Rs,
+               const tuple<int, int, int>& Rg);
 
     void generalizedRectangle(const vector<PathEntry>& path1,
                               const vector<PathEntry>& path2, const MDD& mdd1,
                               const MDD& mdd2, const list<Constraint>& B1,
                               const list<Constraint>& B2, int timestep,
-                              int& best_type, pair<int, int>& best_Rs,
-                              pair<int, int>& best_Rg);
+                              int& best_type, tuple<int, int, int>& best_Rs,
+                              tuple<int, int, int>& best_Rg);
 
     // Identify rectangle conflicts
-    bool isRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
-                             const pair<int, int>& g1, const pair<int, int>& g2,
-                             int g1_t, int g2_t);  // for CR and R
-    bool isRectangleConflict(const pair<int, int>& s1, const pair<int, int>& s2,
-                             const pair<int, int>& g1,
-                             const pair<int, int>& g2) const;  // for RM
+    bool isRectangleConflict(const tuple<int, int, int>& s1,
+                             const tuple<int, int, int>& s2,
+                             const tuple<int, int, int>& g1,
+                             const tuple<int, int, int>& g2, int g1_t,
+                             int g2_t);  // for CR and R
+    bool isRectangleConflict(const tuple<int, int, int>& s1,
+                             const tuple<int, int, int>& s2,
+                             const tuple<int, int, int>& g1,
+                             const tuple<int, int, int>& g2) const;  // for RM
 
     // Classify rectangle conflicts
-    int classifyRectangleConflict(const pair<int, int>& s1,
-                                  const pair<int, int>& s2,
-                                  const pair<int, int>& g1,
-                                  const pair<int, int>& g2);  // for CR and R
-    int classifyRectangleConflict(const pair<int, int>& s1,
-                                  const pair<int, int>& s2,
-                                  const pair<int, int>& g1,
-                                  const pair<int, int>& g2,
-                                  const pair<int, int>& Rg);  // for RM
+    int classifyRectangleConflict(
+        const tuple<int, int, int>& s1, const tuple<int, int, int>& s2,
+        const tuple<int, int, int>& g1,
+        const tuple<int, int, int>& g2);  // for CR and R
+    int classifyRectangleConflict(const tuple<int, int, int>& s1,
+                                  const tuple<int, int, int>& s2,
+                                  const tuple<int, int, int>& g1,
+                                  const tuple<int, int, int>& g2,
+                                  const tuple<int, int, int>& Rg);  // for RM
 
     // Compute rectangle corners
-    pair<int, int> getRg(const pair<int, int>& s1, const pair<int, int>& g1,
-                         const pair<int, int>& g2);
-    pair<int, int> getRs(const pair<int, int>& s1, const pair<int, int>& s2,
-                         const pair<int, int>& g1);
+    tuple<int, int, int> getRg(const tuple<int, int, int>& s1,
+                               const tuple<int, int, int>& g1,
+                               const tuple<int, int, int>& g2);
+    tuple<int, int, int> getRs(const tuple<int, int, int>& s1,
+                               const tuple<int, int, int>& s2,
+                               const tuple<int, int, int>& g1);
 
     // Compute start and goal candidates for RM
     list<int> getStartCandidates(const Path& path, const MDD& mdd,
@@ -82,9 +89,10 @@ private:
                           int t_min, bool horizontal) const;
 
     bool addModifiedBarrierConstraints(
-        int a1, int a2, const pair<int, int>& Rs, const pair<int, int>& Rg,
-        const pair<int, int>& s1, const pair<int, int>& s2, int Rg_t,
-        const MDD* mdd1, const MDD* mdd2, list<Constraint>& constraint1,
+        int a1, int a2, const tuple<int, int, int>& Rs,
+        const tuple<int, int, int>& Rg, const tuple<int, int, int>& s1,
+        const tuple<int, int, int>& s2, int Rg_t, const MDD* mdd1,
+        const MDD* mdd2, list<Constraint>& constraint1,
         list<Constraint>& constraint2);  // for RM
 
     // add a horizontal modified barrier constraint

@@ -22,8 +22,9 @@ constraint
     }
     return false;
 }*/
+
 bool MDD::buildMDD(ConstraintTable& constraint_table,
-                   const SingleAgentSolver* _solver)
+                   const SingleAgentSolver* _solver, bool dummy_start_node)
 {
     struct Node
     {
@@ -68,8 +69,19 @@ bool MDD::buildMDD(ConstraintTable& constraint_table,
     // int holding_time = constraint_table.getHoldingTime(solver->goal_location,
     // constraint_table.length_min); // the earliest timestep that the agent can
     // hold its goal location. The length_min is considered here.
-    auto root = new Node(solver->start_location, 0,
-                         solver->my_heuristic[solver->start_location]);  // Root
+    Node* root;
+    if (dummy_start_node)
+    {
+        // Create dummy start node if specified
+        root =
+            new Node(GLOBAL_VAR::dummy_start_loc, 0,
+                     1 + solver->my_heuristic[solver->start_location]);  // Root
+    }
+    else
+    {
+        root = new Node(solver->start_location, 0,
+                        solver->my_heuristic[solver->start_location]);  // Root
+    }
     // generate a heap that can save nodes (and a open_handle)
     pairing_heap<Node*, compare<Node::compare_node> > open;
     unordered_set<Node*, Node::NodeHasher, Node::eqnode> allNodes_table;
@@ -91,7 +103,17 @@ bool MDD::buildMDD(ConstraintTable& constraint_table,
             upperbound = curr->timestep;
             continue;
         }
-        auto next_locations = solver->getNextLocations(curr->location);
+        // auto next_locations = solver->getNextLocations(curr->location);
+        list<int> next_locations;
+        if (curr->location == GLOBAL_VAR::dummy_start_loc)
+        {
+            next_locations.emplace_back(solver->start_location);
+            next_locations.emplace_back(curr->location);
+        }
+        else
+        {
+            next_locations = solver->getNextLocations(curr->location);
+        }
         for (int next_location :
              next_locations)  // Try every possible move. We only add backward
                               // edges in this step.
@@ -158,10 +180,20 @@ bool MDD::buildMDD(ConstraintTable& constraint_table,
 }
 
 bool MDD::buildMDD(const ConstraintTable& ct, int num_of_levels,
-                   const SingleAgentSolver* _solver)
+                   const SingleAgentSolver* _solver, bool dummy_start_node)
 {
     this->solver = _solver;
-    auto root = new MDDNode(solver->start_location, nullptr);  // Root
+    // auto root = new MDDNode(solver->start_location, nullptr);  // Root
+    MDDNode* root;
+    if (dummy_start_node)
+    {
+        // Create dummy start node if specified
+        root = new MDDNode(GLOBAL_VAR::dummy_start_loc, nullptr);  // Root
+    }
+    else
+    {
+        root = new MDDNode(solver->start_location, nullptr);  // Root
+    }
     std::queue<MDDNode*> open;
     list<MDDNode*> closed;
     open.push(root);
@@ -181,10 +213,19 @@ bool MDD::buildMDD(const ConstraintTable& ct, int num_of_levels,
         // We want (g + 1)+h <= f = numOfLevels - 1, so h <= numOfLevels - g
         // - 2. -1 because it's the bound of the children.
         int heuristicBound = num_of_levels - curr->level - 2;
-        list<int> next_locations = solver->getNextLocations(curr->location);
-        for (int next_location :
-             next_locations)  // Try every possible move. We only add backward
-                              // edges in this step.
+        // list<int> next_locations = solver->getNextLocations(curr->location);
+        list<int> next_locations;
+        if (curr->location == GLOBAL_VAR::dummy_start_loc)
+        {
+            next_locations.emplace_back(solver->start_location);
+            next_locations.emplace_back(curr->location);
+        }
+        else
+        {
+            next_locations = solver->getNextLocations(curr->location);
+        }
+        // Try every possible move. We only add backward edges in this step.
+        for (int next_location : next_locations)
         {
             if (solver->my_heuristic[next_location] <= heuristicBound &&
                 !ct.constrained(next_location, curr->level + 1) &&
@@ -332,12 +373,23 @@ corresponding parent link and child link find = true; break;
     return true;
 }*/
 
-
-void MDD::buildMDD(const Instance& instance, const vector<int>& distances_to_goal, int start_location)
+void MDD::buildMDD(const Instance& instance,
+                   const vector<int>& distances_to_goal, int start_location,
+                   bool dummy_start_node)
 {
     std::queue<MDDNode*> open;
     levels.resize(distances_to_goal[start_location] + 1);
-    auto root = new MDDNode(start_location, nullptr); // Root
+    // auto root = new MDDNode(start_location, nullptr);  // Root
+    MDDNode* root;
+    if (dummy_start_node)
+    {
+        // Create dummy start node if specified
+        root = new MDDNode(GLOBAL_VAR::dummy_start_loc, nullptr);  // Root
+    }
+    else
+    {
+        root = new MDDNode(solver->start_location, nullptr);  // Root
+    }
     levels[0].push_back(root);
     open.push(root);
     while (!open.empty())
@@ -346,22 +398,36 @@ void MDD::buildMDD(const Instance& instance, const vector<int>& distances_to_goa
         open.pop();
         int next_level = curr->level + 1;
         int next_dist_to_goal = distances_to_goal[start_location] - next_level;
-        for (int next_location : instance.getNeighbors(curr->location)) // Try every possible move. We only add backward edges in this step.
+        // Try every possible move. We only add backward edges in this step.
+        // We ignore constraints so no need to wait at current timestep
+        list<int> next_locations;
+        if (curr->location == GLOBAL_VAR::dummy_start_loc)
         {
-            if (distances_to_goal[next_location] != next_dist_to_goal) // not valid move
+            next_locations.emplace_back(solver->start_location);
+        }
+        else
+        {
+            next_locations = instance.getNeighbors(curr->location);
+        }
+        for (int next_location : next_locations)
+        {
+            // not valid move
+            if (distances_to_goal[next_location] != next_dist_to_goal)
                 continue;
             bool find = false;
-            for (auto & child : levels[next_level])
+            for (auto& child : levels[next_level])
             {
-                if (child->location == next_location) // If the child node exists
+                // If the child node exists
+                if (child->location == next_location)
                 {
-                    child->parents.push_back(curr); // then add corresponding parent link and child link
+                    // then add corresponding parent link and child link
+                    child->parents.push_back(curr);
                     curr->children.push_back(child);
                     find = true;
                     break;
                 }
             }
-            if (!find) // Else generate a new mdd node
+            if (!find)  // Else generate a new mdd node
             {
                 auto childNode = new MDDNode(next_location, curr);
                 levels[childNode->level].push_back(childNode);
@@ -692,9 +758,10 @@ MDD* MDDTable::getMDD(HLNode& node, int id, size_t mdd_levels)
     ConstraintTable ct(initial_constraints[id]);
     ct.insert2CT(node, id);
     if (node.getName() == "CBS Node")
-        mdd->buildMDD(ct, mdd_levels, search_engines[id]);
+        mdd->buildMDD(ct, mdd_levels, search_engines[id],
+                      this->dummy_start_node);
     else  // ECBS node
-        mdd->buildMDD(ct, search_engines[id]);
+        mdd->buildMDD(ct, search_engines[id], this->dummy_start_node);
     if (!lookupTable.empty())
     {
         // ConstraintsHasher c(id, &node);

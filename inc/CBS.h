@@ -136,6 +136,7 @@ public:
         agentSuboptimality = w;
         this->dummy_start_node = dummy_start_node;
         this->heuristic_helper.setSolverParams(this->dummy_start_node);
+        this->mdd_helper.setParams(this->dummy_start_node);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
