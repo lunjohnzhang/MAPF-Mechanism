@@ -120,7 +120,7 @@ public:
     map<int, int> initPartialInstance(set<int> global_agents);
 
     const vector<int>* getDistances(int root_location, int start_location,
-                                    int goal_location);
+                                    int goal_location, bool find_all=true);
 
     void saveAgentProfile(boost::filesystem::path filename);
 
