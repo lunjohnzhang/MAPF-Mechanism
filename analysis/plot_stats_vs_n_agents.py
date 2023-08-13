@@ -1,6 +1,7 @@
 import os
 import json
 import fire
+import shutil
 
 import numpy as np
 import scipy.stats as st
@@ -261,7 +262,11 @@ def collect_results(logdirs, baseline_algo="PP1"):
             std_payment = None
             if "payments" in result:
                 payments = result["payments"]
-                std_payment = np.std(payments)
+                try:
+                    std_payment = np.std(payments)
+                except TypeError:
+                    print("Payment not proper:", logdir_f)
+                    shutil.rmtree(logdir_f)
 
             runtime = result["runtime"]
             if current_algo == "CBS" and success == 1:
