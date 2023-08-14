@@ -286,6 +286,7 @@ int main(int argc, char** argv)
         pp.saveResults(logdir / "result.json");
         if (vm["savePath"].as<bool>() && pp.solution_found)
             pp.savePaths((logdir / "paths.txt").string());
+        pp.clearSearchEngines();
     }
     else if (algo == "CBS")
     {
@@ -346,6 +347,7 @@ int main(int argc, char** argv)
         if (pbs.solution_found && vm["savePath"].as<bool>())
             pbs.savePaths((logdir / "paths.txt").string());
         pbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
+        // pbs.savePriorityGraphs(logdir / "all_sols.json"); // for debug
         /*size_t pos = (logdir / "stats.csv").string().rfind('.');      //
         position of the file extension string output_name = (logdir /
         "stats.csv").string().substr(0, pos);     // get the name without

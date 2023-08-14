@@ -37,6 +37,7 @@ public:
     bool solution_found;
 
     PP(Instance& instance, int screen, int seed);
+    void clearSearchEngines();
     void setLowLevelSolver(bool dummy_start_node)
     {
         this->dummy_start_node = dummy_start_node;
@@ -73,7 +74,8 @@ private:
     Instance& instance;
     int screen;
     // PathTable path_table;
-    SpaceTimeAStar single_agent_planner;
+    // SpaceTimeAStar single_agent_planner;
+    vector<SpaceTimeAStar*> search_engines;
     vector<Path*> best_paths;
 
     // Whether use dummy start node at single agent solver

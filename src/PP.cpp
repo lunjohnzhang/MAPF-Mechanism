@@ -1,18 +1,18 @@
 #include "PP.h"
 
 PP::PP(Instance& instance, int screen, int seed)
-    : instance(instance),
-      screen(screen),
-      seed(seed),
-      //   path_table(instance.map_size + 1),  // plus 1 to include dummy start
-      //   loc
-      single_agent_planner(instance, 0)
+    : instance(instance), screen(screen), seed(seed)
+//   path_table(instance.map_size + 1),  // plus 1 to include dummy start
+//   loc
+//   single_agent_planner(instance, 0)
 {
     agents.reserve(instance.num_of_agents);
+    search_engines.resize(instance.num_of_agents);
     for (int i = 0; i < instance.num_of_agents; i++)
     {
         agents.emplace_back(i, instance.start_locations[i],
                             instance.goal_locations[i]);
+        search_engines[i] = new SpaceTimeAStar(instance, i);
     }
 
     this->gen = mt19937(this->seed);
@@ -96,7 +96,7 @@ tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
         //             path_table, *agents[id].distance_to_goal,
         //             agents[id].start_location, agents[id].goal_location,
         //             time_out_sec, dummy_start_node);
-        agents[id].path = single_agent_planner.findOptimalPath(
+        agents[id].path = search_engines[id]->findOptimalPath(
             constraint_table, 0, dummy_start_node);
         // agents[id].path = single_agent_planner.findOptimalPath(
         //     constraint_table, 0, dummy_start_node);
@@ -577,4 +577,10 @@ bool PP::validateSolution() const
     }
 
     return true;
+}
+
+void PP::clearSearchEngines()
+{
+    for (auto s : search_engines) delete s;
+    search_engines.clear();
 }
