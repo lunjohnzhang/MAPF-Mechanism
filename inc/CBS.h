@@ -214,7 +214,7 @@ protected:
 
     vector<double> payments;
     vector<double> utilities;
-    bool payment_calculate_success = false;
+    bool payment_calculate_success = true;
 
     // used to find (single) agents' paths and mdd
     vector<SingleAgentSolver*> search_engines;

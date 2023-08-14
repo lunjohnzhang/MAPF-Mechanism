@@ -1689,10 +1689,20 @@ bool CBS::generateRoot()
 
 inline void CBS::releaseNodes()
 {
-    open_list.clear();
-    cleanup_list.clear();
-    focal_list.clear();
+    // TODO: this part is causing segmentational fault with the following
+    // instance:
+    // clang-format off
+    // ./build/drone -m maps/random-32-32-20.map -a custom_scens/random-32-32-20-my-9.scen -t 600 --algo CBS --cost config/agent_costs/uniform/10000_8.json  --value config/agent_values/uniform/10000_8.json --seed 79 --screen 1 --nLayers 1 -k 25 /usr/bin/env /bin/sh /tmp/Microsoft-MIEngine-Cmd-dwpdqz24.oa5  --suboptimality 1.05 --nRuns 100
+    // clang-format on
+    // I have no idea what's happening. I commented out the code to let the seg
+    // fault disappear not clearing out the lists may cause issue if the same
+    // CBS object is used multiple times. I will try to figure this out in the
+    // future.
+    // open_list.clear();
+    // cleanup_list.clear();
+    // focal_list.clear();
     for (auto& node : allNodes_table) delete node;
+    // cout << "Clearing table itself" << endl;
     allNodes_table.clear();
 }
 
@@ -1914,43 +1924,46 @@ void CBS::computeVCGPayment()
 
         // Run
         cbs.clear();
-        cout << "run " << i << ": running with time limit " << time_remain
-             << endl;
+        // cout << "run " << i << ": running with time limit " << time_remain
+        //      << endl;
         cbs.solve(time_remain);
         total_runtime += cbs.runtime;
         time_remain -= cbs.runtime;
-        cout << "run " << i << " finished, runtime " << cbs.runtime << endl
-             << endl;
+        // cout << "run " << i << " finished, runtime " << cbs.runtime << endl
+        //      << endl;
         runtime_calculate_payment += (double)(clock() - t) / CLOCKS_PER_SEC;
 
         if (!cbs.solution_found)
         {
             payment_calculate_success = false;
             timeout = true;
-            cout << "Clearing search engine after failing" << endl;
+            // cout << "Clearing search engine after failing" << endl;
             cbs.clearSearchEngines();
-            cout << "Done clearing search engine after failing" << endl;
-            return;
+            // cout << "Done clearing search engine after failing" << endl;
+            cbs.clear();
+            break;
         }
         this->solution_costs_wo_i[i] = cbs.solution_cost;
+        cbs.clear();
         cbs.clearSearchEngines();
     }
-
-    this->payments.resize(this->num_of_agents, INT_MAX);
-    this->utilities.resize(this->num_of_agents, INT_MAX);
-
-    for (int i = 0; i < this->num_of_agents; i++)
+    if (payment_calculate_success)
     {
-        payments[i] =
-            this->solution_costs_wo_i[i] -
-            (solution_cost - this->search_engines[0]->instance.costs[i] *
-                                 (this->paths[i]->size() - 1));
+        this->payments.resize(this->num_of_agents, INT_MAX);
+        this->utilities.resize(this->num_of_agents, INT_MAX);
 
-        double curr_welfare = this->search_engines[0]->instance.values[i] -
-                              this->search_engines[0]->instance.costs[i] *
-                                  (this->paths[i]->size() - 1);
+        for (int i = 0; i < this->num_of_agents; i++)
+        {
+            payments[i] =
+                this->solution_costs_wo_i[i] -
+                (solution_cost - this->search_engines[0]->instance.costs[i] *
+                                     (this->paths[i]->size() - 1));
 
-        utilities[i] = curr_welfare - payments[i];
+            double curr_welfare = this->search_engines[0]->instance.values[i] -
+                                  this->search_engines[0]->instance.costs[i] *
+                                      (this->paths[i]->size() - 1);
+
+            utilities[i] = curr_welfare - payments[i];
+        }
     }
-    payment_calculate_success = true;
 }
