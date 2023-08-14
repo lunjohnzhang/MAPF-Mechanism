@@ -215,6 +215,10 @@ public:
             num_of_errors.assign(1, 0);
         }
     }
+    heuristics_type getInadmissibleHeuristicsType()
+    {
+        return inadmissible_heuristic;
+    }
     bool computeInformedHeuristics(CBSNode& curr, double time_limit);
     bool computeInformedHeuristics(ECBSNode& curr,
                                    const vector<int>& min_f_vals,

@@ -20,6 +20,7 @@
 #include <stack>
 #include <random>
 #include <nlohmann/json.hpp>
+#include <sstream>
 
 using boost::unordered_map;
 using boost::unordered_set;
@@ -48,6 +49,7 @@ using std::vector;
 using std::get;
 using std::stack;
 using std::mt19937;
+using std::stringstream;
 using json = nlohmann::json;
 
 // #define NDEBUG
@@ -56,7 +58,7 @@ using json = nlohmann::json;
 #define MAX_COST INT_MAX / 2
 #define MIN_COST INT_MIN / 2
 #define MAX_NODES INT_MAX / 2
-#define MAX_NODES_CBS 100000
+#define MAX_NODES_CBS 10000000
 #define SOLVER_NAME_LEN 35
 
 namespace GLOBAL_VAR

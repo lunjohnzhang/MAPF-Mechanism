@@ -1810,7 +1810,6 @@ void CBS::saveResults(boost::filesystem::path filename,
         {"goal_coordinates",
          this->search_engines[0]->instance.convertAgentLocations(
              this->search_engines[0]->instance.goal_locations)},
-        {"timeout", timeout},
         {"nodeout", nodeout},
         {"runtime", runtime},
         {"solution_cost", solution_cost},
@@ -1860,7 +1859,7 @@ void CBS::saveResults(boost::filesystem::path filename,
         else
             cout << "Payment calculation failed" << endl;
     }
-
+    mechanism_results["timeout"] = timeout;
     mechanism_results["payments"] = payments;
     mechanism_results["utilities"] = utilities;
     mechanism_results["payment_calculate_success"] = payment_calculate_success;
@@ -1897,25 +1896,43 @@ bool CBS::computeVCGPayment()
         Instance local_instance(global_instance);
         local_instance.costs[i] = 0;
 
-        // Clear current search engine and set new ones with cost[i] = 0
-        clearSearchEngines();
-        search_engines.resize(num_of_agents);
-        for (int j = 0; j < num_of_agents; j++)
-            search_engines[j] = new SpaceTimeAStar(local_instance, j);
-        runtime_preprocessing = (double)(clock() - t) / CLOCKS_PER_SEC;
-        mutex_helper.search_engines = search_engines;
+        // Create new CBS using local instance
+        CBS cbs(local_instance, false, this->screen);
+        cbs.setPrioritizeConflicts(this->PC);
+        cbs.setDisjointSplitting(this->disjoint_splitting);
+        cbs.setBypass(false);
+        cbs.setRectangleReasoning(this->rectangle_reasoning);
+        cbs.setCorridorReasoning(this->corridor_reasoning);
+        cbs.setHeuristicType(heuristic_helper.type,
+                             heuristic_helper.getInadmissibleHeuristicsType());
+        cbs.setTargetReasoning(false);
+        cbs.setMutexReasoning(false);
+        cbs.setConflictSelectionRule(conflict_selection::EARLIEST);
+        cbs.setNodeSelectionRule(node_selection::NODE_CONFLICTPAIRS);
+        cbs.setSavingStats(this->save_stats);
+        cbs.setHighLevelSolver(this->solver_type, 1.0);
+        cbs.setLowLevelSolver(-1, this->dummy_start_node);
 
         // Run
-        this->bypass = false;
-        solve(time_remain / num_of_agents);
-        total_runtime += runtime;
+        cbs.clear();
+        cout << "run " << i << ": running with time limit " << time_remain
+             << endl;
+        cbs.solve(time_remain);
+        total_runtime += cbs.runtime;
+        time_remain -= cbs.runtime;
+        cout << "run " << i << " finished, runtime " << cbs.runtime << endl
+             << endl;
         runtime_calculate_payment += (double)(clock() - t) / CLOCKS_PER_SEC;
-        if (!solution_found)
+
+        if (!cbs.solution_found)
         {
+            payment_calculate_success = false;
             timeout = true;
+            cbs.clearSearchEngines();
             return false;
         }
-        this->solution_costs_wo_i[i] = solution_cost;
+        this->solution_costs_wo_i[i] = cbs.solution_cost;
+        cbs.clearSearchEngines();
     }
 
     this->payments.resize(this->num_of_agents, INT_MAX);
