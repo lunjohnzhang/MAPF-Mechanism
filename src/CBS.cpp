@@ -1862,6 +1862,7 @@ void CBS::saveResults(boost::filesystem::path filename,
     if (solution_found)
     {
         payment_calculate_success = computeVCGPayment();
+        cout << "Returned" << endl;
         if (payment_calculate_success)
             cout << "Payment computed successfuly" << endl;
         else
@@ -1938,6 +1939,7 @@ bool CBS::computeVCGPayment()
             timeout = true;
             cout << "Clearing search engine after failing" << endl;
             cbs.clearSearchEngines();
+            cout << "Done clearing search engine after failing" << endl;
             return false;
         }
         this->solution_costs_wo_i[i] = cbs.solution_cost;
