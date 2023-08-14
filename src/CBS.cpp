@@ -1876,15 +1876,15 @@ void CBS::computeVCGPayment()
 
     // Sequentially set each cost to 0 and obtain the solutions
     this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
-    double opt_solution_cost = solution_cost;
-    Instance global_instance(this->search_engines[0]->instance);
+    // double opt_solution_cost = solution_cost;
+    // Instance global_instance(this->search_engines[0]->instance);
 
-    // Save best paths
-    vector<Path*> best_paths(num_of_agents, nullptr);
-    for (int i = 0; i < num_of_agents; i++)
-    {
-        best_paths[i] = new Path(*this->paths[i]);
-    }
+    // // Save best paths
+    // vector<Path*> best_paths(num_of_agents, nullptr);
+    // for (int i = 0; i < num_of_agents; i++)
+    // {
+    //     best_paths[i] = new Path(*this->paths[i]);
+    // }
 
     // Get solution cost wo i by calling solve with each agents cost set to 0.
     for (int i = 0; i < this->num_of_agents; i++)
@@ -1894,7 +1894,7 @@ void CBS::computeVCGPayment()
         clear();
 
         // Get new instance and set cost[i] to 0
-        Instance local_instance(global_instance);
+        Instance local_instance(this->search_engines[0]->instance);
         local_instance.costs[i] = 0;
 
         // Create new CBS using local instance
@@ -1943,13 +1943,14 @@ void CBS::computeVCGPayment()
 
     for (int i = 0; i < this->num_of_agents; i++)
     {
-        payments[i] = this->solution_costs_wo_i[i] -
-                      (opt_solution_cost -
-                       global_instance.costs[i] * (best_paths[i]->size() - 1));
+        payments[i] =
+            this->solution_costs_wo_i[i] -
+            (solution_cost - this->search_engines[0]->instance.costs[i] *
+                                 (this->paths[i]->size() - 1));
 
-        double curr_welfare =
-            global_instance.values[i] -
-            global_instance.costs[i] * (best_paths[i]->size() - 1);
+        double curr_welfare = this->search_engines[0]->instance.values[i] -
+                              this->search_engines[0]->instance.costs[i] *
+                                  (this->paths[i]->size() - 1);
 
         utilities[i] = curr_welfare - payments[i];
     }
