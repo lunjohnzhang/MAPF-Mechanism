@@ -217,7 +217,7 @@ void PP::run(int n_runs, double time_out_sec)
             cout << "PP: Run " << i << " failed" << endl;
             total_runtime += this->runtime;
             failed_runs.emplace_back(i);
-            break; // All runs should succeed with current setting
+            break;  // All runs should succeed with current setting
         }
         else
         {
@@ -439,9 +439,8 @@ void PP::saveResults(boost::filesystem::path filename)
     // 1. Weighted sum of path length by the costs of the agents.
     // 2. Weighted sum of path length if ignoring cost of agent i, for each i.
     // 3. Payment of each agent.
-    //    payment[i] = "weighted min sum of path length without agent i" -
-    //                 ("weighted min sum of path length" - "weighted length of
-    //                 path[i]").
+    //    payment[i] = "max welfare without agent i" -
+    //                 ("max welfare" - "welfare of path[i]").
     // 4. Utility of each agent.
     //    utility[i] = value[i] - cost[i] * path_length_i - payment_i
     // 5. Agent profile.
@@ -455,9 +454,11 @@ void PP::saveResults(boost::filesystem::path filename)
     {
         for (int i = 0; i < this->agents.size(); i++)
         {
-            payments[i] = min_sum_of_cost_wo_i[i] -
-                          (min_sum_of_cost -
-                           all_weighted_path_lengths[max_welfare_idx][i]);
+            payments[i] =
+                max_welfare_wo_i[i] -
+                (max_social_welfare -
+                 max(0.0, this->instance.values[i] -
+                              all_weighted_path_lengths[max_welfare_idx][i]));
 
             double curr_welfare = this->instance.values[i] -
                                   all_weighted_path_lengths[max_welfare_idx][i];
