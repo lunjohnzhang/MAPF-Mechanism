@@ -1915,13 +1915,13 @@ bool CBS::computeVCGPayment()
 
         // Run
         cbs.clear();
-        cout << "run " << i << ": running with time limit " << time_remain
-             << endl;
+        // cout << "run " << i << ": running with time limit " << time_remain
+        //      << endl;
         cbs.solve(time_remain);
         total_runtime += cbs.runtime;
         time_remain -= cbs.runtime;
-        cout << "run " << i << " finished, runtime " << cbs.runtime << endl
-             << endl;
+        // cout << "run " << i << " finished, runtime " << cbs.runtime << endl
+        //      << endl;
         runtime_calculate_payment += (double)(clock() - t) / CLOCKS_PER_SEC;
 
         if (!cbs.solution_found)
