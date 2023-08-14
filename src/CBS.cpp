@@ -1890,8 +1890,6 @@ void CBS::computeVCGPayment()
     for (int i = 0; i < this->num_of_agents; i++)
     {
         clock_t t = clock();
-        // Clear previous run.
-        clear();
 
         // Get new instance and set cost[i] to 0
         Instance local_instance(this->search_engines[0]->instance);
