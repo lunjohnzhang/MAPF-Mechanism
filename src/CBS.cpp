@@ -1714,7 +1714,15 @@ CBS::~CBS()
 
 void CBS::clearSearchEngines()
 {
-    for (auto s : search_engines) delete s;
+    // for (auto s : search_engines)
+    for(int i = 0; i < search_engines.size(); i++)
+    {
+        auto s = search_engines[i];
+        if (s == nullptr)
+            cout << "engine " << i << " is nullptr, skipping" << endl;
+        else
+            delete s;
+    }
     search_engines.clear();
 }
 
