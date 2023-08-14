@@ -1714,15 +1714,7 @@ CBS::~CBS()
 
 void CBS::clearSearchEngines()
 {
-    // for (auto s : search_engines)
-    for(int i = 0; i < search_engines.size(); i++)
-    {
-        auto s = search_engines[i];
-        if (s == nullptr)
-            cout << "engine " << i << " is nullptr, skipping" << endl;
-        else
-            delete s;
-    }
+    for (auto s : search_engines) delete s;
     search_engines.clear();
 }
 
@@ -1861,7 +1853,7 @@ void CBS::saveResults(boost::filesystem::path filename,
 
     if (solution_found)
     {
-        payment_calculate_success = computeVCGPayment();
+        computeVCGPayment();
         cout << "Returned" << endl;
         if (payment_calculate_success)
             cout << "Payment computed successfuly" << endl;
@@ -1877,7 +1869,7 @@ void CBS::saveResults(boost::filesystem::path filename,
     write_to_json(mechanism_results, filename);
 }
 
-bool CBS::computeVCGPayment()
+void CBS::computeVCGPayment()
 {
     total_runtime = runtime;
     double time_remain = this->time_limit - runtime;
@@ -1940,7 +1932,7 @@ bool CBS::computeVCGPayment()
             cout << "Clearing search engine after failing" << endl;
             cbs.clearSearchEngines();
             cout << "Done clearing search engine after failing" << endl;
-            return false;
+            return;
         }
         this->solution_costs_wo_i[i] = cbs.solution_cost;
         cbs.clearSearchEngines();
@@ -1961,6 +1953,5 @@ bool CBS::computeVCGPayment()
 
         utilities[i] = curr_welfare - payments[i];
     }
-
-    return true;
+    payment_calculate_success = true;
 }
