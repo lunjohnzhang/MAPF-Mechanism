@@ -281,5 +281,5 @@ private:  // CBS only, cannot be used by ECBS
 
     vector<double> solution_costs_wo_i;
     // Compute VCG payment for CBS
-    bool computeVCGPayment();
+    void computeVCGPayment();
 };
