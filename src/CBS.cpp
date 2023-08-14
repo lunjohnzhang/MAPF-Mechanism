@@ -1928,6 +1928,7 @@ bool CBS::computeVCGPayment()
         {
             payment_calculate_success = false;
             timeout = true;
+            cout << "Clearing search engine after failing" << endl;
             cbs.clearSearchEngines();
             return false;
         }
