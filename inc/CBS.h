@@ -280,6 +280,7 @@ private:  // CBS only, cannot be used by ECBS
     void printPaths() const;
 
     vector<double> solution_costs_wo_i;
+    vector<double> social_welfare_wo_i;
     // Compute VCG payment for CBS
     void computeVCGPayment();
 };

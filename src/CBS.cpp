@@ -1695,9 +1695,9 @@ inline void CBS::releaseNodes()
     // ./build/drone -m maps/random-32-32-20.map -a custom_scens/random-32-32-20-my-9.scen -t 600 --algo CBS --cost config/agent_costs/uniform/10000_8.json  --value config/agent_values/uniform/10000_8.json --seed 79 --screen 1 --nLayers 1 -k 25 /usr/bin/env /bin/sh /tmp/Microsoft-MIEngine-Cmd-dwpdqz24.oa5  --suboptimality 1.05 --nRuns 100
     // clang-format on
     // I have no idea what's happening. I commented out the code to let the seg
-    // fault disappear not clearing out the lists may cause issue if the same
-    // CBS object is used multiple times. I will try to figure this out in the
-    // future.
+    // fault disappear but not clearing out the lists may cause issue if the
+    // same CBS object is used multiple times. I will try to figure this out in
+    // the future.
     // open_list.clear();
     // cleanup_list.clear();
     // focal_list.clear();
@@ -1864,7 +1864,6 @@ void CBS::saveResults(boost::filesystem::path filename,
     if (solution_found)
     {
         computeVCGPayment();
-        cout << "Returned" << endl;
         if (payment_calculate_success)
             cout << "Payment computed successfuly" << endl;
         else
@@ -1886,6 +1885,7 @@ void CBS::computeVCGPayment()
 
     // Sequentially set each cost to 0 and obtain the solutions
     this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
+    this->social_welfare_wo_i.resize(num_of_agents, INT_MAX);
     // double opt_solution_cost = solution_cost;
     // Instance global_instance(this->search_engines[0]->instance);
 
@@ -1904,6 +1904,7 @@ void CBS::computeVCGPayment()
         // Get new instance and set cost[i] to 0
         Instance local_instance(this->search_engines[0]->instance);
         local_instance.costs[i] = 0;
+        local_instance.values[i] = 0;
 
         // Create new CBS using local instance
         CBS cbs(local_instance, false, this->screen);
@@ -1944,6 +1945,7 @@ void CBS::computeVCGPayment()
             break;
         }
         this->solution_costs_wo_i[i] = cbs.solution_cost;
+        this->social_welfare_wo_i[i] = cbs.social_welfare;
         cbs.clear();
         cbs.clearSearchEngines();
     }
@@ -1954,14 +1956,17 @@ void CBS::computeVCGPayment()
 
         for (int i = 0; i < this->num_of_agents; i++)
         {
+            double weighted_path_len =
+                this->search_engines[0]->instance.costs[i] *
+                (this->paths[i]->size() - 1);
             payments[i] =
-                this->solution_costs_wo_i[i] -
-                (solution_cost - this->search_engines[0]->instance.costs[i] *
-                                     (this->paths[i]->size() - 1));
+                social_welfare_wo_i[i] -
+                (social_welfare -
+                 max(0.0, this->search_engines[0]->instance.values[i] -
+                              weighted_path_len));
 
-            double curr_welfare = this->search_engines[0]->instance.values[i] -
-                                  this->search_engines[0]->instance.costs[i] *
-                                      (this->paths[i]->size() - 1);
+            double curr_welfare =
+                this->search_engines[0]->instance.values[i] - weighted_path_len;
 
             utilities[i] = curr_welfare - payments[i];
         }
