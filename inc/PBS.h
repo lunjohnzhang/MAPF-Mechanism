@@ -80,7 +80,7 @@ public:
 
     Path* getBestPathByGlobalID(int agent_global_id,
                                 map<int, int> id_map) const;
-
+    void savePriorityGraphs(boost::filesystem::path filename) const;
 private:
     conflict_selection conflict_seletion_rule;
 
@@ -203,8 +203,11 @@ private:
     // Debug related
     bool tobeReplanned(PBSNode* node);
     string stringifyPriorityGraph() const;
+    string stringifyPaths(vector<Path> paths_to_str) const;
+    // map from priority graph to paths
     map<string, vector<Path>> all_sol_priority_g;
-    set<vector<Path>> all_sols;
+    // map from path to each priority graph
+    map<vector<Path>, set<string>> all_sol_by_path;
     int n_overlap_solutions = 0;
     // bool consistentWithTotalOrder(PBSNode* curr);
 };

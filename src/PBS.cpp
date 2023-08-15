@@ -93,8 +93,10 @@ bool PBS::solve(double _time_limit)
         cout << "Found " << this->n_solutions
              << " solutions, min cost: " << solution_cost
              << ", max welfare: " << max_social_welfare << endl;
-        cout << "N solutions without overlap: " << this->all_sols.size()
-             << endl;
+        // ******************* Debug *******************
+        // cout << "N solutions without overlap: " <<
+        // this->all_sol_by_path.size()
+        //      << endl;
         // cout << "N solutions without overlap: " << this->n_solutions -
         // this->n_overlap_solutions << endl; for (auto item :
         // this->all_sol_priority_g)
@@ -113,6 +115,7 @@ bool PBS::solve(double _time_limit)
         //     }
         //     cout << endl;
         // }
+        // ******************* Debug *******************
     }
     return solution_found;
 }
@@ -943,7 +946,7 @@ bool PBS::terminate(PBSNode* curr)
         // printPriorityGraph();
 
         // ******************* Debug *******************
-        // Overlap solution?
+        // // Overlap solution?
         // string curr_priority_graph_str = stringifyPriorityGraph();
         // vector<Path> current_sol;
         // for (int i = 0; i < num_of_agents; i++)
@@ -963,17 +966,20 @@ bool PBS::terminate(PBSNode* curr)
         //     this->all_sol_priority_g[curr_priority_graph_str] = current_sol;
         // }
 
-        // if (this->all_sols.find(current_sol) != this->all_sols.end())
+        // if (this->all_sol_by_path.find(current_sol) !=
+        //     this->all_sol_by_path.end())
         // {
         //     // cout << "Overlap solution" << endl;
         //     this->n_overlap_solutions += 1;
+        //     this->all_sol_by_path[current_sol].insert(curr_priority_graph_str);
         // }
         // else
-        //     this->all_sols.insert(current_sol);
+        //     this->all_sol_by_path[current_sol] =
+        //         set<string>{curr_priority_graph_str};
 
-        // cout << "Solution " << this->n_solutions << endl;
-        // printPaths();
-        // cout << endl;
+        // // cout << "Solution " << this->n_solutions << endl;
+        // // printPaths();
+        // // cout << endl;
         // ******************* Debug *******************
 
         // With exhaustive PBS, remember the current best solution and
@@ -1430,14 +1436,14 @@ void PBS::saveResults(boost::filesystem::path filename,
     {
         for (int i = 0; i < this->num_of_agents; i++)
         {
-            payments[i] =
-                this->solution_costs_wo_i[i] -
-                (this->solution_cost -
-                 this->instance.costs[i] * (this->best_paths[i]->size() - 1));
-
-            double curr_welfare =
-                this->instance.values[i] -
+            double weighted_path_len =
                 this->instance.costs[i] * (this->best_paths[i]->size() - 1);
+            payments[i] =
+                max_welfare_wo_i[i] -
+                (max_social_welfare -
+                 max(0.0, this->instance.values[i] - weighted_path_len));
+
+            double curr_welfare = this->instance.values[i] - weighted_path_len;
 
             utilities[i] = curr_welfare - payments[i];
 
@@ -1594,4 +1600,35 @@ Path* PBS::getBestPathByGlobalID(int agent_global_id,
                                  map<int, int> id_map) const
 {
     return this->best_paths[id_map.at(agent_global_id)];
+}
+
+string PBS::stringifyPaths(vector<Path> paths_to_str) const
+{
+    string paths_str = "";
+    for (int i = 0; i < num_of_agents; i++)
+    {
+        paths_str +=
+            "Agent " + std::to_string(i) + " (" +
+            std::to_string(
+                search_engines[i]
+                    ->my_heuristic[search_engines[i]->start_location]) +
+            " -->" + std::to_string(paths_to_str[i].size() - 1) + "): ";
+        for (const auto& t : paths_to_str[i])
+            paths_str += std::to_string(t.location) + "->";
+        paths_str += "\n";
+    }
+    return paths_str;
+}
+
+void PBS::savePriorityGraphs(boost::filesystem::path filename) const
+{
+    json all_sols_by_path;
+    for (auto item : this->all_sol_by_path)
+    {
+        auto paths = item.first;
+        string paths_str = stringifyPaths(paths);
+        auto graphs = item.second;
+        all_sols_by_path[paths_str] = graphs;
+    }
+    write_to_json(all_sols_by_path, filename);
 }
