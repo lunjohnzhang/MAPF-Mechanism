@@ -255,7 +255,7 @@ bool ConstraintTable::constrained(size_t loc, int t) const
 bool ConstraintTable::constrained(size_t curr_loc, size_t next_loc,
                                   int next_t) const
 {
-    if (curr_loc == GLOBAL_VAR::dummy_start_loc &&
+    if (curr_loc == GLOBAL_VAR::dummy_start_loc ||
         next_loc == GLOBAL_VAR::dummy_start_loc)
         return false;
     return constrained(getEdgeIndex(curr_loc, next_loc), next_t);
