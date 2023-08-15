@@ -178,19 +178,21 @@ def collect_results(logdirs, baseline_algo="PP1"):
 
     to_plot_algo = {}
 
+
     # Obtain all_logdir_algo.
-    # We want to collect results for `baseline_algo` first to compute
-    # suboptimalities
     all_logdir_algo = os.listdir(logdirs)
-    all_logdir_algo.remove(baseline_algo)
-    all_logdir_algo.insert(0, baseline_algo)
-    baseline_algo_name = None
-    baseline_logdir_algo_f = None
 
     # Plot CBS last it's visible
     if "CBS" in all_logdir_algo:
         all_logdir_algo.remove("CBS")
         all_logdir_algo.append("CBS")
+
+    # We want to collect results for `baseline_algo` first to compute
+    # suboptimalities
+    all_logdir_algo.remove(baseline_algo)
+    all_logdir_algo.insert(0, baseline_algo)
+    baseline_algo_name = None
+    baseline_logdir_algo_f = None
 
     # Loop through all logdirs to get the stats
     for logdir_algo in all_logdir_algo:
@@ -318,7 +320,7 @@ def main(logdirs, add_legend=True, legend_only=False):
 
         figsize = (8, 5.5)
         if legend_only:
-            figsize = (20, 8)
+            figsize = (18, 8)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
