@@ -187,6 +187,11 @@ def collect_results(logdirs, baseline_algo="PP1"):
     baseline_algo_name = None
     baseline_logdir_algo_f = None
 
+    # Plot CBS last it's visible
+    if "CBS" in all_logdir_algo:
+        all_logdir_algo.remove("CBS")
+        all_logdir_algo.append("CBS")
+
     # Loop through all logdirs to get the stats
     for logdir_algo in all_logdir_algo:
         logdir_algo_f = os.path.join(logdirs, logdir_algo)
@@ -261,19 +266,25 @@ def collect_results(logdirs, baseline_algo="PP1"):
             # For CBS and EECBS, there is no payment, so ignore
             std_payment = None
             if "payments" in result:
+                if current_algo == "CBS":
+                    payment_calc_success = result["payment_calculate_success"]
+
+                    if not payment_calc_success:
+                        print(f"CBS: Payment calculated failed: {logdir_f}")
+
                 payments = result["payments"]
                 try:
                     std_payment = np.std(payments)
                 except TypeError:
-                    print("Payment not proper:", logdir_f)
+                    print(f"{current_algo}: Payment not proper: {logdir_f}")
                     shutil.rmtree(logdir_f)
 
             runtime = result["runtime"]
             if current_algo == "CBS" and success == 1:
                 runtime = result["total_runtime"]
 
-            if current_algo == "CBS" and not success:
-                print(logdir_f)
+            # if current_algo == "CBS" and not success:
+            #     print(logdir_f)
 
             stat = Stats(runtime=runtime,
                          success=success,
