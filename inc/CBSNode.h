@@ -24,6 +24,7 @@ public:
     size_t depth = 0;        // depath of this CT node
     size_t makespan = 0;     // makespan over all paths
     bool h_computed = false;
+    double path_cost = 0;
 
     uint64_t time_expanded = 0;
     uint64_t time_generated = 0;

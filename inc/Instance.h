@@ -19,6 +19,28 @@ public:
              int num_of_agents = 0, int num_of_rows = 0, int num_of_cols = 0,
              int num_of_layers = 0, int num_of_obstacles = 0,
              int warehouse_width = 0);
+    Instance(const Instance& other)
+        : num_of_cols(other.num_of_cols),
+          num_of_rows(other.num_of_rows),
+          num_of_layers(other.num_of_layers),
+          map_size(other.map_size),
+          num_of_agents(other.num_of_agents),
+          start_locations(other.start_locations),
+          goal_locations(other.goal_locations),
+          seed(other.seed),
+          gen(other.gen),
+          cost_config(other.cost_config),
+          costs(other.costs),
+          cost_mode(other.cost_mode),
+          value_config(other.value_config),
+          values(other.values),
+          value_mode(other.value_mode),
+          my_map(other.my_map),
+          agent_fname(other.agent_fname),
+          map_fname(other.map_fname),
+          distance_matrix(other.distance_matrix)
+    {
+    }
 
     void printAgents() const;
 
@@ -94,7 +116,11 @@ public:
     vector<double> values;
     string value_mode;
 
-    const vector<int>* getDistances(int root_location);
+    // Keep only the global agents and initialize the id_map.
+    map<int, int> initPartialInstance(set<int> global_agents);
+
+    const vector<int>* getDistances(int root_location, int start_location,
+                                    int goal_location, bool find_all=true);
 
     void saveAgentProfile(boost::filesystem::path filename);
 

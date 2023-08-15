@@ -127,7 +127,7 @@ double weighted_path_cost(vector<Path*> paths, vector<double> costs)
 {
     assert(paths.size() == costs.size());
 
-    double weighted_sum;
+    double weighted_sum = 0;
     for (int i = 0; i < paths.size(); i++)
     {
         weighted_sum += (double)(paths[i]->size() - 1) * costs[i];

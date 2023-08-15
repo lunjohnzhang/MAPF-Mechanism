@@ -6,6 +6,7 @@
 #include <boost/tokenizer.hpp>
 
 #include "ECBS.h"
+#include "IDPBS.h"
 #include "PBS.h"
 #include "PP.h"
 
@@ -26,7 +27,7 @@ int main(int argc, char** argv)
 
         // Algo, PP1 refers to PP with nRuns = 1, which is
         // first-come-first-serve
-        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP', 'PBS', 'PP1']")
+        ("algo", po::value<string>()->required(), "algorithm. one of ['CBS', 'ECBS', 'PP', 'PBS', 'PP1', 'IDPBS']")
 
         // params for the input instance and experiment settings
 		("map,m", po::value<string>()->required(), "input file for map")
@@ -83,11 +84,13 @@ int main(int argc, char** argv)
 		("bypass", po::value<bool>()->default_value(true), "Bypass1")
 		("disjointSplitting", po::value<bool>()->default_value(false),
             "disjoint splitting")
+        ("rectangleReasoning", po::value<bool>()->default_value(true),
+            "rectangle reasoning")
 		("corridorReasoning", po::value<bool>()->default_value(true),
             "corridor reasoning")
 		("targetReasoning", po::value<bool>()->default_value(false),
             "target reasoning")
-		("sipp", po::value<bool>()->default_value(0),
+		("sipp", po::value<bool>()->default_value(false),
             "using SIPPS as the low-level solver")
 		;
     // clang-format on
@@ -217,6 +220,11 @@ int main(int argc, char** argv)
          << endl
          << endl;
 
+    // Turn on rectangle reasoning only in 2D maps.
+    bool rectangle_reasoning = false;
+    if(vm["rectangleReasoning"].as<bool>() && instance.num_of_layers == 1)
+        rectangle_reasoning = true;
+
     //////////////////////////////////////////////////////////////////////
     // initialize the solver
     if (vm["lowLevelSolver"].as<bool>() && algo == "ECBS")
@@ -225,6 +233,7 @@ int main(int argc, char** argv)
         ecbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
         ecbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
         ecbs.setBypass(vm["bypass"].as<bool>());
+        ecbs.setRectangleReasoning(rectangle_reasoning);
         ecbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         ecbs.setHeuristicType(h, h_hat);
         ecbs.setTargetReasoning(false);
@@ -275,8 +284,9 @@ int main(int argc, char** argv)
         pp.setLowLevelSolver(vm["dummyStart"].as<bool>());
         pp.run(runs, vm["cutoffTime"].as<double>());
         pp.saveResults(logdir / "result.json");
-        if (vm["savePath"].as<bool>())
+        if (vm["savePath"].as<bool>() && pp.solution_found)
             pp.savePaths((logdir / "paths.txt").string());
+        pp.clearSearchEngines();
     }
     else if (algo == "CBS")
     {
@@ -284,6 +294,7 @@ int main(int argc, char** argv)
         cbs.setPrioritizeConflicts(vm["prioritizingConflicts"].as<bool>());
         cbs.setDisjointSplitting(vm["disjointSplitting"].as<bool>());
         cbs.setBypass(vm["bypass"].as<bool>());
+        cbs.setRectangleReasoning(rectangle_reasoning);
         cbs.setCorridorReasoning(vm["corridorReasoning"].as<bool>());
         cbs.setHeuristicType(h, h_hat);
         cbs.setTargetReasoning(false);
@@ -296,7 +307,7 @@ int main(int argc, char** argv)
         //////////////////////////////////////////////////////////////////////
         // run
         double runtime = 0;
-        int lowerbound = 0;
+        int lowerbound = MIN_COST;
         int runs = vm["nRestarts"].as<int>() + 1;
         for (int i = 0; i < runs; i++)
         {
@@ -328,7 +339,7 @@ int main(int argc, char** argv)
                             vm["exhaustiveSearch"].as<bool>());
 
         // run
-        double runtime = 0;
+        // double runtime = 0;
         pbs.solve(vm["cutoffTime"].as<double>());
         // if (vm["saveStats"].as<bool>())
         //     pbs.saveResults((logdir / "stats.csv").string(),
@@ -336,11 +347,22 @@ int main(int argc, char** argv)
         if (pbs.solution_found && vm["savePath"].as<bool>())
             pbs.savePaths((logdir / "paths.txt").string());
         pbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
+        // pbs.savePriorityGraphs(logdir / "all_sols.json"); // for debug
         /*size_t pos = (logdir / "stats.csv").string().rfind('.');      //
         position of the file extension string output_name = (logdir /
         "stats.csv").string().substr(0, pos);     // get the name without
         extension cbs.saveCT(output_name); // for debug*/
         pbs.clearSearchEngines();
+    }
+    else if (algo == "IDPBS")
+    {
+        IDPBS idpbs(instance, vm["sipp"].as<bool>(), vm["screen"].as<int>(),
+                    vm["dummyStart"].as<bool>(),
+                    vm["exhaustiveSearch"].as<bool>());
+        idpbs.solve(vm["cutoffTime"].as<double>());
+        if (idpbs.solution_found && vm["savePath"].as<bool>())
+            idpbs.savePaths((logdir / "paths.txt").string());
+        idpbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
     }
 
     return 0;

@@ -1,28 +1,30 @@
 #include "PP.h"
 
 PP::PP(Instance& instance, int screen, int seed)
-    : instance(instance),
-      screen(screen),
-      seed(seed),
-      path_table(instance.map_size + 1),  // plus 1 to include dummy start loc
-      single_agent_planner(instance, 0)
+    : instance(instance), screen(screen), seed(seed)
+//   path_table(instance.map_size + 1),  // plus 1 to include dummy start
+//   loc
+//   single_agent_planner(instance, 0)
 {
     agents.reserve(instance.num_of_agents);
+    search_engines.resize(instance.num_of_agents);
     for (int i = 0; i < instance.num_of_agents; i++)
     {
         agents.emplace_back(i, instance.start_locations[i],
                             instance.goal_locations[i]);
+        search_engines[i] = new SpaceTimeAStar(instance, i);
     }
 
     this->gen = mt19937(this->seed);
 
     this->min_sum_of_cost_wo_i.resize(this->agents.size(), MAX_COST);
+    this->max_welfare_wo_i.resize(this->agents.size(), INT_MIN);
     this->best_paths.resize(this->agents.size(), nullptr);
 }
 
 void PP::reset()
 {
-    path_table.reset();
+    // path_table.reset();
     for (int i = 0; i < instance.num_of_agents; i++)
     {
         agents[i].path.clear();
@@ -34,62 +36,81 @@ void PP::preprocess(bool compute_distance_to_start,
                     bool compute_distance_to_goal,
                     bool compute_mdd)  // compute information in each agent
 {
-    assert(compute_distance_to_goal ||
-           !compute_mdd);  // when compute_mdd is true, compute_distance_to_goal
-                           // must be true
+    // when compute_mdd is true, compute_distance_to_goal must be true
+    assert(compute_distance_to_goal || !compute_mdd);
     clock_t start_time = clock();
     if (compute_distance_to_start)
     {
         for (auto& agent : agents)
         {
-            agent.distance_to_start =
-                instance.getDistances(agent.start_location);
+            agent.distance_to_start = instance.getDistances(
+                agent.start_location, agent.start_location,
+                agent.goal_location);
         }
     }
     if (compute_distance_to_goal)
     {
         for (auto& agent : agents)
         {
-            agent.distance_to_goal = instance.getDistances(agent.goal_location);
+            agent.distance_to_goal = instance.getDistances(
+                agent.goal_location, agent.start_location, agent.goal_location);
         }
     }
-    if (compute_mdd)
-    {
-        for (auto& agent : agents)
-        {
-            agent.mdd.buildMDD(instance, *agent.distance_to_goal,
-                               agent.start_location);
-        }
-    }
+    // if (compute_mdd)
+    // {
+    //     for (auto& agent : agents)
+    //     {
+    //         agent.mdd.buildMDD(instance, *agent.distance_to_goal,
+    //                            agent.start_location);
+    //     }
+    // }
     runtime_preprocessing = (double)(clock() - start_time) / CLOCKS_PER_SEC;
 }
 
-double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
+tuple<double, double> PP::run_once(int& failed_agent_id, int run_id,
+                                   double time_out_sec)
 {
     assert(ordering.size() == agents.size());
     if (screen > 1)
     {
         cout << "Current order: ";
-        for (int id : ordering)
-            cout << id << ", ";
+        for (int id : ordering) cout << id << ", ";
         cout << endl;
     }
 
     clock_t start_time = clock();
     double sum_of_costs = 0;
+    double curr_welfare = 0;
     dependency_graph.resize(ordering.size());
+    ConstraintTable constraint_table(this->instance.num_of_cols,
+                                     this->instance.map_size);
     // vector<double> weighted_path_lengths(agents.size());
+    int n = 0;
     for (int id : ordering)
     {
-        path_table.hit_agents.clear();
-        agents[id].path = single_agent_planner.findOptimalPath(
-            path_table, *agents[id].distance_to_goal, agents[id].start_location,
-            agents[id].goal_location, time_out_sec, dummy_start_node);
+        if (screen > 1)
+            cout << "Planning " << n << "th agent: " << id << endl;
+        n += 1;
+        // path_table.hit_agents.clear();
+        // agents[id].path = single_agent_planner.findOptimalPath(
+        //             path_table, *agents[id].distance_to_goal,
+        //             agents[id].start_location, agents[id].goal_location,
+        //             time_out_sec, dummy_start_node);
+        agents[id].path = search_engines[id]->findOptimalPath(
+            constraint_table, 0, dummy_start_node);
+        // agents[id].path = single_agent_planner.findOptimalPath(
+        //     constraint_table, 0, dummy_start_node);
+        // agents[id].path = single_agent_planner.findOptimalPath(
+        //     path_table, *agents[id].distance_to_goal,
+        //     agents[id].start_location, agents[id].goal_location,
+        //     time_out_sec, dummy_start_node);
 
         if (time_out_sec < (double)(clock() - start_time) / CLOCKS_PER_SEC)
         {
             sum_of_costs = MAX_COST;
+            curr_welfare = INT_MIN;
             failed_agent_id = id;
+            solution_found = false;
             break;
         }
         // for (auto& agent : path_table.hit_agents)
@@ -102,15 +123,22 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
         if (agents[id].path.empty())
         {
             sum_of_costs = MAX_COST;
+            curr_welfare = INT_MIN;
             failed_agent_id = id;
+            solution_found = false;
             break;  // failed, id is the failing agent. in its dependency graph,
                     // at least one pair should be reversed
         }
         double curr_agent_weighted_path_len =
             (double)(agents[id].path.size() - 1) * this->instance.costs[id];
         sum_of_costs += curr_agent_weighted_path_len;
-        path_table.insertPath(agents[id].id, agents[id].path);
+        curr_welfare +=
+            max(this->instance.values[id] - curr_agent_weighted_path_len, 0.0);
+        // path_table.insertPath(agents[id].id, agents[id].path);
         all_weighted_path_lengths[run_id][id] = curr_agent_weighted_path_len;
+
+        // Add current path to constraint table
+        constraint_table.insert2CT(agents[id].path);
     }
 
     // Success: update min sum of cost without agent i
@@ -118,20 +146,25 @@ double PP::run_once(int& failed_agent_id, int run_id, double time_out_sec)
     {
         for (int i = 0; i < agents.size(); i++)
         {
-            double curr_sum_of_cost_wo_i =
-                sum_of_costs -
+            double curr_weighted_path_len =
                 (double)(agents[i].path.size() - 1) * this->instance.costs[i];
+            double curr_sum_of_cost_wo_i =
+                sum_of_costs - curr_weighted_path_len;
+            double curr_welfare_wo_i =
+                curr_welfare -
+                max(0.0, this->instance.values[i] - curr_weighted_path_len);
 
             // Better?
-            if (curr_sum_of_cost_wo_i < this->min_sum_of_cost_wo_i[i])
+            if (curr_welfare_wo_i > this->max_welfare_wo_i[i])
             {
+                this->max_welfare_wo_i[i] = curr_welfare_wo_i;
                 this->min_sum_of_cost_wo_i[i] = curr_sum_of_cost_wo_i;
             }
         }
     }
 
     runtime = (double)(clock() - start_time) / CLOCKS_PER_SEC;
-    return sum_of_costs;
+    return std::make_tuple(sum_of_costs, curr_welfare);
 }
 
 void PP::storeBestPath()
@@ -167,17 +200,24 @@ void PP::run(int n_runs, double time_out_sec)
 
     for (int i = 0; i < n_runs; i++)
     {
-        this->preprocess(true, true, true);
+        // Don't need distance to goal here because we use heuristic in
+        // single_agent_solver
+        // TODO: delete distance_to_goal and distance_to_start if necessary
+        this->preprocess(true, false, false);
         this->computeRandomOrdering();
         int failed_agent_id = -1;
-        double sum_of_cost = run_once(failed_agent_id, i);
+        double sum_of_cost, curr_welfare;
+        std::tie(sum_of_cost, curr_welfare) =
+            run_once(failed_agent_id, i, time_out_sec);
 
         // Current run is failed
         if (failed_agent_id >= 0)
         {
-            cout << "Failed agent: " << failed_agent_id << endl;
-            cout << "Run " << i << " failed" << endl;
+            cout << "PP: Failed agent: " << failed_agent_id << endl;
+            cout << "PP: Run " << i << " failed" << endl;
+            total_runtime += this->runtime;
             failed_runs.emplace_back(i);
+            break;  // All runs should succeed with current setting
         }
         else
         {
@@ -198,12 +238,21 @@ void PP::run(int n_runs, double time_out_sec)
             avg_suboptimality += suboptimality;
             n_success += 1;
             avg_sum_of_cost += sum_of_cost;
-            if (suboptimality < min_suboptimality)
-                min_suboptimality = suboptimality;
-            if (sum_of_cost < min_sum_of_cost)
+            // if (suboptimality < min_suboptimality)
+            //     min_suboptimality = suboptimality;
+            // if (sum_of_cost < min_sum_of_cost)
+            // {
+            //     min_sum_of_cost = sum_of_cost;
+            //     min_sum_of_cost_idx = i;
+            // }
+            // We want the path that corresponds to the maximum welfare.
+            if (curr_welfare > max_social_welfare)
             {
+                max_social_welfare = curr_welfare;
                 min_sum_of_cost = sum_of_cost;
+                max_welfare_idx = i;
                 min_sum_of_cost_idx = i;
+                min_suboptimality = suboptimality;
                 storeBestPath();
             }
 
@@ -218,8 +267,9 @@ void PP::run(int n_runs, double time_out_sec)
             if (time_out_sec < total_runtime)
             {
                 timeout = true;
+                solution_found = false;
                 cout << "Timeout at run " << i << endl;
-                return;
+                break;
             }
 
             if (screen > 0)
@@ -231,12 +281,23 @@ void PP::run(int n_runs, double time_out_sec)
         }
         this->reset();
     }
-    avg_suboptimality /= n_success;
-    avg_sum_of_cost /= n_success;
-    cout << "Average suboptimality: " << avg_suboptimality << endl;
-    cout << "Average sum of cost: " << avg_sum_of_cost << endl;
-    cout << "Minimum suboptimality: " << min_suboptimality << endl;
-    cout << "Minimum sum of cost: " << min_sum_of_cost << endl;
+
+    // All runs succeeded
+    if (n_success == n_runs)
+    {
+        solution_found = true;
+        avg_suboptimality /= n_success;
+        avg_sum_of_cost /= n_success;
+        cout << "Average suboptimality: " << avg_suboptimality << endl;
+        cout << "Average sum of cost: " << avg_sum_of_cost << endl;
+        // cout << "Minimum suboptimality: " << min_suboptimality << endl;
+        // cout << "Minimum sum of cost idx: " << min_sum_of_cost_idx << endl;
+        cout << "Maximum social welfare: " << max_social_welfare << endl;
+        cout << "Maximum social welfare idx: " << max_welfare_idx << endl;
+        cout << "Sum of cost of max social welfare path: " << min_sum_of_cost
+             << endl;
+    }
+
     cout << "Total runtime: " << total_runtime << endl;
 }
 
@@ -372,34 +433,45 @@ void PP::printDependencyGraph() const
     }
 }
 
-void PP::saveResults(boost::filesystem::path filename) const
+void PP::saveResults(boost::filesystem::path filename)
 {
     // Calculate (if necessary) and store the following results:
     // 1. Weighted sum of path length by the costs of the agents.
     // 2. Weighted sum of path length if ignoring cost of agent i, for each i.
     // 3. Payment of each agent.
-    //    payment[i] = "weighted min sum of path length without agent i" -
-    //                 ("weighted min sum of path length" - "weighted length of
-    //                 path[i]").
+    //    payment[i] = "max welfare without agent i" -
+    //                 ("max welfare" - "welfare of path[i]").
     // 4. Utility of each agent.
     //    utility[i] = value[i] - cost[i] * path_length_i - payment_i
     // 5. Agent profile.
     // 6. Any MAPF related stats.
 
-    // Calculate payment
     vector<double> payments(this->agents.size());
     vector<double> utilities(this->agents.size());
-    for (int i = 0; i < this->agents.size(); i++)
-    {
-        payments.emplace_back(
-            min_sum_of_cost_wo_i[i] -
-            (min_sum_of_cost -
-             all_weighted_path_lengths[min_sum_of_cost_idx][i]));
 
-        utilities[i] = this->instance.values[i] -
-                       this->instance.costs[i] *
-                           all_weighted_path_lengths[min_sum_of_cost_idx][i] -
-                       payments[i];
+    // Calculate payment
+    if (solution_found)
+    {
+        for (int i = 0; i < this->agents.size(); i++)
+        {
+            payments[i] =
+                max_welfare_wo_i[i] -
+                (max_social_welfare -
+                 max(0.0, this->instance.values[i] -
+                              all_weighted_path_lengths[max_welfare_idx][i]));
+
+            double curr_welfare = this->instance.values[i] -
+                                  all_weighted_path_lengths[max_welfare_idx][i];
+
+            utilities[i] = curr_welfare - payments[i];
+
+            // If utility is negative, we assign "no path" to the agent and set
+            // social welfare of that agent to 0
+            // if (utilities[i] >= 0)
+            // {
+            //     this->social_welfare += max(0.0, curr_welfare);
+            // }
+        }
     }
 
     json mechanism_results = {
@@ -420,12 +492,15 @@ void PP::saveResults(boost::filesystem::path filename) const
         {"avg_sum_of_cost", avg_sum_of_cost},
         {"min_suboptimality", min_suboptimality},
         {"solution_cost", min_sum_of_cost},
+        {"social_welfare", max_social_welfare},
         {"min_sum_of_cost_idx", min_sum_of_cost_idx},
+        {"max_welfare_idx", max_welfare_idx},
         {"min_sum_of_cost_wo_i", min_sum_of_cost_wo_i},
         {"all_weighted_path_lengths", all_weighted_path_lengths},
         {"failed_runs", failed_runs},
         {"timeout", timeout},
         {"runtime", total_runtime},
+        {"solution_found", solution_found},
         // Mechanism stats
         {"payments", payments},
         {"utilities", utilities}};
@@ -502,4 +577,10 @@ bool PP::validateSolution() const
     }
 
     return true;
+}
+
+void PP::clearSearchEngines()
+{
+    for (auto s : search_engines) delete s;
+    search_engines.clear();
 }

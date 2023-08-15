@@ -111,8 +111,8 @@ public:
         type = conflict_type::CORRIDOR;
     }
 
-    bool rectangleConflict(int a1, int a2, const std::pair<int, int>& Rs,
-                           const std::pair<int, int>& Rg, int Rg_t,
+    bool rectangleConflict(int a1, int a2, const std::tuple<int, int, int>& Rs,
+                           const std::tuple<int, int, int>& Rg, int Rg_t,
                            const list<Constraint>& constraint1,
                            const list<Constraint>& constraint2)  // For RM
     {

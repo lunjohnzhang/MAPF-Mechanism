@@ -1,6 +1,7 @@
 import os
 import json
 import fire
+import shutil
 
 import numpy as np
 import scipy.stats as st
@@ -13,7 +14,7 @@ FIELD_TO_LABEL = {
     "success": "Success Rate",
     "solution_cost": "Solution Cost",
     "social_welfare": "Social Welfare",
-    "social_welfare_subopt": "Social Welfare Diff w/ FCFS",
+    "social_welfare_subopt": "Social Welfare Div w/ FCFS",
     "solution_cost_subopt": "Solution Cost Diff w/ FCFS",
     "std_payment": "Payment Std",
 }
@@ -64,7 +65,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     save_fig = False
     if ax is None:
         save_fig = True
-        fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+        fig, ax = plt.subplots(1, 1, figsize=(8, 5.5))
 
     to_plot = sorted(to_plot.items())
     agent_nums = []
@@ -134,7 +135,6 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     elif field_name in ["success"]:
         # plot success rate
         success_rate = np.sum(all_vals, axis=1) / all_vals.shape[1]
-
         ax.plot(
             agent_nums,
             success_rate,
@@ -143,13 +143,14 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             label=algo,
             markersize=15,
         )
+        ax.set_ylim(-0.1, 1.1)
 
     if save_fig:
         ax.set_ylabel(FIELD_TO_LABEL[field_name], fontsize=25)
         ax.set_xlabel("Number of Agents", fontsize=25)
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=25)
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         ax.figure.tight_layout()
@@ -177,10 +178,17 @@ def collect_results(logdirs, baseline_algo="PP1"):
 
     to_plot_algo = {}
 
+
     # Obtain all_logdir_algo.
+    all_logdir_algo = os.listdir(logdirs)
+
+    # Plot CBS last it's visible
+    if "CBS" in all_logdir_algo:
+        all_logdir_algo.remove("CBS")
+        all_logdir_algo.append("CBS")
+
     # We want to collect results for `baseline_algo` first to compute
     # suboptimalities
-    all_logdir_algo = os.listdir(logdirs)
     all_logdir_algo.remove(baseline_algo)
     all_logdir_algo.insert(0, baseline_algo)
     baseline_algo_name = None
@@ -235,16 +243,17 @@ def collect_results(logdirs, baseline_algo="PP1"):
                 success = 1
 
             # Social welfare is sum of values - solution cost
-            values = result["values"]
+            # values = result["values"]
             solution_cost = result["solution_cost"]
-            social_welfare = np.sum(values) - solution_cost
+            social_welfare = result[
+                "social_welfare"] if "social_welfare" in result else 0
 
             social_welfare_subopt = None
             solution_cost_subopt = None
 
             # Compute suboptimalities
             if logdir_algo == baseline_algo:
-                social_welfare_subopt = 0
+                social_welfare_subopt = 1
                 solution_cost_subopt = 0
                 baseline_algo_name = current_algo
                 baseline_logdir_algo_f = logdir_algo_f
@@ -252,17 +261,34 @@ def collect_results(logdirs, baseline_algo="PP1"):
                 baseline_stat = to_plot_algo[(
                     baseline_algo_name,
                     baseline_logdir_algo_f)][n_agents][seed]
-                social_welfare_subopt = social_welfare - baseline_stat.social_welfare
+                social_welfare_subopt = social_welfare / baseline_stat.social_welfare
                 solution_cost_subopt = solution_cost - baseline_stat.solution_cost
 
             # Compute std of payments
             # For CBS and EECBS, there is no payment, so ignore
             std_payment = None
             if "payments" in result:
-                payments = result["payments"]
-                std_payment = np.std(payments)
+                if current_algo == "CBS":
+                    payment_calc_success = result["payment_calculate_success"]
 
-            stat = Stats(runtime=result["runtime"],
+                    if not payment_calc_success:
+                        print(f"CBS: Payment calculated failed: {logdir_f}")
+
+                payments = result["payments"]
+                try:
+                    std_payment = np.std(payments)
+                except TypeError:
+                    print(f"{current_algo}: Payment not proper: {logdir_f}")
+                    shutil.rmtree(logdir_f)
+
+            runtime = result["runtime"]
+            if current_algo == "CBS" and success == 1:
+                runtime = result["total_runtime"]
+
+            # if current_algo == "CBS" and not success:
+            #     print(logdir_f)
+
+            stat = Stats(runtime=runtime,
                          success=success,
                          solution_cost=solution_cost,
                          social_welfare=social_welfare,
@@ -279,12 +305,22 @@ def collect_results(logdirs, baseline_algo="PP1"):
 def main(logdirs, add_legend=True, legend_only=False):
     to_plot_algo = collect_results(logdirs)
 
+    ###################### For debugging ######################
+    # pp = to_plot_algo[('Monte Carlo PP', 'logs/to_show/demo/PP')]
+    # pbs = to_plot_algo[('Exhaustive PBS', 'logs/to_show/demo/PBS')]
+    # for i in range(1, 101):
+    #     assert pp[25][i].solution_cost + 1e-3 >= pbs[25][i].solution_cost
+    #     print(f"Seed {i}, pp={pp[25][i].solution_cost}, pbs={pbs[25][i].solution_cost}")
+    # exit()
+
+    ###################### For debugging ######################
+
     for field in fields(Stats):
         print(f"Plotting {field.name}")
 
-        figsize = (8, 8)
+        figsize = (8, 5.5)
         if legend_only:
-            figsize = (20, 8)
+            figsize = (18, 8)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
@@ -303,15 +339,16 @@ def main(logdirs, add_legend=True, legend_only=False):
                 longest_agent_nums = agent_nums
 
         # Post process
-        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=30)
-        ax.set_xlabel("Number of Agents", fontsize=30)
+        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=25)
+        ax.set_xlabel("Number of Agents", fontsize=25)
 
-        ax.set_xticks(longest_agent_nums)
-        ax.set_xticklabels(longest_agent_nums)
+        if longest_agent_nums is not None:
+            ax.set_xticks(longest_agent_nums)
+            ax.set_xticklabels(longest_agent_nums)
 
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=25)
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         if add_legend:

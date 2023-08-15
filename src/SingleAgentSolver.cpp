@@ -29,7 +29,8 @@ void SingleAgentSolver::compute_heuristics()
             // f-val, and then highest g-val)
     };
 
-    my_heuristic.resize(instance.map_size, MAX_TIMESTEP);
+    // Plus 1 to include dummy start location
+    my_heuristic.resize(instance.map_size + 1, MAX_TIMESTEP);
 
     // generate a heap that can save nodes (and an open_handle)
     boost::heap::pairing_heap<Node, boost::heap::compare<Node::compare_node> >
@@ -52,4 +53,8 @@ void SingleAgentSolver::compute_heuristics()
             }
         }
     }
+    my_heuristic[GLOBAL_VAR::dummy_start_loc] =
+        my_heuristic[start_location] + 1;
+    // cout << "heuristic at dummy start: " << my_heuristic[GLOBAL_VAR::dummy_start_loc] << endl;
+    // cout << "heuristic at start: " << my_heuristic[start_location] << endl;
 }

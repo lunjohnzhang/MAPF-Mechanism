@@ -30,6 +30,9 @@ public:
     PBSNode* dummy_start = nullptr;
     PBSNode* goal_node = nullptr;
 
+    int n_cache_hit = 0;
+    int n_cache_miss = 0;
+
     const Instance& instance;
 
     bool solution_found = false;
@@ -37,9 +40,12 @@ public:
     // The cost of the solution. If using exhaustive PBS, it's the cost of the
     // best solution.
     double solution_cost = -2;
+    double max_social_welfare = INT_MIN;
 
     // Under exhaustive PBS, remember the best solution w/o each agent i.
     vector<double> solution_costs_wo_i;
+    // [i] stores the max welfare without agent i
+    vector<double> max_welfare_wo_i;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     // set params
@@ -69,8 +75,12 @@ public:
     void savePaths(const string& fileName) const;  // write the paths to a file
     // write mechanism related results
     void saveResults(boost::filesystem::path filename,
-                     const string& instanceName) const;
+                     const string& instanceName);
     void clear();  // used for rapid random  restart
+
+    Path* getBestPathByGlobalID(int agent_global_id,
+                                map<int, int> id_map) const;
+    void savePriorityGraphs(boost::filesystem::path filename) const;
 private:
     conflict_selection conflict_seletion_rule;
 
@@ -108,21 +118,20 @@ private:
 
     int num_of_agents;
 
-    vector<Path*> best_paths;
     vector<Path*> paths;
+    vector<Path*> best_paths;
 
     // Exhaustive PBS improvement:
-    // 1. replan until we hit the first collision outside of priority graph.
+    // 1. replan until we hit the first collision outside of to_be_replanned
+    //    set.
     // 2. have a map to cache the planned paths
-    vector<bool> to_be_replanned;
+
     // Map to cache the replanned paths.
     // Key is a pair, where the first entry is the id of agent i, and the
     // second entry is a set of pairs, where each pair is the agent id and path
     // of the higher priority agents.
     // Value is the replanned path of the agent
     map<pair<int, set<pair<int, Path>>>, Path> path_cache;
-    int n_cache_hit = 0;
-    int n_cache_miss = 0;
 
     // Check if given agent and paths of higher priority agents are in
     // path_cach. If yes, return.
@@ -131,7 +140,7 @@ private:
     void addPathToCache(int agent_id, const set<int>& higher_agents,
                         Path& new_path);
     pair<int, set<pair<int, Path>>> getCacheKey(int agent_id,
-                                     const set<int>& higher_agents);
+                                                const set<int>& higher_agents);
 
     // used to find (single) agents' paths and mdd
     vector<SingleAgentSolver*> search_engines;
@@ -143,6 +152,9 @@ private:
 
     bool hasConflicts(int a1, int a2) const;
     bool hasConflicts(int a1, const set<int>& agents) const;
+    // Return the first agent that is not in to_be_replanned and has conflicts
+    // with a1. If none, return empty set.
+    set<int> hasConflictsWithNotTobeReplanned(int a1, PBSNode* node) const;
     shared_ptr<Conflict> chooseConflict(const PBSNode& node) const;
     int getSumOfCosts() const;
     inline void releaseNodes();
@@ -188,5 +200,14 @@ private:
     void topologicalSort(list<int>& stack);
     void topologicalSortUtil(int v, vector<bool>& visited, list<int>& stack);
 
+    // Debug related
+    bool tobeReplanned(PBSNode* node);
+    string stringifyPriorityGraph() const;
+    string stringifyPaths(vector<Path> paths_to_str) const;
+    // map from priority graph to paths
+    map<string, vector<Path>> all_sol_priority_g;
+    // map from path to each priority graph
+    map<vector<Path>, set<string>> all_sol_by_path;
+    int n_overlap_solutions = 0;
     // bool consistentWithTotalOrder(PBSNode* curr);
 };

@@ -2,6 +2,7 @@
 #include "CBSHeuristic.h"
 #include "CorridorReasoning.h"
 #include "MutexReasoning.h"
+#include "RectangleReasoning.h"
 
 enum high_level_solver_type
 {
@@ -19,7 +20,9 @@ public:
 
     /////////////////////////////////////////////////////////////////////////////////////
     // stats
-    // total runtime
+    // total runtime of n runs, used for payment calculation
+    double total_runtime = 0;
+    // runtime of one run
     double runtime = 0;
     // runtime of generating child nodes
     double runtime_generate_child = 0;
@@ -33,6 +36,8 @@ public:
     double runtime_detect_conflicts = 0;
     // runtime of building heuristic table for the low level
     double runtime_preprocessing = 0;
+    // Runtime of calculating payment
+    double runtime_calculate_payment = 0;
 
     uint64_t num_cardinal_conflicts = 0;
     uint64_t num_corridor_conflicts = 0;
@@ -61,6 +66,7 @@ public:
 
     bool solution_found = false;
     double solution_cost = -2;
+    double social_welfare;
 
     /////////////////////////////////////////////////////////////////////////////////////////
     // set params
@@ -73,6 +79,11 @@ public:
     {
         PC = p;
         heuristic_helper.PC = p;
+    }
+    void setRectangleReasoning(bool r)
+    {
+        rectangle_reasoning = r;
+        heuristic_helper.rectangle_reasoning = r;
     }
     void setCorridorReasoning(bool c)
     {
@@ -125,11 +136,12 @@ public:
         agentSuboptimality = w;
         this->dummy_start_node = dummy_start_node;
         this->heuristic_helper.setSolverParams(this->dummy_start_node);
+        this->mdd_helper.setParams(this->dummy_start_node);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////
     // Runs the algorithm until the problem is solved or time is exhausted
-    bool solve(double time_limit, int cost_lowerbound = 0,
+    bool solve(double time_limit, int cost_lowerbound = MIN_COST,
                int cost_upperbound = MAX_COST);
 
     int getLowerBound() const { return cost_lowerbound; }
@@ -143,7 +155,7 @@ public:
 
     // Save results
     void saveResults(boost::filesystem::path filename,
-                     const string& instanceName) const;
+                     const string& instanceName);
     // void saveStats(const string& fileName, const string& instanceName);
     void saveCT(const string& fileName) const;     // write the CT to a file
     void savePaths(const string& fileName) const;  // write the paths to a file
@@ -156,18 +168,20 @@ public:
     }
 
 protected:
-    bool corridor_reasoning;  // using corridor reasoning
-    bool target_reasoning;    // using target reasoning
-    bool disjoint_splitting;  // disjoint splitting
-    bool mutex_reasoning;     // using mutex reasoning
-    bool bypass;              // using Bypass1
-    bool PC;                  // prioritize conflicts
+    bool rectangle_reasoning;  // using rectangle reasoning
+    bool corridor_reasoning;   // using corridor reasoning
+    bool target_reasoning;     // using target reasoning
+    bool disjoint_splitting;   // disjoint splitting
+    bool mutex_reasoning;      // using mutex reasoning
+    bool bypass;               // using Bypass1
+    bool PC;                   // prioritize conflicts
     bool save_stats;
     high_level_solver_type solver_type;  // the solver for the high-level search
     conflict_selection conflict_selection_rule;
     node_selection node_selection_rule;
 
     MDDTable mdd_helper;
+    RectangleReasoning rectangle_helper;
     CorridorReasoning corridor_helper;
     MutexReasoning mutex_helper;
     CBSHeuristic heuristic_helper;
@@ -183,7 +197,7 @@ protected:
     double agentSuboptimality = 1.0;
     double cost_lowerbound = 0;
     double inadmissible_cost_lowerbound;
-    int node_limit = MAX_NODES;
+    int node_limit = MAX_NODES_CBS;
     int cost_upperbound = MAX_COST;
     bool dummy_start_node = false;
     bool timeout = false;
@@ -197,6 +211,10 @@ protected:
     vector<Path*> paths;
     vector<Path> paths_found_initially;  // contain initial paths found
     // vector<MDD*> mdds_initially;  // contain initial paths found
+
+    vector<double> payments;
+    vector<double> utilities;
+    bool payment_calculate_success = true;
 
     // used to find (single) agents' paths and mdd
     vector<SingleAgentSolver*> search_engines;
@@ -236,6 +254,8 @@ protected:
     // check the conflict is cardinal, semi-cardinal or non-cardinal
     void computeConflictPriority(shared_ptr<Conflict>& con, CBSNode& node);
 
+    double computeWelfare(Path& path, int ag);
+
 private:  // CBS only, cannot be used by ECBS
     // it is called open list in ECBS
     pairing_heap<CBSNode*, compare<CBSNode::compare_node_by_f>> cleanup_list;
@@ -258,4 +278,9 @@ private:  // CBS only, cannot be used by ECBS
     // update information
     inline void updatePaths(CBSNode* curr);
     void printPaths() const;
+
+    vector<double> solution_costs_wo_i;
+    vector<double> social_welfare_wo_i;
+    // Compute VCG payment for CBS
+    void computeVCGPayment();
 };

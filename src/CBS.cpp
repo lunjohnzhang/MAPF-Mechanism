@@ -356,6 +356,25 @@ void CBS::classifyConflicts(CBSNode& node)
             }
         }
 
+        // Rectangle reasoning
+        if (rectangle_reasoning && (int)paths[con->a1]->size() > timestep &&
+            (int)paths[con->a2]->size() >
+                timestep &&  // conflict happens before both agents reach their
+                             // goal locations
+            type == constraint_type::VERTEX)  // vertex conflict
+        {
+            auto mdd1 = mdd_helper.getMDD(node, a1, paths[a1]->size());
+            auto mdd2 = mdd_helper.getMDD(node, a2, paths[a2]->size());
+            auto rectangle =
+                rectangle_helper.run(paths, timestep, a1, a2, mdd1, mdd2);
+            if (rectangle != nullptr)
+            {
+                computeSecondPriorityForConflict(*rectangle, node);
+                node.conflicts.push_back(rectangle);
+                continue;
+            }
+        }
+
         computeSecondPriorityForConflict(*con, node);
         node.conflicts.push_back(con);
     }
@@ -417,9 +436,16 @@ bool CBS::findPathForSingleAgent(CBSNode* node, int ag, int lowerbound)
     {
         assert(!isSamePath(*paths[ag], new_path));
         node->paths.emplace_back(ag, new_path);
-        node->g_val =
-            node->g_val - ((int)paths[ag]->size() - (int)new_path.size()) *
-                              search_engines[ag]->instance.costs[ag];
+        node->path_cost =
+            node->path_cost - ((int)paths[ag]->size() - (int)new_path.size()) *
+                                  search_engines[ag]->instance.costs[ag];
+
+        // Compute g_val as sum of -max(0, v[i] - c[i] * path_length) for each i
+        // i.e. the opposite of social welfare of the current agent
+        double prev_welfare = computeWelfare(*paths[ag], ag);
+        double curr_welfare = computeWelfare(new_path, ag);
+        node->g_val = node->g_val - prev_welfare + curr_welfare;
+
         paths[ag] = &node->paths.back().second;
         node->makespan = max(node->makespan, new_path.size() - 1);
         return true;
@@ -430,6 +456,25 @@ bool CBS::findPathForSingleAgent(CBSNode* node, int ag, int lowerbound)
     }
 }
 
+double CBS::computeWelfare(Path& path, int ag)
+{
+    double curr_v = search_engines[ag]->instance.values[ag];
+    double curr_c = search_engines[ag]->instance.costs[ag];
+
+    // double prev_welfare = curr_v - curr_c * ((int)paths[ag]->size() - 1);
+    // double curr_welfare = curr_v - curr_c * ((int)new_path.size() - 1);
+
+    double welfare = curr_v - curr_c * ((int)path.size() - 1);
+
+    // CBS natrually minimize instead of maximize. We are trying to
+    // maximize the welfare, so we need to take the opposite.
+    welfare = -max(0.0, welfare);
+    // cout << "welfare = " << welfare << endl;
+    // curr_welfare = -max(0.0, curr_welfare);
+
+    return welfare;
+}
+
 bool CBS::generateChild(CBSNode* node, CBSNode* parent)
 {
     clock_t t1 = clock();
@@ -438,6 +483,7 @@ bool CBS::generateChild(CBSNode* node, CBSNode* parent)
     node->g_val = parent->g_val;
     node->makespan = parent->makespan;
     node->depth = parent->depth + 1;
+    node->path_cost = parent->path_cost;
     /*int agent, x, y, t;
     constraint_type type;
     assert(node->constraints.size() > 0);
@@ -890,8 +936,8 @@ void CBS::printResults() const
     else if (solution_cost == -3)  // nodes out
         cout << "Nodesout,";
 
-    cout << solution_cost << "," << runtime << "," << num_HL_expanded << ","
-         << num_LL_expanded << ","
+    cout << social_welfare << "," << solution_cost << "," << runtime << ","
+         << num_HL_expanded << "," << num_LL_expanded << ","
          <<  // HL_num_generated << "," << LL_num_generated << "," <<
         cost_lowerbound << "," << dummy_start->g_val << ","
          << dummy_start->g_val + dummy_start->h_val << "," << endl;
@@ -1195,6 +1241,8 @@ string CBS::getSolverName() const
     default:
         break;
     }
+    if (rectangle_reasoning)
+        name += "+R";
     if (corridor_reasoning)
         name += "+C";
     if (target_reasoning)
@@ -1296,7 +1344,7 @@ bool CBS::solve(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
                     delete (child[i]);
                     continue;
                 }
-                else if (bypass && child[i]->g_val == curr->g_val &&
+                else if (bypass && child[i]->path_cost == curr->path_cost &&
                          child[i]->distance_to_go <
                              curr->distance_to_go)  // Bypass1
                 {
@@ -1350,6 +1398,7 @@ bool CBS::solve(double _time_limit, int _cost_lowerbound, int _cost_upperbound)
                 {
                     if (solved[i])
                     {
+                        assert(child[i]->constraints.size() > 0);
                         pushNode(child[i]);
                         curr->children.push_back(child[i]);
                         if (screen > 1)
@@ -1408,7 +1457,12 @@ bool CBS::terminate(HLNode* curr)
     {  // found a solution
         solution_found = true;
         goal_node = curr;
-        solution_cost = goal_node->getFHatVal() - goal_node->cost_to_go;
+        // solution_cost = goal_node->getFHatVal() - goal_node->cost_to_go;
+        // Calculate solution_cost as weighted sum of path lenght
+        solution_cost = goal_node->path_cost;
+        // g_val actually stores the negative social welfare.
+        // Negate back to get the actual social welfare
+        social_welfare = -goal_node->g_val;
         if (!validateSolution())
         {
             cout << "Solution invalid!!!" << endl;
@@ -1493,6 +1547,7 @@ CBS::CBS(vector<SingleAgentSolver*>& search_engines,
       paths_found_initially(paths_found_initially),
       search_engines(search_engines),
       mdd_helper(initial_constraints, search_engines),
+      rectangle_helper(search_engines[0]->instance),
       mutex_helper(search_engines[0]->instance, initial_constraints),
       corridor_helper(search_engines, initial_constraints),
       heuristic_helper(search_engines.size(), paths, search_engines,
@@ -1507,6 +1562,7 @@ CBS::CBS(const Instance& instance, bool sipp, int screen)
       suboptimality(1),
       num_of_agents(instance.getDefaultNumberOfAgents()),
       mdd_helper(initial_constraints, search_engines),
+      rectangle_helper(instance),
       mutex_helper(instance, initial_constraints),
       corridor_helper(search_engines, initial_constraints),
       heuristic_helper(instance.getDefaultNumberOfAgents(), paths,
@@ -1597,8 +1653,9 @@ bool CBS::generateRoot()
             paths[i] = &paths_found_initially[i];
             root->makespan =
                 max(root->makespan, paths_found_initially[i].size() - 1);
-            root->g_val += ((int)paths_found_initially[i].size() - 1) *
-                           search_engines[i]->instance.costs[i];
+            root->path_cost += ((int)paths_found_initially[i].size() - 1) *
+                               search_engines[i]->instance.costs[i];
+            root->g_val += computeWelfare(paths_found_initially[i], i);
             num_LL_expanded += search_engines[i]->num_expanded;
             num_LL_generated += search_engines[i]->num_generated;
         }
@@ -1610,8 +1667,9 @@ bool CBS::generateRoot()
             paths[i] = &paths_found_initially[i];
             root->makespan =
                 max(root->makespan, paths_found_initially[i].size() - 1);
-            root->g_val += ((int)paths_found_initially[i].size() - 1) *
-                           search_engines[i]->instance.costs[i];
+            root->path_cost += ((int)paths_found_initially[i].size() - 1) *
+                               search_engines[i]->instance.costs[i];
+            root->g_val += computeWelfare(paths_found_initially[i], i);
         }
     }
 
@@ -1631,10 +1689,20 @@ bool CBS::generateRoot()
 
 inline void CBS::releaseNodes()
 {
-    open_list.clear();
-    cleanup_list.clear();
-    focal_list.clear();
+    // TODO: this part is causing segmentational fault with the following
+    // instance:
+    // clang-format off
+    // ./build/drone -m maps/random-32-32-20.map -a custom_scens/random-32-32-20-my-9.scen -t 600 --algo CBS --cost config/agent_costs/uniform/10000_8.json  --value config/agent_values/uniform/10000_8.json --seed 79 --screen 1 --nLayers 1 -k 25 /usr/bin/env /bin/sh /tmp/Microsoft-MIEngine-Cmd-dwpdqz24.oa5  --suboptimality 1.05 --nRuns 100
+    // clang-format on
+    // I have no idea what's happening. I commented out the code to let the seg
+    // fault disappear but not clearing out the lists may cause issue if the
+    // same CBS object is used multiple times. I will try to figure this out in
+    // the future.
+    // open_list.clear();
+    // cleanup_list.clear();
+    // focal_list.clear();
     for (auto& node : allNodes_table) delete node;
+    // cout << "Clearing table itself" << endl;
     allNodes_table.clear();
 }
 
@@ -1663,7 +1731,7 @@ void CBS::clearSearchEngines()
 bool CBS::validateSolution() const
 {
     // check whether the solution cost is within the bound
-    if (solution_cost > cost_lowerbound * suboptimality)
+    if (-social_welfare > cost_lowerbound * suboptimality)
     {
         cout << "Solution cost exceeds the sub-optimality bound!" << endl;
         return false;
@@ -1737,7 +1805,7 @@ void CBS::clear()
 }
 
 void CBS::saveResults(boost::filesystem::path filename,
-                      const string& instanceName) const
+                      const string& instanceName)
 {
     json mechanism_results = {
         {"map_dimension",
@@ -1752,10 +1820,10 @@ void CBS::saveResults(boost::filesystem::path filename,
         {"goal_coordinates",
          this->search_engines[0]->instance.convertAgentLocations(
              this->search_engines[0]->instance.goal_locations)},
-        {"timeout", timeout},
         {"nodeout", nodeout},
         {"runtime", runtime},
         {"solution_cost", solution_cost},
+        {"social_welfare", social_welfare},
         {"num_HL_expanded", num_HL_expanded},
         {"num_HL_generated", num_HL_generated},
         {"num_LL_expanded", num_LL_expanded},
@@ -1789,7 +1857,118 @@ void CBS::saveResults(boost::filesystem::path filename,
         {"runtime_path_finding", runtime_path_finding},
         {"runtime_generate_child", runtime_generate_child},
         {"runtime_preprocessing", runtime_preprocessing},
+        {"runtime_rectangle_reasoning", rectangle_helper.accumulated_runtime},
         {"solver_name", getSolverName()},
         {"instance_name", instanceName}};
+
+    if (solution_found)
+    {
+        computeVCGPayment();
+        if (payment_calculate_success)
+            cout << "Payment computed successfuly" << endl;
+        else
+            cout << "Payment calculation failed" << endl;
+    }
+    mechanism_results["timeout"] = timeout;
+    mechanism_results["payments"] = payments;
+    mechanism_results["utilities"] = utilities;
+    mechanism_results["payment_calculate_success"] = payment_calculate_success;
+    mechanism_results["total_runtime"] = total_runtime;
+
     write_to_json(mechanism_results, filename);
+}
+
+void CBS::computeVCGPayment()
+{
+    total_runtime = runtime;
+    double time_remain = this->time_limit - runtime;
+
+    // Sequentially set each cost to 0 and obtain the solutions
+    this->solution_costs_wo_i.resize(num_of_agents, INT_MAX);
+    this->social_welfare_wo_i.resize(num_of_agents, INT_MAX);
+    // double opt_solution_cost = solution_cost;
+    // Instance global_instance(this->search_engines[0]->instance);
+
+    // // Save best paths
+    // vector<Path*> best_paths(num_of_agents, nullptr);
+    // for (int i = 0; i < num_of_agents; i++)
+    // {
+    //     best_paths[i] = new Path(*this->paths[i]);
+    // }
+
+    // Get solution cost wo i by calling solve with each agents cost set to 0.
+    for (int i = 0; i < this->num_of_agents; i++)
+    {
+        clock_t t = clock();
+
+        // Get new instance and set cost[i] to 0
+        Instance local_instance(this->search_engines[0]->instance);
+        local_instance.costs[i] = 0;
+        local_instance.values[i] = 0;
+
+        // Create new CBS using local instance
+        CBS cbs(local_instance, false, this->screen);
+        cbs.setPrioritizeConflicts(this->PC);
+        cbs.setDisjointSplitting(this->disjoint_splitting);
+        cbs.setBypass(false);
+        cbs.setRectangleReasoning(this->rectangle_reasoning);
+        cbs.setCorridorReasoning(this->corridor_reasoning);
+        cbs.setHeuristicType(heuristic_helper.type,
+                             heuristic_helper.getInadmissibleHeuristicsType());
+        cbs.setTargetReasoning(false);
+        cbs.setMutexReasoning(false);
+        cbs.setConflictSelectionRule(conflict_selection::EARLIEST);
+        cbs.setNodeSelectionRule(node_selection::NODE_CONFLICTPAIRS);
+        cbs.setSavingStats(this->save_stats);
+        cbs.setHighLevelSolver(this->solver_type, 1.0);
+        cbs.setLowLevelSolver(-1, this->dummy_start_node);
+
+        // Run
+        cbs.clear();
+        // cout << "run " << i << ": running with time limit " << time_remain
+        //      << endl;
+        cbs.solve(time_remain);
+        total_runtime += cbs.runtime;
+        time_remain -= cbs.runtime;
+        // cout << "run " << i << " finished, runtime " << cbs.runtime << endl
+        //      << endl;
+        runtime_calculate_payment += (double)(clock() - t) / CLOCKS_PER_SEC;
+
+        if (!cbs.solution_found)
+        {
+            payment_calculate_success = false;
+            timeout = true;
+            // cout << "Clearing search engine after failing" << endl;
+            cbs.clearSearchEngines();
+            // cout << "Done clearing search engine after failing" << endl;
+            cbs.clear();
+            break;
+        }
+        this->solution_costs_wo_i[i] = cbs.solution_cost;
+        this->social_welfare_wo_i[i] = cbs.social_welfare;
+        cbs.clear();
+        cbs.clearSearchEngines();
+    }
+    if (payment_calculate_success)
+    {
+        this->payments.resize(this->num_of_agents, INT_MAX);
+        this->utilities.resize(this->num_of_agents, INT_MAX);
+
+        for (int i = 0; i < this->num_of_agents; i++)
+        {
+            double weighted_path_len =
+                this->search_engines[0]->instance.costs[i] *
+                (this->paths[i]->size() - 1);
+            payments[i] =
+                social_welfare_wo_i[i] -
+                (social_welfare -
+                 max(0.0, this->search_engines[0]->instance.values[i] -
+                              weighted_path_len));
+
+            double curr_welfare =
+                this->search_engines[0]->instance.values[i] - weighted_path_len;
+
+            utilities[i] = curr_welfare - payments[i];
+        }
+    }
 }

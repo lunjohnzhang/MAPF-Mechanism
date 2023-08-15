@@ -23,16 +23,30 @@ public:
         {
             if (n1->g_val + n1->h_val == n2->g_val + n2->h_val)
             {
-                if (n1->h_val == n2->h_val)
-                {
-                    // Break ties by location id
-                    return n1->location > n2->location;
-                }
-                // break ties towards smaller h_vals (closer
-                // to goal location)
-                return n1->h_val >= n2->h_val;
+                // if (n1->location == n2->location)
+                // {
+                //     cout << n1->g_val << " + " << n1->h_val << " vs "
+                //          << n2->g_val << " + " << n2->h_val << endl;
+                //     cout << "Same location: " << n1->location << " "
+                //          << n2->location << endl;
+                //     cout << "time step " << n1->timestep << " " << n2->timestep
+                //          << endl;
+                // }
+
+                assert(n1->location != n2->location);
+
+                // Break ties determinstically by location id
+                return n1->location > n2->location;
+                // if (n1->h_val == n2->h_val)
+                // {
+                //     // Break ties by location id
+
+                // }
+                // // break ties towards smaller h_vals (closer
+                // // to goal location)
+                // return n1->h_val >= n2->h_val;
             }
-            return n1->g_val + n1->h_val >= n2->g_val + n2->h_val;
+            return n1->g_val + n1->h_val > n2->g_val + n2->h_val;
         }
     };  // used by OPEN (heap) to compare nodes (top of the heap has min f-val,
         // and then highest g-val)

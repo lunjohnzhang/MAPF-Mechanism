@@ -38,12 +38,19 @@ private:
 public:
     vector<list<MDDNode*>> levels;
 
-    bool buildMDD(
-        const ConstraintTable& ct, int num_of_levels,
-        const SingleAgentSolver* solver);  // build mdd of given levels
-    bool buildMDD(ConstraintTable& ct,
-                  const SingleAgentSolver* solver);  // build minimal MDD
-    void buildMDD(const Instance& instance, const vector<int>& distances_to_goal, int start_location); // build MDD by ignoring constraints
+    // build mdd of given levels
+    bool buildMDD(const ConstraintTable& ct, int num_of_levels,
+                  const SingleAgentSolver* solver, bool dummy_start_node);
+
+    // build minimal MDD
+    bool buildMDD(ConstraintTable& ct, const SingleAgentSolver* solver,
+                  bool dummy_start_node);
+
+    // build MDD by ignoring constraints
+    void buildMDD(const Instance& instance,
+                  const vector<int>& distances_to_goal, int start_location,
+                  bool dummy_start_node);
+
     // bool buildMDD(const std::vector <std::list< std::pair<int, int> > >&
     // constraints, int numOfLevels, 	int start_location, const int*
     // moves_offset, const std::vector<int>& my_heuristic, int map_size, int
@@ -111,8 +118,8 @@ class MDDTable
 {
 public:
     double accumulated_runtime = 0;  // runtime of building MDDs
-    uint64_t num_released_mdds =
-        0;  // number of released MDDs ( to save memory)
+    // number of released MDDs ( to save memory)
+    uint64_t num_released_mdds = 0;
 
     MDDTable(const vector<ConstraintTable>& initial_constraints,
              const vector<SingleAgentSolver*>& search_engines)
@@ -129,8 +136,16 @@ public:
     // void findSingletons(HLNode& node, int agent, Path& path);
     void clear();
 
+    inline void setParams(bool dummy_start_node)
+    {
+        this->dummy_start_node = dummy_start_node;
+    }
+
 private:
     int max_num_of_mdds = 10000;  // per agent
+
+    // Whether agents should start from dummy start locations
+    bool dummy_start_node = false;
 
     vector<unordered_map<ConstraintsHasher, MDD*, ConstraintsHasher::Hasher,
                          ConstraintsHasher::EqNode>>

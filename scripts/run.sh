@@ -1,13 +1,13 @@
 #!/bin/bash
 
-USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX [RELOAD_DIR]"
+USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX TIME_LIMIT [RELOAD_DIR]"
 
 algos=(
     "PP"
     "PP1"
-    "PBS"
-    "ECBS"
-    "CBS"
+    # "PBS"
+    # "ECBS"
+    # "CBS"
 )
 
 function get_dirname() {
@@ -84,7 +84,8 @@ N_CORES="$7"    # max number of cores available
 N_AGENTS_MIN="$8"
 N_AGENTS_STEP="$9"
 N_AGENTS_MAX="${10}"
-RELOAD_DIR="${11}"
+TIME_LIMIT="${11}"
+RELOAD_DIR="${12}"
 
 if [ -z "${MAP_FILE}" ]; then
     echo "${USAGE}"
@@ -136,6 +137,11 @@ if [ -z "${N_AGENTS_MAX}" ]; then
     exit 1
 fi
 
+if [ -z "${TIME_LIMIT}" ]; then
+    echo "${USAGE}"
+    exit 1
+fi
+
 # Array to store dynamic params for each experiment
 all_algos_exp=()
 all_n_agents_exp=()
@@ -160,9 +166,10 @@ if [ -z "${RELOAD_DIR}" ]; then
             i=1 # The seed
             for cost_value_id in $(seq 1 10); do
                 for scen_id in $(seq 1 10); do
-                    all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
-                    all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
-                    all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    all_cost_files+=("config/agent_costs/${COST_MODE}/10000_${cost_value_id}.json")
+                    all_value_files+=("config/agent_values/${VALUE_MODE}/10000_${cost_value_id}.json")
+                    # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    all_scen_files+=("custom_scens/${map_name}-my-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
                     mkdir -p $logdir_algo
                     # echo "$algo $n_agent $i $logdir_algo"
@@ -217,9 +224,10 @@ else
                     # Obtain name of the map so that we can infer the scen filenames
                     map_name=$(get_filename $MAP_FILE)
                     echo "Have_run does not contain $exp_fingerprint"
-                    all_cost_files+=("config/agent_costs/${COST_MODE}/1000_${cost_value_id}.json")
-                    all_value_files+=("config/agent_values/${VALUE_MODE}/1000_${cost_value_id}.json")
-                    all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    all_cost_files+=("config/agent_costs/${COST_MODE}/10000_${cost_value_id}.json")
+                    all_value_files+=("config/agent_values/${VALUE_MODE}/10000_${cost_value_id}.json")
+                    # all_scen_files+=("scens/${map_name}-random-${scen_id}.scen")
+                    all_scen_files+=("custom_scens/${map_name}-my-${scen_id}.scen")
                     logdir_algo="${logdir}/$algo"
                     mkdir -p $logdir_algo
                     all_algos_exp+=("$algo")
@@ -246,7 +254,7 @@ for i in "${order[@]}"; do
             -m $MAP_FILE \
             -a ${all_scen_files[$i]} \
             -k ${all_n_agents_exp[$i]} \
-            -t 120 \
+            -t ${TIME_LIMIT} \
             --cost ${all_cost_files[$i]} \
             --value ${all_value_files[$i]} \
             --algo ${all_algos_exp[$i]} \
@@ -283,8 +291,8 @@ done
 #                     -a "$SCEN_FILE" \
 #                     -k "$n_agent" \
 #                     -t 120 \
-#                     --cost config/agent_costs/${COST_MODE}/1000_$i.json \
-#                     --value config/agent_values/${VALUE_MODE}/1000_$i.json \
+#                     --cost config/agent_costs/${COST_MODE}/10000_$i.json \
+#                     --value config/agent_values/${VALUE_MODE}/10000_$i.json \
 #                     --algo $algo \
 #                     --suboptimality 1.05 \
 #                     --nLayers $N_LAYERS \
