@@ -4,6 +4,19 @@ import json
 import matplotlib.pyplot as plt
 
 
+def plot_payments_histogram(payments, algo_name, save_path):
+    plt.figure(figsize=(8, 5.5))
+    plt.hist(payments, edgecolor='black', alpha=0.7)
+    plt.title(f'Payments Distribution for {algo_name} Across All Runs', fontsize=15)
+    plt.xlabel('Payment Value', fontsize=12)
+    plt.ylabel('Frequency', fontsize=12)
+    plt.grid(axis='y', alpha=0.75)
+    plt.tight_layout()
+    plt.savefig(os.path.join(save_path, f'{algo_name}_payments_histogram.png'))
+    plt.savefig(os.path.join(save_path, f'{algo_name}_payments_histogram.pdf'))
+    plt.close()
+
+
 def plot_payment(logdir):
     with open(os.path.join(logdir, "result.json"), "r") as f:
         data = json.load(f)
