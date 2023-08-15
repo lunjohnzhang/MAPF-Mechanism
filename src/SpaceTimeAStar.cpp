@@ -123,15 +123,15 @@ Path SpaceTimeAStar::findOptimalPath(const ConstraintTable& constraint_table,
                 continue;
             }
 
-            int next_internal_conflicts =
-                curr->num_of_conflicts +
-                constraint_table.getNumOfConflictsForStep(
-                    curr->location, next_location, next_timestep);
+            // int next_internal_conflicts =
+            //     curr->num_of_conflicts +
+            //     constraint_table.getNumOfConflictsForStep(
+            //         curr->location, next_location, next_timestep);
 
             // generate (maybe temporary) node
             auto next =
                 new AStarNode(next_location, next_g_val, next_h_val, curr,
-                              next_timestep, next_internal_conflicts);
+                              next_timestep, 0);
 
             // try to retrieve it from the hash table
             auto it = allNodes_table.find(next);
