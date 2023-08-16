@@ -6,6 +6,8 @@ import shutil
 import numpy as np
 import scipy.stats as st
 import matplotlib.pyplot as plt
+import matplotlib.scale as mscale
+import matplotlib.transforms as mtransforms
 
 from dataclasses import dataclass, fields
 
@@ -21,11 +23,70 @@ FIELD_TO_LABEL = {
 
 ALGO_TO_COLOR_MARKER = {
     "EECBS": ("green", "o"),  # circle
-    "CBS": ("red", "^"),  # triangle_up
-    "Monte Carlo PP": ("orange", "s"),  # square
-    "First Come First Serve": ("blue", "P"),  # plus
+    "PCBS": ("red", "^"),  # triangle_up
+    "Monte Carlo PP (100)": ("orange", "s"),  # square
+    "Monte Carlo PP (10)": ("green", "v"),  # triangle_down
+    "Monte Carlo PP (50)": ("olive", "X"),  # square
+    "First-Come-First-Serve": ("blue", "P"),  # plus
     "Exhaustive PBS": ("purple", "*"),  # star
 }
+
+FIRST_LARGE_X = 0
+
+
+class CustomTransform(mtransforms.Transform):
+    input_dims = 1
+    output_dims = 1
+    is_separable = True
+
+    def __init__(self, first_large_x):
+        super().__init__()
+        self.first_large_x = first_large_x
+
+    def transform_non_affine(self, x):
+        return np.piecewise(x, [x <= 25, x > 25], [
+            lambda x: x, lambda x: (15 / (self.first_large_x - 25)) *
+            (x - 25) + 25
+        ])
+
+    def inverted(self):
+        return CustomTransformInverted(first_large_x=self.first_large_x)
+
+
+class CustomTransformInverted(mtransforms.Transform):
+    input_dims = 1
+    output_dims = 1
+    is_separable = True
+
+    def __init__(self, first_large_x):
+        super().__init__()
+        self.first_large_x = first_large_x
+
+    def transform_non_affine(self, x):
+        return np.piecewise(x, [x <= 25, x > 25], [
+            lambda x: x, lambda x: (self.first_large_x - 25) / 15 *
+            (x - 25) + 25
+        ])
+
+    def inverted(self):
+        return CustomTransform()
+
+
+class CustomScale(mscale.ScaleBase):
+    name = 'custom'
+
+    def __init__(self, axis, first_large_x=620, **kwargs):
+        super().__init__(axis)
+        self.first_large_x = first_large_x
+
+    def get_transform(self):
+        return CustomTransform(first_large_x=self.first_large_x)
+
+    def set_default_locators_and_formatters(self, axis):
+        pass
+
+
+mscale.register_scale(CustomScale)
 
 
 @dataclass
@@ -55,7 +116,15 @@ def add_to_dict(key, val, seed, the_dict):
         # the_dict[key] = [val]
 
 
-def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
+def plot_stats_single(
+    logdirs,
+    to_plot,
+    field_name,
+    algo,
+    ax=None,
+    plot_only_success=False,
+    n_runs_mcpp=100,
+):
     """Convert dict of Stats to numpy array and plot"""
 
     # Ignore payment plotting for CBS and EECBS
@@ -73,6 +142,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
     all_vals = []
     for n_agent, stats in to_plot:
         # print(n_agent)
+        curr_vals = []
         breakout = False
         # For solution cost, ignore the entry if success rate is not 100%
         if field_name in [
@@ -83,21 +153,38 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
                 "std_payment",
         ]:
             for _, stat in stats.items():
-                if stat.success == 0:
-                    # should be ignored
-                    breakout = True
-                    break
+                if stat.success == 1:
+                    curr_vals.append(getattr(stat, field_name))
+                # if stat.success == 0:
+                #     # should be ignored
+                #     breakout = True
+                #     break
 
-        if breakout:
-            break
-        agent_nums.append(n_agent)
-        all_vals.append(
-            [getattr(stat, field_name) for _, stat in stats.items()])
+            if len(curr_vals) < 100 and not plot_only_success:
+                break
+            if (len(curr_vals) > 0):
+                agent_nums.append(n_agent)
+                all_vals.append(curr_vals)
+        else:
+            agent_nums.append(n_agent)
+            all_vals.append(
+                [getattr(stat, field_name) for _, stat in stats.items()])
 
     if len(all_vals) == 0:
         return
+    # print(all_vals)
+    # all_vals = np.array(all_vals, dtype=float)
 
-    all_vals = np.array(all_vals, dtype=float)
+    agent_nums = np.array(agent_nums)
+
+    global FIRST_LARGE_X
+    FIRST_LARGE_X = max(FIRST_LARGE_X, agent_nums[np.argmax(agent_nums > 25)])
+    ax.set_xscale('custom', first_large_x=FIRST_LARGE_X)
+
+    # Avoid scientific notation
+    ax.get_xaxis().get_major_formatter().set_scientific(False)
+    ax.get_yaxis().get_major_formatter().set_scientific(False)
+    ax.ticklabel_format(useOffset=False)
 
     color, marker = ALGO_TO_COLOR_MARKER[algo]
 
@@ -110,18 +197,30 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
             "std_payment",
     ]:
         # Plot mean and 95% cf
-        mean_vals = np.mean(all_vals, axis=1)
-        cf_vals = st.t.interval(confidence=0.95,
-                                df=all_vals.shape[1] - 1,
-                                loc=mean_vals,
-                                scale=st.sem(all_vals, axis=1) + 1e-8)
+        mean_vals = [np.mean(curr_vals) for curr_vals in all_vals]
+        cf_vals = []
+        for i, curr_vals in enumerate(all_vals):
+            cf_val = st.t.interval(confidence=0.95,
+                                   df=len(curr_vals) - 1,
+                                   loc=mean_vals[i],
+                                   scale=st.sem(curr_vals) + 1e-8)
+            cf_vals.append(cf_val)
+        cf_vals = np.array(cf_vals).T
+        # mean_vals = np.mean(all_vals, axis=1)
+        # cf_vals = st.t.interval(confidence=0.95,
+        #                         df=all_vals.shape[1] - 1,
+        #                         loc=mean_vals,
+        #                         scale=st.sem(all_vals, axis=1) + 1e-8)
+        label = algo
+        if algo == "Monte Carlo PP":
+            label = f"{algo} ({n_runs_mcpp})"
 
         ax.plot(
             agent_nums,
             mean_vals,
             marker=marker,
             color=color,
-            label=algo,
+            label=label,
             markersize=15,
         )
         ax.fill_between(
@@ -134,6 +233,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
 
     elif field_name in ["success"]:
         # plot success rate
+        all_vals = np.array(all_vals, dtype=float)
         success_rate = np.sum(all_vals, axis=1) / all_vals.shape[1]
         ax.plot(
             agent_nums,
@@ -150,7 +250,7 @@ def plot_stats_single(logdirs, to_plot, field_name, algo, ax=None):
         ax.set_xlabel("Number of Agents", fontsize=25)
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=25)
+        ax.tick_params(axis='both', which='major', labelsize=20)
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         ax.figure.tight_layout()
@@ -178,11 +278,15 @@ def collect_results(logdirs, baseline_algo="PP1"):
 
     to_plot_algo = {}
 
-
     # Obtain all_logdir_algo.
     all_logdir_algo = os.listdir(logdirs)
 
-    # Plot CBS last it's visible
+    # Plot PBS last (or second to last is there is CBS) so it's visible
+    if "PBS" in all_logdir_algo:
+        all_logdir_algo.remove("PBS")
+        all_logdir_algo.append("PBS")
+
+    # Plot CBS last so it's visible
     if "CBS" in all_logdir_algo:
         all_logdir_algo.remove("CBS")
         all_logdir_algo.append("CBS")
@@ -226,11 +330,14 @@ def collect_results(logdirs, baseline_algo="PP1"):
                 if logdir_algo == "PP_A*":
                     current_algo = "Monte Carlo PP (A*)"
                 else:
-                    current_algo = "Monte Carlo PP"
+                    n_runs = config["nRuns"]
+                    current_algo = f"Monte Carlo PP ({n_runs})"
             elif current_algo == "PP1":
-                current_algo = "First Come First Serve"
+                current_algo = "First-Come-First-Serve"
             elif current_algo == "PBS" and config["exhaustiveSearch"]:
                 current_algo = "Exhaustive PBS"
+            elif current_algo == "CBS":
+                current_algo = "PCBS"
 
             n_agents = config["agentNum"]
             seed = config["seed"]
@@ -258,11 +365,14 @@ def collect_results(logdirs, baseline_algo="PP1"):
                 baseline_algo_name = current_algo
                 baseline_logdir_algo_f = logdir_algo_f
             else:
-                baseline_stat = to_plot_algo[(
-                    baseline_algo_name,
-                    baseline_logdir_algo_f)][n_agents][seed]
-                social_welfare_subopt = social_welfare / baseline_stat.social_welfare
-                solution_cost_subopt = solution_cost - baseline_stat.solution_cost
+                try:
+                    baseline_stat = to_plot_algo[(
+                        baseline_algo_name,
+                        baseline_logdir_algo_f)][n_agents][seed]
+                    social_welfare_subopt = social_welfare / baseline_stat.social_welfare
+                    solution_cost_subopt = solution_cost - baseline_stat.solution_cost
+                except RuntimeWarning:
+                    breakpoint()
 
             # Compute std of payments
             # For CBS and EECBS, there is no payment, so ignore
@@ -271,8 +381,8 @@ def collect_results(logdirs, baseline_algo="PP1"):
                 if current_algo == "CBS":
                     payment_calc_success = result["payment_calculate_success"]
 
-                    if not payment_calc_success:
-                        print(f"CBS: Payment calculated failed: {logdir_f}")
+                    # if not payment_calc_success:
+                    #     print(f"CBS: Payment calculated failed: {logdir_f}")
 
                 payments = result["payments"]
                 try:
@@ -320,7 +430,7 @@ def main(logdirs, add_legend=True, legend_only=False):
 
         figsize = (8, 5.5)
         if legend_only:
-            figsize = (18, 8)
+            figsize = (21, 8)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
@@ -355,7 +465,11 @@ def main(logdirs, add_legend=True, legend_only=False):
             ncol = 1
             if legend_only:
                 ncol = len(ALGO_TO_COLOR_MARKER.keys())
+
             handles, labels = ax.get_legend_handles_labels()
+            custom_order = [0, 3, 1, 2]  # The desired order of legend items
+            handles = [handles[i] for i in custom_order]
+            labels = [labels[i] for i in custom_order]
             legend = ax.legend(
                 handles,
                 labels,

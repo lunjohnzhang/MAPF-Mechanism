@@ -13,6 +13,8 @@ do
     printf "Plotting $LOGDIR\n"
     python analysis/plot_stats_vs_n_agents.py \
         --logdirs $LOGDIR \
-        --add-legend $ADD_LEGEND
-    printf "Done!\n\n"
+        --add-legend $ADD_LEGEND &
 done
+
+wait
+printf "Done!\n\n"
