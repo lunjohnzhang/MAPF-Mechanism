@@ -1692,15 +1692,21 @@ inline void CBS::releaseNodes()
     // TODO: this part is causing segmentational fault with the following
     // instance:
     // clang-format off
-    // ./build/drone -m maps/random-32-32-20.map -a custom_scens/random-32-32-20-my-9.scen -t 600 --algo CBS --cost config/agent_costs/uniform/10000_8.json  --value config/agent_values/uniform/10000_8.json --seed 79 --screen 1 --nLayers 1 -k 25 /usr/bin/env /bin/sh /tmp/Microsoft-MIEngine-Cmd-dwpdqz24.oa5  --suboptimality 1.05 --nRuns 100
+    // ./build/drone -m maps/random-32-32-20.map -a custom_scens/random-32-32-20-my-9.scen -t 600 --algo CBS --cost config/agent_costs/uniform/10000_8.json  --value config/agent_values/uniform/10000_8.json --seed 79 --screen 1 --nLayers 1 -k 25 --suboptimality 1.05 --nRuns 100
     // clang-format on
     // I have no idea what's happening. I commented out the code to let the seg
     // fault disappear but not clearing out the lists may cause issue if the
     // same CBS object is used multiple times. I will try to figure this out in
     // the future.
-    // open_list.clear();
-    // cleanup_list.clear();
-    // focal_list.clear();
+    // Update: upon removing the three clear functions, it runs into seg fault
+    // with the following command:
+    // clang-format off
+    // ./build/drone  -m maps/random-32-32-20.map -a custom_scens/random-32-32-20-my-9.scen -k 28 -t 600 --cost config/agent_costs/uniform/10000_2.json --value config/agent_values/uniform/10000_2.json --algo CBS --suboptimality 1.05 --nLayers 1 --nRuns 100 --seed 19 --screen 1
+    // clang-format on
+    open_list.clear();
+    cleanup_list.clear();
+    focal_list.clear();
+    // cout << "Clearing nodes" << endl;
     for (auto& node : allNodes_table) delete node;
     // cout << "Clearing table itself" << endl;
     allNodes_table.clear();
@@ -1924,7 +1930,7 @@ void CBS::computeVCGPayment()
         cbs.setLowLevelSolver(-1, this->dummy_start_node);
 
         // Run
-        cbs.clear();
+        // cbs.clear();
         // cout << "run " << i << ": running with time limit " << time_remain
         //      << endl;
         cbs.solve(time_remain);
@@ -1941,12 +1947,12 @@ void CBS::computeVCGPayment()
             // cout << "Clearing search engine after failing" << endl;
             cbs.clearSearchEngines();
             // cout << "Done clearing search engine after failing" << endl;
-            cbs.clear();
+            // cbs.clear();
             break;
         }
         this->solution_costs_wo_i[i] = cbs.solution_cost;
         this->social_welfare_wo_i[i] = cbs.social_welfare;
-        cbs.clear();
+        // cbs.clear();
         cbs.clearSearchEngines();
     }
     if (payment_calculate_success)
