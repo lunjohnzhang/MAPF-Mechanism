@@ -6,7 +6,10 @@ The code requires the external library BOOST (https://www.boost.org/). After you
 
 ## Usage
 
-The code requires the external library [boost](https://www.boost.org/).
+The code requires the external libraries [boost](https://www.boost.org/) and [parlaylib](https://github.com/cmuparlay/parlaylib).
+
+### Install boost
+
 If you are using Ubuntu, you can install it simply by
 
 ```shell script
@@ -25,7 +28,13 @@ which works for a variety of [systems](https://anaconda.org/anaconda/libboost)
 If neither of the above method works, you can also follow the instructions
 on the [boost](https://www.boost.org/) website and install it manually.
 
-After you installed boost and downloaded the source code, go into the directory of the source code and compile it with CMake:
+### Install parlaylib
+
+To install parlaylib, please follow the instruction in their [documentation](https://cmuparlay.github.io/parlaylib/installation.html).
+
+### Compile and Run
+
+After you installed boost and parlaylib, and downloaded the source code, go into the directory of the source code and compile it with CMake:
 
 ```shell script
 cmake -DCMAKE_BUILD_TYPE=RELEASE .
@@ -62,21 +71,3 @@ To test the code on more instances,
 you can download the MAPF instances from the [MAPF benchmark](https://movingai.com/benchmarks/mapf/index.html).
 In particular, the format of the scen files is explained [here](https://movingai.com/benchmarks/formats.html).
 For a given number of agents k, the first k rows of the scen file are used to generate the k pairs of start and target locations.
-
-## License
-
-The repo is released under USC – Research License. See license.md for further details.
-
-<!-- ## References
-
-[1] Jiaoyang Li, Wheeler Ruml and Sven Koenig.
-EECBS: Bounded-Suboptimal Search for Multi-Agent Path Finding.
-In Proceedings of the AAAI Conference on Artificial Intelligence (AAAI), pages 12353-12362, 2021.
-
-[2] Liron Cohen, Glenn Wagner, David M. Chan, Howie Choset, Nathan R. Sturtevant, Sven Koenig and T. K. Satish Kumar.
-Rapid Randomized Restarts for Multi-Agent Path Finding Solvers.
-In Proceedings of the Symposium on Combinatorial Search (SoCS), pages 148-152, 2018.
-
-[3] Jiaoyang Li, Zhe Chen, Daniel Harabor, Peter J. Stuckey and Sven Koenig.
-MAPF-LNS2: Fast Repairing for Multi-Agent Path Finding via Large Neighborhood Search.
-In Proceedings of the AAAI Conference on Artificial Intelligence, pages 10256-10265, 2022. -->
