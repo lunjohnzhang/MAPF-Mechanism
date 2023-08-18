@@ -27,6 +27,7 @@ ALGO_TO_COLOR_MARKER = {
     "Monte Carlo PP (100)": ("orange", "s"),  # square
     "Monte Carlo PP (10)": ("green", "v"),  # triangle_down
     "Monte Carlo PP (50)": ("olive", "X"),  # square
+    "Monte Carlo PP (150)": ("pink", "h"), # Hexagon
     "First-Come-First-Serve": ("blue", "P"),  # plus
     "Exhaustive PBS": ("purple", "*"),  # star
 }
@@ -177,9 +178,9 @@ def plot_stats_single(
 
     agent_nums = np.array(agent_nums)
 
-    global FIRST_LARGE_X
-    FIRST_LARGE_X = max(FIRST_LARGE_X, agent_nums[np.argmax(agent_nums > 25)])
-    ax.set_xscale('custom', first_large_x=FIRST_LARGE_X)
+    # global FIRST_LARGE_X
+    # FIRST_LARGE_X = max(FIRST_LARGE_X, agent_nums[np.argmax(agent_nums > 25)])
+    # ax.set_xscale('custom', first_large_x=FIRST_LARGE_X)
 
     # Avoid scientific notation
     ax.get_xaxis().get_major_formatter().set_scientific(False)
@@ -430,7 +431,7 @@ def main(logdirs, add_legend=True, legend_only=False):
 
         figsize = (8, 5.5)
         if legend_only:
-            figsize = (21, 8)
+            figsize = (22, 8)
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
 
@@ -463,19 +464,23 @@ def main(logdirs, add_legend=True, legend_only=False):
 
         if add_legend:
             ncol = 1
+            handles, labels = ax.get_legend_handles_labels()
+
             if legend_only:
                 ncol = len(ALGO_TO_COLOR_MARKER.keys())
 
-            handles, labels = ax.get_legend_handles_labels()
-            custom_order = [0, 3, 1, 2]  # The desired order of legend items
-            handles = [handles[i] for i in custom_order]
-            labels = [labels[i] for i in custom_order]
+                # The desired order of legend items
+                custom_order = [0, 3, 1, 2] # For comparing all algos
+                custom_order = [0, 3, 4, 1, 2] # For comparing MCPP
+                handles = [handles[i] for i in custom_order]
+                labels = [labels[i] for i in custom_order]
+
             legend = ax.legend(
                 handles,
                 labels,
                 loc="lower left",
                 ncol=ncol,
-                fontsize=25,
+                fontsize=20,
                 mode="expand",
                 bbox_to_anchor=(0, 1.02, 1, 0.2),  # for ncols=2
                 # borderaxespad=0,)
