@@ -55,6 +55,8 @@ def gen_cost_value(
             values = None
             if value_mode == "uniform":
                 values = np.random.uniform(0, 1, size=n_agent)
+            elif value_mode == "log_normal":
+                values = np.random.lognormal(0, 1, size=n_agent)
             else:
                 raise ValueError(f"Unknown value mode \"{value_mode}\"")
             # Write values to config
