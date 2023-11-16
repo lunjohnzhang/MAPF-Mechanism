@@ -32,7 +32,7 @@ ALGO_TO_COLOR_MARKER = {
     "Exhaustive PBS": ("purple", "*"),  # star
 }
 
-FIRST_LARGE_X = 0
+FIRST_LARGE_X = 25
 
 
 class CustomTransform(mtransforms.Transform):
@@ -216,6 +216,8 @@ def plot_stats_single(
         if algo == "Monte Carlo PP":
             label = f"{algo} ({n_runs_mcpp})"
 
+        print(mean_vals)
+        print(st.sem(curr_vals))
         ax.plot(
             agent_nums,
             mean_vals,
@@ -459,7 +461,7 @@ def main(logdirs, add_legend=True, legend_only=False):
 
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=25)
+        ax.tick_params(axis='both', which='major', labelsize=20)
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         if add_legend:
@@ -488,8 +490,8 @@ def main(logdirs, add_legend=True, legend_only=False):
             for line in legend.get_lines():
                 line.set_linewidth(2.0)
 
-        ax.figure.tight_layout()
-
+        # ax.figure.tight_layout()
+        fig.tight_layout()
         fig.savefig(
             os.path.join(
                 logdirs,
