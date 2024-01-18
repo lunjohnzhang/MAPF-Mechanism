@@ -16,7 +16,7 @@ FIELD_TO_LABEL = {
     "success": "Success Rate",
     "solution_cost": "Solution Cost",
     "social_welfare": "Social Welfare",
-    "social_welfare_subopt": "Social Welfare Div w/ FCFS",
+    "social_welfare_subopt": "SW Div w/ FCFS",
     "solution_cost_subopt": "Solution Cost Diff w/ FCFS",
     "std_payment": "Payment Std",
 }
@@ -177,6 +177,7 @@ def plot_stats_single(
     # all_vals = np.array(all_vals, dtype=float)
 
     agent_nums = np.array(agent_nums)
+    normalized_x = range(len(agent_nums))
 
     # global FIRST_LARGE_X
     # FIRST_LARGE_X = max(FIRST_LARGE_X, agent_nums[np.argmax(agent_nums > 25)])
@@ -219,7 +220,7 @@ def plot_stats_single(
         print(mean_vals)
         print(st.sem(curr_vals))
         ax.plot(
-            agent_nums,
+            normalized_x,
             mean_vals,
             marker=marker,
             color=color,
@@ -227,7 +228,7 @@ def plot_stats_single(
             markersize=15,
         )
         ax.fill_between(
-            agent_nums,
+            normalized_x,
             cf_vals[1],
             cf_vals[0],
             alpha=0.5,
@@ -239,7 +240,7 @@ def plot_stats_single(
         all_vals = np.array(all_vals, dtype=float)
         success_rate = np.sum(all_vals, axis=1) / all_vals.shape[1]
         ax.plot(
-            agent_nums,
+            normalized_x,
             success_rate,
             marker=marker,
             color=color,
@@ -431,7 +432,7 @@ def main(logdirs, add_legend=True, legend_only=False):
     for field in fields(Stats):
         print(f"Plotting {field.name}")
 
-        figsize = (8, 5.5)
+        figsize = (12, 5.5)
         if legend_only:
             figsize = (22, 8)
 
@@ -452,11 +453,13 @@ def main(logdirs, add_legend=True, legend_only=False):
                 longest_agent_nums = agent_nums
 
         # Post process
-        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=25)
-        ax.set_xlabel("Number of Agents", fontsize=25)
+        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=35)
+        ax.set_xlabel("Number of Agents", fontsize=35)
 
         if longest_agent_nums is not None:
-            ax.set_xticks(longest_agent_nums)
+            normalized_x = range(len(longest_agent_nums))
+
+            ax.set_xticks(normalized_x)
             ax.set_xticklabels(longest_agent_nums)
 
         # ax.set_ylim(y_min, y_max)
