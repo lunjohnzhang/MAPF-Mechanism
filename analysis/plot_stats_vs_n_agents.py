@@ -171,6 +171,11 @@ def plot_stats_single(
             all_vals.append(
                 [getattr(stat, field_name) for _, stat in stats.items()])
 
+            if field_name == "runtime":
+                for i in range(len(all_vals)):
+                    while len(all_vals[i]) < 100:
+                        all_vals[i].append(3600)
+
     if len(all_vals) == 0:
         return
     # print(all_vals)
@@ -217,8 +222,8 @@ def plot_stats_single(
         if algo == "Monte Carlo PP":
             label = f"{algo} ({n_runs_mcpp})"
 
-        print(mean_vals)
-        print(st.sem(curr_vals))
+        # print(mean_vals)
+        # print(st.sem(curr_vals))
         ax.plot(
             normalized_x,
             mean_vals,
@@ -237,7 +242,14 @@ def plot_stats_single(
 
     elif field_name in ["success"]:
         # plot success rate
-        all_vals = np.array(all_vals, dtype=float)
+        try:
+            all_vals = np.array(all_vals, dtype=float)
+        except ValueError:
+            max_len = np.max([len(x) for x in all_vals])
+            for i in range(len(all_vals)):
+                while len(all_vals[i]) < max_len:
+                    all_vals[i].append(0)
+            all_vals = np.array(all_vals, dtype=float)
         success_rate = np.sum(all_vals, axis=1) / all_vals.shape[1]
         ax.plot(
             normalized_x,
@@ -323,8 +335,11 @@ def collect_results(logdirs, baseline_algo="PP1"):
             # Read in config and results
             with open(os.path.join(logdir_f, "config.json"), "r") as f:
                 config = json.load(f)
-            with open(os.path.join(logdir_f, "result.json"), "r") as f:
-                result = json.load(f)
+            try:
+                with open(os.path.join(logdir_f, "result.json"), "r") as f:
+                    result = json.load(f)
+            except json.decoder.JSONDecodeError:
+                breakpoint()
 
             current_algo = config["algo"]
 
