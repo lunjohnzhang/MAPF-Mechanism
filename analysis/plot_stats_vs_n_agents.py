@@ -379,23 +379,25 @@ def collect_results(logdirs, baseline_algo="PP1"):
                     "social_welfare"] if "social_welfare" in result else 0
 
                 # Compute std of payments
-                # For CBS and EECBS, there is no payment, so ignore
                 std_payment = None
                 if "payments" in result:
                     if current_algo == "CBS":
                         payment_calc_success = result[
                             "payment_calculate_success"]
-
-                        # if not payment_calc_success:
-                        #     print(f"CBS: Payment calculated failed: {logdir_f}")
-
-                    payments = result["payments"]
-                    try:
-                        std_payment = np.std(payments)
-                    except TypeError:
-                        print(
-                            f"{current_algo}: Payment not proper: {logdir_f}")
-                        shutil.rmtree(logdir_f)
+                        if payment_calc_success:
+                            payments = result["payments"]
+                            std_payment = np.std(payments)
+                        else:
+                            payments = None
+                    else:
+                        payments = result["payments"]
+                        try:
+                            std_payment = np.std(payments)
+                        except TypeError:
+                            print(
+                                f"{current_algo}: Payment not proper: {logdir_f}"
+                            )
+                            shutil.rmtree(logdir_f)
 
                 runtime = result["runtime"]
                 if current_algo == "CBS" and success == 1:
