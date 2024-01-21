@@ -155,7 +155,8 @@ public:
 
     // Save results
     void saveResults(boost::filesystem::path filename,
-                     const string& instanceName);
+                     const string& instanceName,
+                     bool compute_payment);
     // void saveStats(const string& fileName, const string& instanceName);
     void saveCT(const string& fileName) const;     // write the CT to a file
     void savePaths(const string& fileName) const;  // write the paths to a file

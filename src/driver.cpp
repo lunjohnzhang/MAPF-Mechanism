@@ -61,6 +61,8 @@ int main(int argc, char** argv)
         // params for mechanism design
         ("cost", po::value<string>()->required())
         ("value", po::value<string>()->required())
+        ("cbs_payment", po::value<bool>()->default_value(false),
+            "compute VCG payment for CBS or not")
 
 		// params for CBS node selection strategies
 		("highLevelSolver", po::value<string>()->default_value("EES"),
@@ -222,7 +224,7 @@ int main(int argc, char** argv)
 
     // Turn on rectangle reasoning only in 2D maps.
     bool rectangle_reasoning = false;
-    if(vm["rectangleReasoning"].as<bool>() && instance.num_of_layers == 1)
+    if (vm["rectangleReasoning"].as<bool>() && instance.num_of_layers == 1)
         rectangle_reasoning = true;
 
     //////////////////////////////////////////////////////////////////////
@@ -272,7 +274,8 @@ int main(int argc, char** argv)
         // if (vm["stats"].as<bool>())
         //     ecbs.saveStats((logdir / "stats.csv").string(),
         //                    vm["agents"].as<string>());
-        ecbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
+        ecbs.saveResults(logdir / "result.json", vm["agents"].as<string>(),
+                         vm["cbs_payment"].as<bool>());
         ecbs.clearSearchEngines();
     }
     else if (algo == "PP" || algo == "PP1")
@@ -329,7 +332,8 @@ int main(int argc, char** argv)
         // if (vm["stats"].as<bool>())
         //     cbs.saveStats((logdir / "stats.csv").string(),
         //                   vm["agents"].as<string>());
-        cbs.saveResults(logdir / "result.json", vm["agents"].as<string>());
+        cbs.saveResults(logdir / "result.json", vm["agents"].as<string>(),
+                        vm["cbs_payment"].as<bool>());
         cbs.clearSearchEngines();
     }
     else if (algo == "PBS")

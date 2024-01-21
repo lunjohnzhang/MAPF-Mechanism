@@ -1811,7 +1811,7 @@ void CBS::clear()
 }
 
 void CBS::saveResults(boost::filesystem::path filename,
-                      const string& instanceName)
+                      const string& instanceName, bool compute_payment)
 {
     json mechanism_results = {
         {"map_dimension",
@@ -1869,11 +1869,19 @@ void CBS::saveResults(boost::filesystem::path filename,
 
     if (solution_found)
     {
-        computeVCGPayment();
-        if (payment_calculate_success)
-            cout << "Payment computed successfuly" << endl;
+        if (compute_payment)
+        {
+            computeVCGPayment();
+            if (payment_calculate_success)
+                cout << "CBS: Payment computed successfuly" << endl;
+            else
+                cout << "CBS: Payment calculation failed" << endl;
+        }
         else
-            cout << "Payment calculation failed" << endl;
+        {
+            payment_calculate_success = false;
+            cout << "CBS: Payment calculation skipped" << endl;
+        }
     }
     mechanism_results["timeout"] = timeout;
     mechanism_results["payments"] = payments;
