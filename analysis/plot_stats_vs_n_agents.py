@@ -27,7 +27,7 @@ ALGO_TO_COLOR_MARKER = {
     "Monte Carlo PP (100)": ("orange", "s"),  # square
     "Monte Carlo PP (10)": ("green", "v"),  # triangle_down
     "Monte Carlo PP (50)": ("olive", "X"),  # square
-    "Monte Carlo PP (150)": ("pink", "h"), # Hexagon
+    "Monte Carlo PP (150)": ("pink", "h"),  # Hexagon
     "First-Come-First-Serve": ("blue", "P"),  # plus
     "Exhaustive PBS": ("purple", "*"),  # star
 }
@@ -332,6 +332,7 @@ def collect_results(logdirs, baseline_algo="PP1"):
             if not os.path.isdir(logdir_f):
                 continue
 
+            result_exist = True
             # Read in config and results
             with open(os.path.join(logdir_f, "config.json"), "r") as f:
                 config = json.load(f)
@@ -340,6 +341,8 @@ def collect_results(logdirs, baseline_algo="PP1"):
                     result = json.load(f)
             except json.decoder.JSONDecodeError:
                 breakpoint()
+            except FileNotFoundError:
+                result_exist = False
 
             current_algo = config["algo"]
 
@@ -361,18 +364,48 @@ def collect_results(logdirs, baseline_algo="PP1"):
             n_agents = config["agentNum"]
             seed = config["seed"]
 
-            # success? We have well-formed instances, so the only way to fail
-            # is time/node out.
-            success = 0
-            if (not result["timeout"]
-                    and not ("nodeout" in result and result["nodeout"])):
-                success = 1
+            if result_exist:
+                # success? We have well-formed instances, so the only way to
+                # fail is time/node out if result exist
+                success = 0
+                if (not result["timeout"]
+                        and not ("nodeout" in result and result["nodeout"])):
+                    success = 1
 
-            # Social welfare is sum of values - solution cost
-            # values = result["values"]
-            solution_cost = result["solution_cost"]
-            social_welfare = result[
-                "social_welfare"] if "social_welfare" in result else 0
+                # Social welfare is sum of values - solution cost
+                # values = result["values"]
+                solution_cost = result["solution_cost"]
+                social_welfare = result[
+                    "social_welfare"] if "social_welfare" in result else 0
+
+                # Compute std of payments
+                # For CBS and EECBS, there is no payment, so ignore
+                std_payment = None
+                if "payments" in result:
+                    if current_algo == "CBS":
+                        payment_calc_success = result[
+                            "payment_calculate_success"]
+
+                        # if not payment_calc_success:
+                        #     print(f"CBS: Payment calculated failed: {logdir_f}")
+
+                    payments = result["payments"]
+                    try:
+                        std_payment = np.std(payments)
+                    except TypeError:
+                        print(
+                            f"{current_algo}: Payment not proper: {logdir_f}")
+                        shutil.rmtree(logdir_f)
+
+                runtime = result["runtime"]
+                if current_algo == "CBS" and success == 1:
+                    runtime = result["total_runtime"]
+            # Solution not exist
+            else:
+                runtime = config["cutoffTime"]
+                solution_cost = -1
+                social_welfare = 0
+                success = 0
 
             social_welfare_subopt = None
             solution_cost_subopt = None
@@ -392,27 +425,6 @@ def collect_results(logdirs, baseline_algo="PP1"):
                     solution_cost_subopt = solution_cost - baseline_stat.solution_cost
                 except RuntimeWarning:
                     breakpoint()
-
-            # Compute std of payments
-            # For CBS and EECBS, there is no payment, so ignore
-            std_payment = None
-            if "payments" in result:
-                if current_algo == "CBS":
-                    payment_calc_success = result["payment_calculate_success"]
-
-                    # if not payment_calc_success:
-                    #     print(f"CBS: Payment calculated failed: {logdir_f}")
-
-                payments = result["payments"]
-                try:
-                    std_payment = np.std(payments)
-                except TypeError:
-                    print(f"{current_algo}: Payment not proper: {logdir_f}")
-                    shutil.rmtree(logdir_f)
-
-            runtime = result["runtime"]
-            if current_algo == "CBS" and success == 1:
-                runtime = result["total_runtime"]
 
             # if current_algo == "CBS" and not success:
             #     print(logdir_f)
@@ -462,9 +474,9 @@ def main(logdirs, add_legend=True, legend_only=False):
 
             # We want the longest because some agent_nums might be incomplete
             # because of failed runs
-            if agent_nums is not None and (
-                    longest_agent_nums is None
-                    or len(longest_agent_nums) < len(agent_nums)):
+            if agent_nums is not None and (longest_agent_nums is None
+                                           or len(longest_agent_nums)
+                                           < len(agent_nums)):
                 longest_agent_nums = agent_nums
 
         # Post process
@@ -490,8 +502,8 @@ def main(logdirs, add_legend=True, legend_only=False):
                 ncol = len(ALGO_TO_COLOR_MARKER.keys())
 
                 # The desired order of legend items
-                custom_order = [0, 3, 1, 2] # For comparing all algos
-                custom_order = [0, 3, 4, 1, 2] # For comparing MCPP
+                custom_order = [0, 3, 1, 2]  # For comparing all algos
+                custom_order = [0, 3, 4, 1, 2]  # For comparing MCPP
                 handles = [handles[i] for i in custom_order]
                 labels = [labels[i] for i in custom_order]
 
