@@ -8,3 +8,4 @@ debug/*.json
 debug/CalculatePaymentDebug
 debug/*.sol
 .DS_Store
+__pycache__

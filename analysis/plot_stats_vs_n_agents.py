@@ -288,7 +288,7 @@ def plot_stats_single(
     return agent_nums
 
 
-def collect_results(logdirs, baseline_algo="CBS_no_payment"):
+def collect_results(logdirs, baseline_algo="PP1"):
     # All results to plot, key is the current algo, value is the `to_plot` dict
     # of the current algo
     print(f"Collecting results")
@@ -450,8 +450,8 @@ def collect_results(logdirs, baseline_algo="CBS_no_payment"):
     return to_plot_algo
 
 
-def main(logdirs, add_legend=True, legend_only=False):
-    to_plot_algo = collect_results(logdirs)
+def main(logdirs, add_legend=True, legend_only=False, baseline_algo="PP1"):
+    to_plot_algo = collect_results(logdirs, baseline_algo=baseline_algo)
 
     ###################### For debugging ######################
     # pp = to_plot_algo[('Monte Carlo PP', 'logs/to_show/demo/PP')]
@@ -466,7 +466,7 @@ def main(logdirs, add_legend=True, legend_only=False):
     for field in fields(Stats):
         print(f"Plotting {field.name}")
 
-        figsize = (12, 5.5)
+        figsize = (8, 5.5)
         if legend_only:
             figsize = (22, 8)
 
@@ -502,7 +502,7 @@ def main(logdirs, add_legend=True, legend_only=False):
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         if add_legend:
-            ncol = 1
+            ncol = 2
             handles, labels = ax.get_legend_handles_labels()
 
             if legend_only:
