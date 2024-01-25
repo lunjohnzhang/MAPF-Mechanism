@@ -1,11 +1,11 @@
 #!/bin/bash
 
-USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX TIME_LIMIT [RELOAD_DIR]"
+USAGE="Usage: bash scripts/run.sh MAP_FILE COST_MODE VALUE_MODE N_LAYERS N_RUNS N_SIM N_CORES N_AGENTS_MIN N_AGENTS_STEP N_AGENTS_MAX TIME_LIMIT [-r RELOAD_DIR] [-c CBS_PAYMENT]"
 
 algos=(
     # "PP"
     # "PP1"
-    "PBS"
+    # "PBS"
     # "ECBS"
     "CBS"
 )
@@ -85,7 +85,17 @@ N_AGENTS_MIN="$8"
 N_AGENTS_STEP="$9"
 N_AGENTS_MAX="${10}"
 TIME_LIMIT="${11}"
-RELOAD_DIR="${12}"
+# RELOAD_DIR="${12}"
+
+shift 11
+while getopts "r:c:" flag; do
+  case "$flag" in
+      r) RELOAD_DIR=$OPTARG;;
+      c) CBS_PAYMENT=$OPTARG;;
+      *) echo "Invalid option. ${USAGE}"
+  esac
+done
+
 
 if [ -z "${MAP_FILE}" ]; then
     echo "${USAGE}"
@@ -140,6 +150,10 @@ fi
 if [ -z "${TIME_LIMIT}" ]; then
     echo "${USAGE}"
     exit 1
+fi
+
+if [ -z "${CBS_PAYMENT}" ]; then
+    CBS_PAYMENT="true"
 fi
 
 # Array to store dynamic params for each experiment
@@ -263,7 +277,8 @@ for i in "${order[@]}"; do
             --nRuns $N_RUNS \
             --seed ${all_seeds_exp[$i]} \
             --screen 0 \
-            --root_logdir ${all_root_logdir[$i]}
+            --root_logdir ${all_root_logdir[$i]} \
+            --cbs_payment $CBS_PAYMENT
         echo "Done task $task_idx/$n_tasks"
     ) &
 

@@ -61,7 +61,7 @@ int main(int argc, char** argv)
         // params for mechanism design
         ("cost", po::value<string>()->required())
         ("value", po::value<string>()->required())
-        ("cbs_payment", po::value<bool>()->default_value(false),
+        ("cbs_payment", po::value<bool>()->default_value(true),
             "compute VCG payment for CBS or not")
 
 		// params for CBS node selection strategies
