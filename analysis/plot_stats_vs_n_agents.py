@@ -24,9 +24,10 @@ FIELD_TO_LABEL = {
 ALGO_TO_COLOR_MARKER = {
     "EECBS": ("green", "o"),  # circle
     "PCBS": ("red", "^"),  # triangle_up
+    "PCBS (w/o payment)": ("deepskyblue", "D"), # diamond
     "Monte Carlo PP (100)": ("orange", "s"),  # square
     "Monte Carlo PP (10)": ("green", "v"),  # triangle_down
-    "Monte Carlo PP (50)": ("olive", "X"),  # square
+    "Monte Carlo PP (50)": ("olive", "X"),  # X (filled)
     "Monte Carlo PP (150)": ("pink", "h"),  # Hexagon
     "First-Come-First-Serve": ("blue", "P"),  # plus
     "Exhaustive PBS": ("purple", "*"),  # star
@@ -287,7 +288,7 @@ def plot_stats_single(
     return agent_nums
 
 
-def collect_results(logdirs, baseline_algo="PP1"):
+def collect_results(logdirs, baseline_algo="CBS_no_payment"):
     # All results to plot, key is the current algo, value is the `to_plot` dict
     # of the current algo
     print(f"Collecting results")
@@ -359,7 +360,9 @@ def collect_results(logdirs, baseline_algo="PP1"):
             elif current_algo == "PBS" and config["exhaustiveSearch"]:
                 current_algo = "Exhaustive PBS"
             elif current_algo == "CBS":
-                current_algo = "PCBS"
+                calc_payment = config[
+                    "cbs_payment"] if "cbs_payment" in config else True
+                current_algo = "PCBS" if calc_payment else "PCBS (w/o payment)"
 
             n_agents = config["agentNum"]
             seed = config["seed"]
@@ -376,7 +379,9 @@ def collect_results(logdirs, baseline_algo="PP1"):
                 # values = result["values"]
                 solution_cost = result["solution_cost"]
                 social_welfare = result[
-                    "social_welfare"] if "social_welfare" in result else 0
+                    "social_welfare"] if "social_welfare" in result else np.inf
+                if not success and social_welfare == 0:
+                    social_welfare = np.inf
 
                 # Compute std of payments
                 std_payment = None
@@ -406,7 +411,7 @@ def collect_results(logdirs, baseline_algo="PP1"):
             else:
                 runtime = config["cutoffTime"]
                 solution_cost = -1
-                social_welfare = 0
+                social_welfare = np.inf
                 success = 0
 
             social_welfare_subopt = None
