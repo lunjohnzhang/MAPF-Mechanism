@@ -498,8 +498,9 @@ def main(logdirs, add_legend=True, legend_only=False, baseline_algo="PP1"):
 
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=25)
-        ax.tick_params(axis='both', which='minor', labelsize=15)
+        ax.tick_params(axis='x', which='major', labelsize=30, rotation=45)
+        ax.tick_params(axis='y', which='major', labelsize=30)
+        # ax.tick_params(axis='both', which='minor', labelsize=15)
 
         if add_legend:
             ncol = 2
