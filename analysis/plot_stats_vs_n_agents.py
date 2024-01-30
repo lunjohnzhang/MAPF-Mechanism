@@ -466,7 +466,7 @@ def main(logdirs, add_legend=True, legend_only=False, baseline_algo="PP1"):
     for field in fields(Stats):
         print(f"Plotting {field.name}")
 
-        figsize = (8, 5.5)
+        figsize = (10, 5.5)
         if legend_only:
             figsize = (22, 8)
 
@@ -487,8 +487,8 @@ def main(logdirs, add_legend=True, legend_only=False, baseline_algo="PP1"):
                 longest_agent_nums = agent_nums
 
         # Post process
-        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=35)
-        ax.set_xlabel("Number of Agents", fontsize=35)
+        ax.set_ylabel(FIELD_TO_LABEL[field.name], fontsize=32)
+        ax.set_xlabel("Number of Agents", fontsize=32)
 
         if longest_agent_nums is not None:
             normalized_x = range(len(longest_agent_nums))
@@ -498,7 +498,7 @@ def main(logdirs, add_legend=True, legend_only=False, baseline_algo="PP1"):
 
         # ax.set_ylim(y_min, y_max)
         # ax.grid()
-        ax.tick_params(axis='both', which='major', labelsize=20)
+        ax.tick_params(axis='both', which='major', labelsize=25)
         ax.tick_params(axis='both', which='minor', labelsize=15)
 
         if add_legend:

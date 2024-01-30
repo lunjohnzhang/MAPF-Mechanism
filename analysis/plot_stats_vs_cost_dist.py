@@ -32,8 +32,6 @@ def plot_stats_vs_cost_dist(logdirs, n_agents=1800):
     # List of tuple of (plot_order, welfare_subopt, tick_label)
     to_plot = []
 
-    # ticks_labels = []
-    # all_welfare_subopt = []
     for logdir in os.listdir(logdirs):
         logdir = os.path.join(logdirs, logdir)
         if not os.path.isdir(logdir):
@@ -65,7 +63,6 @@ def plot_stats_vs_cost_dist(logdirs, n_agents=1800):
 
     # Sort by plot order
     to_plot = sorted(to_plot, key=lambda x: x[0], reverse=True)
-    # breakpoint()
 
     all_welfare_subopt = np.array([x[1] for x in to_plot])
     ticks_labels = [x[2] for x in to_plot]
