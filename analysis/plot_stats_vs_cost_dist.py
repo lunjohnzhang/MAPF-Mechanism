@@ -20,16 +20,20 @@ plt.rc("text", usetex=True)
 
 
 def get_cost_value_label(raw_label):
+    """Return the label of the run along with plot order"""
     if raw_label == "uniform":
-        return "Uniform"
+        return np.inf, "Uniform"
     elif "logN" in raw_label:
         _, mu, sigma = raw_label.split("-")
-        return rf"$\mathcal{{LN}}({mu}, {sigma}^2)$"
+        return float(sigma), rf"$\mathcal{{LN}}({mu}, {sigma}^2)$"
 
 
 def plot_stats_vs_cost_dist(logdirs, n_agents=1800):
-    ticks_labels = []
-    all_welfare_subopt = []
+    # List of tuple of (plot_order, welfare_subopt, tick_label)
+    to_plot = []
+
+    # ticks_labels = []
+    # all_welfare_subopt = []
     for logdir in os.listdir(logdirs):
         logdir = os.path.join(logdirs, logdir)
         if not os.path.isdir(logdir):
@@ -42,10 +46,10 @@ def plot_stats_vs_cost_dist(logdirs, n_agents=1800):
         with open(os.path.join(logdir, "meta.yaml"), "r") as f:
             meta = yaml.safe_load(f)
 
-        value_label = get_cost_value_label(meta["value"])
-        cost_label = get_cost_value_label(meta["cost"])
+        # value_label = get_cost_value_label(meta["value"])
+        plot_order, cost_label = get_cost_value_label(meta["cost"])
 
-        ticks_labels.append(cost_label)
+        # ticks_labels.append(cost_label)
 
         # Get the suboptimality
         for (algo, logdir_algo_f) in curr_result:
@@ -54,9 +58,17 @@ def plot_stats_vs_cost_dist(logdirs, n_agents=1800):
                 welfare_subopts = []
                 for _, stats in result.items():
                     welfare_subopts.append(stats.social_welfare_subopt)
-        all_welfare_subopt.append(welfare_subopts)
 
-    all_welfare_subopt = np.array(all_welfare_subopt)
+        to_plot.append((plot_order, welfare_subopts, cost_label))
+
+        # all_welfare_subopt.append(welfare_subopts)
+
+    # Sort by plot order
+    to_plot = sorted(to_plot, key=lambda x: x[0], reverse=True)
+    # breakpoint()
+
+    all_welfare_subopt = np.array([x[1] for x in to_plot])
+    ticks_labels = [x[2] for x in to_plot]
     mean_vals = np.mean(all_welfare_subopt, axis=1)
     cf_vals = st.t.interval(confidence=0.95,
                             df=all_welfare_subopt.shape[1] - 1,
