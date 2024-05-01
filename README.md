@@ -1,6 +1,6 @@
 # Scalable Mechanism Design for Multi-Agent Path Finding
 
-This repository is the official implementation of the paper **Scalable Mechanism Design for Multi-Agent Path Finding**. The repository builds on top of repositories of [EECBS](https://github.com/Jiaoyang-Li/EECBS), [PBS](https://github.com/Jiaoyang-Li/PBS), and [prioritized planning with ML](https://github.com/Jiaoyang-Li/Prioritized-Planning-with-ML).
+This repository is the official implementation of the paper **[Scalable Mechanism Design for Multi-Agent Path Finding](https://arxiv.org/abs/2401.17044)**, accepted to IJCAI 2024. The repository builds on top of repositories of [EECBS](https://github.com/Jiaoyang-Li/EECBS), [PBS](https://github.com/Jiaoyang-Li/PBS), and [prioritized planning with ML](https://github.com/Jiaoyang-Li/Prioritized-Planning-with-ML).
 
 The code requires the external library BOOST (https://www.boost.org/). After you installed BOOST and downloaded the source code, go into the directory of the source code and compile it with CMake:
 
