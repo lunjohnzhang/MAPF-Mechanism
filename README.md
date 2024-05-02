@@ -1,10 +1,9 @@
 # Scalable Mechanism Design for Multi-Agent Path Finding
 
-This repository is the official implementation of the paper **Scalable Mechanism Design for Multi-Agent Path Finding**. The repository builds on top of repositories of [EECBS](https://github.com/Jiaoyang-Li/EECBS), [PBS](https://github.com/Jiaoyang-Li/PBS), and [prioritized planning with ML](https://github.com/Jiaoyang-Li/Prioritized-Planning-with-ML).
+This repository is the official implementation of the paper **Scalable Mechanism Design for Multi-Agent Path Finding**, accepted to IJCAI 2024. The repository builds on top of repositories of [EECBS](https://github.com/Jiaoyang-Li/EECBS), [PBS](https://github.com/Jiaoyang-Li/PBS), and [prioritized planning with ML](https://github.com/Jiaoyang-Li/Prioritized-Planning-with-ML).
 
-The code requires the external library BOOST (https://www.boost.org/). After you installed BOOST and downloaded the source code, go into the directory of the source code and compile it with CMake:
 
-## Usage
+## Installation
 
 The code requires the external libraries [boost](https://www.boost.org/) and [parlaylib](https://github.com/cmuparlay/parlaylib).
 
@@ -44,22 +43,29 @@ make
 Then, you are able to run the code:
 
 ```
-./drone -m maps/random-32-32-20.map -a scens/random-32-32-20-random-1.scen -k 50 -t 60 --suboptimality=1.2 --algo ECBS
+./build/drone --map maps/random-32-32-20.map \
+    --agents custom_scens/random-32-32-20-my-1.scen \
+    --cost config/agent_costs/uniform/1000_1.json \
+    --value config/agent_values/uniform/1000_1.json \
+    --cutoffTime 120 --seed 1 --agentNum 1500 --nLayers 1 \
+    --algo PP1 --nRuns 1 --screen 1
 ```
-- algo: the MAPF algorithm. One of `CBS`, `ECBS`, `PBS`, and `PP`.
+
 - map: the map file from the MAPF benchmark
 - agents: the scenario file from the MAPF benchmark
+- cost: config file for costs
+- value: config file for values
 - agentNum: the number of agents
 - cutoffTime: the runtime limit
-- saveStats: whether to save the search statistics
-- savePath: whether to save the paths
 - seed: global random seed
 - nLayers: height of 3D map
-- dummyStart: whether to create a dummy start node in single agent solver
 - nRuns: number of random orders to run in `PP`.
-- exhaustiveSearch: whether to use exhaustive search in `PBS`
-- suboptimality: the suboptimality factor w for `ECBS`
-- agentSuboptimality: per agent suboptimality factor for `ECBS`
+- algo: the MAPF algorithm. One of `CBS`, `PBS`, and `PP`.
+- nRuns: number of times to run in Monte Carlo PP. i.e. if `nRuns=1`, MCPP becomes naive PP (aka first come first serve).
+- screen: screen level of the program
+- savePath: whether to save the paths, default to True
+- dummyStart: whether to create a dummy start node in single agent solver, default to True
+- exhaustiveSearch: whether to use exhaustive search in `PBS`, default to True
 
 You can find more details and explanations for all parameters with:
 
