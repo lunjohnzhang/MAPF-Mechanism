@@ -15,6 +15,12 @@ If you are using Ubuntu, you can install it simply by
 sudo apt install libboost-all-dev
 ```
 
+On MacOS, you can install it by
+
+```shell script
+brew install boost
+```
+
 Another easy way of installing the boost library is to install anaconda/miniconda and then
 
 ```shell script
@@ -26,6 +32,8 @@ which works for a variety of [systems](https://anaconda.org/anaconda/libboost)
 
 If neither of the above method works, you can also follow the instructions
 on the [boost](https://www.boost.org/) website and install it manually.
+
+As a reference, we use Boost version `1.71.0` on `Ubuntu 20.04` or `1.85.0` on `MaxOS 14.1.2`.
 
 ### Install parlaylib
 
@@ -42,7 +50,7 @@ make
 
 Then, you are able to run the code:
 
-```
+```shell script
 ./build/drone --map maps/random-32-32-20.map \
     --agents custom_scens/random-32-32-20-my-1.scen \
     --cost config/agent_costs/uniform/10000_1.json \
