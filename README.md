@@ -45,8 +45,8 @@ Then, you are able to run the code:
 ```
 ./build/drone --map maps/random-32-32-20.map \
     --agents custom_scens/random-32-32-20-my-1.scen \
-    --cost config/agent_costs/uniform/1000_1.json \
-    --value config/agent_values/uniform/1000_1.json \
+    --cost config/agent_costs/uniform/10000_1.json \
+    --value config/agent_values/uniform/10000_1.json \
     --cutoffTime 120 --seed 1 --agentNum 1500 --nLayers 1 \
     --algo PP1 --nRuns 1 --screen 1
 ```
