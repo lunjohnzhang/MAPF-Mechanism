@@ -33,7 +33,7 @@ which works for a variety of [systems](https://anaconda.org/anaconda/libboost)
 If neither of the above method works, you can also follow the instructions
 on the [boost](https://www.boost.org/) website and install it manually.
 
-As a reference, we use Boost version `1.71.0` on `Ubuntu 20.04` or `1.85.0` on `MaxOS 14.1.2`.
+As a reference, we use Boost version `1.71.0` on `Ubuntu 20.04` or `1.85.0` on `MacOS 14.1.2`.
 
 ### Install parlaylib
 
