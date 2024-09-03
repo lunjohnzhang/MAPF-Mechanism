@@ -67,7 +67,6 @@ Then, you are able to run the code:
 - cutoffTime: the runtime limit
 - seed: global random seed
 - nLayers: height of 3D map
-- nRuns: number of random orders to run in `PP`.
 - algo: the MAPF algorithm. One of `CBS`, `PBS`, and `PP`.
 - nRuns: number of times to run in Monte Carlo PP. i.e. if `nRuns=1`, MCPP becomes naive PP (aka first come first serve).
 - screen: screen level of the program
